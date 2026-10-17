@@ -1,44 +1,202 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useAdmin } from "./admin-context";
 import { socialPostText } from "@/lib/description";
-import type { AdminCar, Origin } from "@/lib/types";
+import { formatDate } from "@/lib/format";
+import type { AdminCar, Origin, SocialNetwork, SocialPost, SocialStatus } from "@/lib/types";
 
 const originOf = (car: AdminCar): Origin | null =>
   car.source === "AUTOHOME" ? "CN" : car.source === "AUTOWINI" ? "KR" : null;
 
-/** The Facebook/Instagram post for this car, in the posting script's format, ready to copy. */
+const networkLabels: Record<SocialNetwork, string> = { FACEBOOK: "Facebook", INSTAGRAM: "Instagram" };
+const INSTAGRAM_CAPTION_MAX = 2200;
+const MAX_PHOTOS = 10;
+
+/** The generated FB/IG text for the car (editable), publishing to the page, sharing and the list of posts. */
 export function SocialPostPanel({ car }: { car: AdminCar }) {
-  const [copied, setCopied] = useState(false);
+  const { adminFetch } = useAdmin();
   const listingId = car.sourceRef ? (car.source === "AUTOHOME" ? `AH${car.sourceRef}` : car.sourceRef) : null;
-  const text = socialPostText(car.specs, originOf(car), car.price?.totalEur ?? null, listingId);
+  const generated = socialPostText(car.specs, originOf(car), car.price?.totalEur ?? null, listingId);
+
+  const [text, setText] = useState(generated);
+  const [status, setStatus] = useState<SocialStatus | null>(null);
+  const [posts, setPosts] = useState<SocialPost[]>([]);
+  const [busy, setBusy] = useState<string | null>(null);
+  const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null);
+
+  useEffect(() => {
+    adminFetch<SocialStatus>("/api/admin/social/status").then(setStatus).catch(() => setStatus(null));
+    adminFetch<SocialPost[]>(`/api/admin/cars/${car.id}/social-posts`).then(setPosts).catch(() => setPosts([]));
+  }, [adminFetch, car.id]);
+
+  async function publish(network: SocialNetwork) {
+    const earlier = posts.find((p) => p.network === network);
+    if (earlier && !window.confirm(`Колата вече е публикувана в ${networkLabels[network]} на ${formatDate(earlier.createdAt)}. Публикувай отново?`)) {
+      return;
+    }
+    setBusy(network);
+    setMessage(null);
+    try {
+      const post = await adminFetch<SocialPost>(`/api/admin/cars/${car.id}/social-posts`, {
+        method: "POST",
+        body: JSON.stringify({ network, text }),
+      });
+      setPosts((list) => [post, ...list]);
+      setMessage({ ok: true, text: `Публикувано в ${networkLabels[network]} ✓ (${post.photos} снимки)` });
+    } catch (e) {
+      setMessage({ ok: false, text: e instanceof Error ? e.message : "Грешка" });
+    } finally {
+      setBusy(null);
+    }
+  }
 
   async function copy() {
     try {
       await navigator.clipboard.writeText(text);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+      setMessage({ ok: true, text: "Текстът е копиран ✓" });
     } catch {
-      setCopied(false);
+      setMessage({ ok: false, text: "Неуспешно копиране" });
     }
   }
+
+  /** The phone's / Windows share sheet with the photos and the text (e.g. to the Instagram or Facebook app). */
+  async function shareWithPhotos() {
+    setBusy("share");
+    setMessage(null);
+    try {
+      const files = await photoFiles(car);
+      const data: ShareData = { text, files };
+      if (!navigator.canShare?.(data)) {
+        throw new Error("Този браузър не може да споделя снимки. Използвай „Свали снимките“ и „Копирай текста“.");
+      }
+      await navigator.clipboard.writeText(text).catch(() => undefined); // Instagram ignores shared text
+      await navigator.share(data);
+    } catch (e) {
+      if (!(e instanceof DOMException && e.name === "AbortError")) {
+        setMessage({ ok: false, text: e instanceof Error ? e.message : "Грешка" });
+      }
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function downloadPhotos() {
+    setBusy("download");
+    try {
+      for (const file of await photoFiles(car)) {
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(file);
+        a.download = file.name;
+        a.click();
+        URL.revokeObjectURL(a.href);
+      }
+    } catch (e) {
+      setMessage({ ok: false, text: e instanceof Error ? e.message : "Грешка" });
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  const tooLongForInstagram = text.length > INSTAGRAM_CAPTION_MAX;
+  const noPhotos = car.images.length === 0;
 
   return (
     <section className="rounded-2xl border border-line bg-card p-4">
       <div className="mb-2 flex items-center justify-between gap-2">
-        <h2 className="font-bold">Текст за Facebook / Instagram</h2>
-        <button type="button" onClick={copy} className="btn-ghost px-3! py-1.5! text-xs!">
-          {copied ? "Копирано ✓" : "Копирай"}
-        </button>
+        <h2 className="font-bold">Facebook / Instagram</h2>
+        <div className="flex gap-1.5">
+          {text !== generated && (
+            <button type="button" onClick={() => setText(generated)} className="btn-ghost px-3! py-1.5! text-xs!">
+              Възстанови
+            </button>
+          )}
+          <button type="button" onClick={copy} className="btn-ghost px-3! py-1.5! text-xs!">
+            Копирай текста
+          </button>
+        </div>
       </div>
       <textarea
-        readOnly
         value={text}
+        onChange={(e) => setText(e.target.value)}
         rows={12}
         className="field font-mono text-xs! leading-relaxed"
         aria-label="Текст за публикация"
       />
-      <p className="mt-2 text-xs text-muted">Обновява се след „Запиши“. Цената е крайната цена от сайта.</p>
+      <p className={`mt-1 text-xs ${tooLongForInstagram ? "font-semibold text-warn" : "text-muted"}`}>
+        {text.length} знака{tooLongForInstagram ? ` — над лимита на Instagram (${INSTAGRAM_CAPTION_MAX})` : ""}.
+        Генерира се от данните след „Запиши“; можеш да го редактираш преди публикуване.
+      </p>
+
+      <div className="mt-3 grid grid-cols-2 gap-2">
+        <button
+          type="button"
+          className="btn-primary px-3! py-2! text-sm!"
+          disabled={!status?.facebook || noPhotos || busy !== null}
+          onClick={() => publish("FACEBOOK")}
+        >
+          {busy === "FACEBOOK" ? "Публикуване…" : "Публикувай във Facebook"}
+        </button>
+        <button
+          type="button"
+          className="btn-primary px-3! py-2! text-sm!"
+          disabled={!status?.instagram || noPhotos || tooLongForInstagram || busy !== null}
+          onClick={() => publish("INSTAGRAM")}
+        >
+          {busy === "INSTAGRAM" ? "Публикуване…" : "Публикувай в Instagram"}
+        </button>
+      </div>
+      {status && (!status.facebook || !status.instagram) && (
+        <p className="mt-2 text-xs text-muted">
+          {!status.facebook && "Facebook не е настроен (FB_PAGE_ID, FB_ACCESS_TOKEN). "}
+          {!status.instagram && "Instagram не е настроен (IG_USER_ID, FB_ACCESS_TOKEN, IMGBB_API_KEY). "}
+          Виж README на бекенда.
+        </p>
+      )}
+      <p className="mt-1 text-xs text-muted">Публикуват се до {MAX_PHOTOS} снимки в реда от галерията.</p>
+
+      <div className="mt-3 flex flex-wrap gap-2">
+        <button type="button" className="btn-ghost px-3! py-1.5! text-xs!" disabled={noPhotos || busy !== null} onClick={shareWithPhotos}>
+          {busy === "share" ? "Подготовка…" : "Сподели със снимките"}
+        </button>
+        <button type="button" className="btn-ghost px-3! py-1.5! text-xs!" disabled={noPhotos || busy !== null} onClick={downloadPhotos}>
+          {busy === "download" ? "Сваляне…" : "Свали снимките"}
+        </button>
+      </div>
+
+      {message && (
+        <p className={`mt-3 text-sm font-semibold ${message.ok ? "text-ok" : "text-warn"}`}>{message.text}</p>
+      )}
+
+      {posts.length > 0 && (
+        <ul className="mt-3 space-y-1 border-t border-line pt-3 text-xs">
+          {posts.map((p) => (
+            <li key={p.id} className="flex justify-between gap-2">
+              <span>
+                {networkLabels[p.network]} · {formatDate(p.createdAt)} · {p.photos} снимки
+              </span>
+              {p.permalink && (
+                <a href={p.permalink} target="_blank" rel="noreferrer" className="font-semibold text-accent hover:underline">
+                  виж ↗
+                </a>
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
     </section>
   );
+}
+
+/** The car's photos as files, in gallery order (the same ones the publish buttons send). */
+async function photoFiles(car: AdminCar): Promise<File[]> {
+  const files: File[] = [];
+  for (const [i, img] of car.images.slice(0, MAX_PHOTOS).entries()) {
+    const res = await fetch(img.url);
+    if (!res.ok) throw new Error(`Снимка ${i + 1} не се зареди (${res.status})`);
+    const blob = await res.blob();
+    const ext = blob.type === "image/png" ? "png" : blob.type === "image/webp" ? "webp" : "jpg";
+    files.push(new File([blob], `${car.slug}-${String(i + 1).padStart(2, "0")}.${ext}`, { type: blob.type || "image/jpeg" }));
+  }
+  return files;
 }

@@ -19,10 +19,10 @@ import {
   transmissionLabels,
 } from "@/lib/format";
 import { CarGallery } from "@/components/car-gallery";
-import { CarDescription } from "@/components/car-description";
+import { ShareButtons } from "@/components/share-buttons";
 import { InquiryForm } from "@/components/inquiry-form";
 import { PriceCard } from "@/components/price-card";
-import type { CarSpecs } from "@/lib/types";
+import type { CarSpecs, Origin } from "@/lib/types";
 
 export async function generateMetadata({ params }: PageProps<"/cars/[slug]">): Promise<Metadata> {
   const { slug } = await params;
@@ -51,24 +51,58 @@ export default function CarPage({ params }: PageProps<"/cars/[slug]">) {
   );
 }
 
-/** Label/value pairs of the facts grid; empty values are left out. */
-function facts(s: CarSpecs): [string, string | null][] {
+type Fact = [label: string, value: string | null | undefined];
+
+/** The car's data in groups; empty values (and groups left empty) are not shown. */
+function factGroups(s: CarSpecs, origin: Origin | null): { title: string; facts: Fact[] }[] {
+  const electric = hasTractionBattery(s.fuelType);
   return [
-    ["Година", s.year?.toString() ?? null],
-    ["Първа регистрация", formatYearMonth(s.firstRegistration)],
-    ["Пробег", s.mileageKm != null ? formatKm(s.mileageKm) : null],
-    ["Гориво", s.fuelType ? fuelLabels[s.fuelType] : null],
-    ["Скоростна кутия", s.transmission ? transmissionLabels[s.transmission] : null],
-    ["Задвижване", s.drivetrain ? drivetrainLabels[s.drivetrain] : null],
-    ["Двигател", s.engineCc ? `${formatNumber(s.engineCc)} см³` : s.engine],
-    ["Мощност", formatPower(s.powerHp, s.fuelType === "ELECTRIC" ? s.motorPowerKw : null)],
-    ["Купе", bodyTypeLabel(s.bodyType)],
-    ["Места", s.seats?.toString() ?? null],
-    ["Врати", s.doors?.toString() ?? null],
-    ["Цвят", colorLabel(s.color)],
-    ["Тегло", s.curbWeightKg ? `${formatNumber(s.curbWeightKg)} кг` : null],
-    ["Размери (Д × Ш × В)", s.dimensions ? `${s.dimensions} мм` : null],
-  ];
+    {
+      title: "Основни данни",
+      facts: [
+        ["Година", s.year?.toString()],
+        ["Първа регистрация", formatYearMonth(s.firstRegistration)],
+        ["Пробег", s.mileageKm != null ? formatKm(s.mileageKm) : null],
+        ["Произход", origin ? originLabels[origin] : null],
+        ["Купе", bodyTypeLabel(s.bodyType)],
+        ["Цвят", colorLabel(s.color)],
+        ["Места", s.seats?.toString()],
+        ["Врати", s.doors?.toString()],
+      ],
+    },
+    {
+      title: "Двигател и задвижване",
+      facts: [
+        ["Гориво", s.fuelType ? fuelLabels[s.fuelType] : null],
+        ["Двигател", s.engineCc ? `${formatNumber(s.engineCc)} см³` : s.engine],
+        ["Мощност", formatPower(s.powerHp, s.fuelType === "ELECTRIC" ? s.motorPowerKw : null)],
+        ["Скоростна кутия", s.transmission ? transmissionLabels[s.transmission] : null],
+        ["Задвижване", s.drivetrain ? drivetrainLabels[s.drivetrain] : null],
+      ],
+    },
+    {
+      title: "Електрическо задвижване",
+      facts: [
+        ["Батерия", s.batteryKwh != null ? formatKwh(s.batteryKwh) : null],
+        ["Пробег на ток", formatRange(s.electricRangeKm, s.rangeStandard)],
+        [
+          "Електромотор(и)",
+          electric && s.motorPowerKw != null && s.fuelType !== "ELECTRIC"
+            ? `${formatNumber(s.motorPowerKw)} kW (${formatNumber(Math.round(s.motorPowerKw * 1.36))} к.с.)`
+            : null,
+        ],
+      ],
+    },
+    {
+      title: "Размери и тегло",
+      facts: [
+        ["Размери (Д × Ш × В)", s.dimensions ? `${s.dimensions} мм` : null],
+        ["Тегло", s.curbWeightKg ? `${formatNumber(s.curbWeightKg)} кг` : null],
+      ],
+    },
+  ]
+    .map((g) => ({ ...g, facts: g.facts.filter(([, v]) => v) as Fact[] }))
+    .filter((g) => g.facts.length > 0);
 }
 
 async function CarDetailView({ params }: { params: PageProps<"/cars/[slug]">["params"] }) {
@@ -77,7 +111,16 @@ async function CarDetailView({ params }: { params: PageProps<"/cars/[slug]">["pa
   if (!car) notFound();
   const s = car.specs;
   const extra = Object.entries(s.extraSpecs ?? {});
-  const electric = hasTractionBattery(s.fuelType);
+  const evStats = hasTractionBattery(s.fuelType)
+    ? ([
+        ["Батерия", s.batteryKwh != null ? formatKwh(s.batteryKwh) : null],
+        ["Пробег на ток", formatRange(s.electricRangeKm, s.rangeStandard)],
+        [
+          s.fuelType === "ELECTRIC" ? "Мощност" : "Електромотор",
+          formatPower(s.fuelType === "ELECTRIC" ? s.powerHp : null, s.motorPowerKw),
+        ],
+      ].filter(([, v]) => v) as [string, string][])
+    : [];
 
   return (
     <div className="mt-4 grid gap-10 lg:grid-cols-[1fr_380px]">
@@ -89,45 +132,70 @@ async function CarDetailView({ params }: { params: PageProps<"/cars/[slug]">["pa
             <span className="rounded-full bg-warn px-3 py-1 text-xs font-bold text-white uppercase">Резервирана</span>
           )}
           <h1 className="mt-2 text-3xl font-extrabold tracking-tight sm:text-4xl">{s.title}</h1>
+          <div className="mt-4">
+            <ShareButtons title={s.title} />
+          </div>
         </div>
 
-        {electric && (s.batteryKwh != null || s.electricRangeKm != null || s.motorPowerKw != null) && (
-          <div className="mt-6 grid gap-px overflow-hidden rounded-2xl bg-ink sm:grid-cols-3">
-            <EvStat label="Батерия" value={s.batteryKwh != null ? formatKwh(s.batteryKwh) : null} />
-            <EvStat label="Пробег на ток" value={formatRange(s.electricRangeKm, s.rangeStandard)} />
-            <EvStat
-              label={s.fuelType === "ELECTRIC" ? "Мощност" : "Електромотор"}
-              value={formatPower(s.fuelType === "ELECTRIC" ? s.powerHp : null, s.motorPowerKw)}
-            />
+        {evStats.length > 0 && (
+          <div
+            className={`mt-6 grid gap-px overflow-hidden rounded-2xl bg-paper/10 ${
+              evStats.length === 3 ? "sm:grid-cols-3" : evStats.length === 2 ? "sm:grid-cols-2" : ""
+            }`}
+          >
+            {evStats.map(([label, value]) => (
+              <div key={label} className="bg-ink p-4 text-paper">
+                <p className="text-[11px] font-semibold tracking-wide text-paper/60 uppercase">⚡ {label}</p>
+                <p className="mt-1 text-lg font-extrabold">{value}</p>
+              </div>
+            ))}
           </div>
         )}
 
-        <dl className="mt-6 grid grid-cols-2 gap-px overflow-hidden rounded-2xl border border-line bg-line sm:grid-cols-3">
-          {facts(s)
-            .filter(([, v]) => v)
-            .map(([label, value]) => (
-              <div key={label} className="bg-card p-4">
-                <dt className="text-[11px] font-semibold tracking-wide text-muted uppercase">{label}</dt>
-                <dd className="mt-1 font-bold">{value}</dd>
+        <div className="mt-8 space-y-8">
+          {factGroups(s, car.origin).map((group) => (
+            <section key={group.title}>
+              <h2 className="text-lg font-extrabold">{group.title}</h2>
+              <div className="mt-3 overflow-hidden rounded-2xl border border-line bg-card">
+                {/* -mb-px hides the bottom border of the last row under the rounded frame */}
+                <dl className="-mb-px grid sm:grid-cols-2">
+                  {group.facts.map(([label, value]) => (
+                    <div
+                      key={label}
+                      className="flex items-baseline justify-between gap-4 border-b border-line px-4 py-3 text-sm sm:odd:border-r"
+                    >
+                      <dt className="text-muted">{label}</dt>
+                      <dd className="text-right font-semibold">{value}</dd>
+                    </div>
+                  ))}
+                </dl>
               </div>
-            ))}
-        </dl>
+            </section>
+          ))}
 
-        <CarDescription specs={s} origin={car.origin} priceEur={car.priceEur} />
+          {extra.length > 0 && (
+            <section>
+              <h2 className="text-lg font-extrabold">Допълнителни характеристики</h2>
+              <dl className="mt-3 divide-y divide-line rounded-2xl border border-line bg-card">
+                {extra.map(([k, v]) => (
+                  <div key={k} className="flex justify-between gap-6 px-4 py-3 text-sm">
+                    <dt className="text-muted">{k}</dt>
+                    <dd className="text-right font-semibold">{v}</dd>
+                  </div>
+                ))}
+              </dl>
+            </section>
+          )}
 
-        {extra.length > 0 && (
-          <section className="mt-10">
-            <h2 className="text-xl font-extrabold">Допълнителни характеристики</h2>
-            <dl className="mt-4 divide-y divide-line rounded-2xl border border-line bg-card">
-              {extra.map(([k, v]) => (
-                <div key={k} className="flex justify-between gap-6 px-4 py-3 text-sm">
-                  <dt className="text-muted">{k}</dt>
-                  <dd className="text-right font-semibold">{v}</dd>
-                </div>
-              ))}
-            </dl>
-          </section>
-        )}
+          {s.description && (
+            <section>
+              <h2 className="text-lg font-extrabold">Бележки</h2>
+              <p className="mt-3 rounded-2xl border border-line bg-card p-4 leading-relaxed whitespace-pre-line text-ink-soft">
+                {s.description}
+              </p>
+            </section>
+          )}
+        </div>
       </div>
 
       <aside className="space-y-5 lg:sticky lg:top-24 lg:self-start">
@@ -137,15 +205,6 @@ async function CarDetailView({ params }: { params: PageProps<"/cars/[slug]">["pa
           <InquiryForm carId={car.id} carTitle={s.title} />
         </div>
       </aside>
-    </div>
-  );
-}
-
-function EvStat({ label, value }: { label: string; value: string | null }) {
-  return (
-    <div className="bg-ink p-4 text-paper">
-      <p className="text-[11px] font-semibold tracking-wide text-paper/60 uppercase">⚡ {label}</p>
-      <p className="mt-1 text-lg font-extrabold">{value ?? "—"}</p>
     </div>
   );
 }
