@@ -47,6 +47,6 @@ Run `npm run lint` and `npm run build` before finishing a change.
 |---|---|
 | `src/app/page.tsx` | home: hero, latest cars, how import works, "find me a car" form |
 | `src/app/cars/page.tsx` | catalog with filters in the URL (GET form) |
-| `src/app/cars/[slug]/page.tsx` | car page: gallery, specs, price breakdown, inquiry form |
-| `src/app/admin/**` | admin: import by link, edit car, photos, statuses, inquiries |
+| `src/app/cars/[slug]/page.tsx` | car page: gallery, specs, description, final price (only `priceEur`), inquiry form |
+| `src/app/admin/**` | admin: import by link, edit car, photos, statuses, price formulas (`pricing/`), inquiries |
 | `src/components/**` | shared components; `admin/` for admin-only ones |
