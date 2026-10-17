@@ -5,6 +5,8 @@ import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 
 export const metadata: Metadata = {
+  // Absolute links for preview images (/media/...) when a page is shared
+  metadataBase: new URL(process.env.SITE_URL ?? "http://localhost:3000"),
   title: {
     default: "Premium Cars Import — коли от Корея и Китай",
     template: "%s · Premium Cars Import",

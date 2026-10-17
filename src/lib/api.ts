@@ -1,9 +1,9 @@
 // Server-side calls to the public API. Used from Server Components inside <Suspense>,
 // so every request gets fresh data (an admin change is visible on the next page load).
 import type { CarDetail, CarSummary, FilterOptions, PageResponse } from "./types";
-import { PUBLIC_API_URL } from "./config";
 /** URL the Next.js server uses; differs from the public one inside Docker/Kubernetes. */
-const SERVER_API_URL = process.env.API_URL ?? PUBLIC_API_URL;
+/** Server components call the backend directly (not through the /api rewrite). */
+const SERVER_API_URL = process.env.API_URL ?? "http://localhost:8080";
 
 export class ApiError extends Error {
   constructor(

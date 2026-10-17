@@ -26,6 +26,9 @@ export function InquiryForm({ carId, carTitle }: { carId?: number; carTitle?: st
           website: form.get("website"), // honeypot
         }),
       });
+      if (res.status === 429) {
+        throw new Error("Изпратихте няколко запитвания за кратко време. Опитайте отново след малко или ни се обадете.");
+      }
       if (!res.ok) {
         const problem = await res.json().catch(() => null);
         throw new Error(problem?.detail ?? `Грешка ${res.status}`);

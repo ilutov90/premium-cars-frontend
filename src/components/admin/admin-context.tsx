@@ -1,13 +1,12 @@
 "use client";
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
-import { PUBLIC_API_URL } from "@/lib/config";
 
 /*
- * MVP admin auth: HTTP Basic credentials kept in sessionStorage (cleared when the tab closes).
- * Replace with a proper login (OAuth2 / Keycloak / session cookie) before exposing the admin publicly.
+ * Admin login with a server session: the backend sets an HttpOnly session cookie (the password is never stored in
+ * the browser). Changing requests send the CSRF token from the XSRF-TOKEN cookie in the X-XSRF-TOKEN header.
+ * All calls go to the same origin (/api is forwarded to the backend by next.config.ts).
  */
-const STORAGE_KEY = "pc-admin-auth";
 
 export class AdminApiError extends Error {
   constructor(
@@ -23,7 +22,7 @@ type AdminFetch = <T>(path: string, init?: RequestInit) => Promise<T>;
 interface AdminContextValue {
   username: string;
   adminFetch: AdminFetch;
-  logout: () => void;
+  logout: () => Promise<void>;
 }
 
 const AdminContext = createContext<AdminContextValue | null>(null);
@@ -34,114 +33,99 @@ export function useAdmin(): AdminContextValue {
   return ctx;
 }
 
-async function call<T>(token: string, path: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(`${PUBLIC_API_URL}${path}`, {
-    ...init,
-    headers: {
-      Accept: "application/json",
-      ...(init?.body ? { "Content-Type": "application/json" } : {}),
-      Authorization: `Basic ${token}`,
-      ...init?.headers,
-    },
-  });
+function csrfToken(): string | null {
+  const match = document.cookie.match(/(?:^|;\s*)XSRF-TOKEN=([^;]+)/);
+  return match ? decodeURIComponent(match[1]) : null;
+}
+
+/** Bulgarian texts for the backend's (English) answers the admin sees most. */
+function message(status: number, detail: string | undefined): string {
+  if (status === 429) return "Твърде много опити. Опитайте отново след няколко минути.";
+  if (status === 403) return "Сесията е изтекла. Презаредете страницата.";
+  if (detail === "Wrong username or password") return "Грешно потребителско име или парола";
+  if (detail?.startsWith("Too many wrong passwords")) return "Твърде много грешни пароли. Опитайте след 15 минути.";
+  return detail ?? `Грешка ${status}`;
+}
+
+async function call<T>(path: string, init?: RequestInit): Promise<T> {
+  const method = (init?.method ?? "GET").toUpperCase();
+  const token = method === "GET" ? null : csrfToken();
+  let res: Response;
+  try {
+    res = await fetch(path, {
+      ...init,
+      credentials: "same-origin",
+      headers: {
+        Accept: "application/json",
+        ...(init?.body ? { "Content-Type": "application/json" } : {}),
+        ...(token ? { "X-XSRF-TOKEN": token } : {}),
+        ...init?.headers,
+      },
+    });
+  } catch {
+    throw new AdminApiError(0, "Няма връзка със сървъра.");
+  }
   if (!res.ok) {
     const problem = await res.json().catch(() => null);
-    throw new AdminApiError(res.status, problem?.detail ?? `Грешка ${res.status}`);
+    throw new AdminApiError(res.status, message(res.status, problem?.detail));
   }
   if (res.status === 204) return undefined as T;
   return res.json() as Promise<T>;
 }
 
-function readStoredToken(): string | null {
-  try {
-    return sessionStorage.getItem(STORAGE_KEY);
-  } catch {
-    return null;
-  }
-}
-
 export function AdminProvider({ children }: { children: React.ReactNode }) {
   // undefined = not checked yet (avoids flashing the login form), null = logged out
-  const [token, setToken] = useState<string | null | undefined>(undefined);
-  const [username, setUsername] = useState("");
+  const [username, setUsername] = useState<string | null | undefined>(undefined);
 
   useEffect(() => {
-    const stored = readStoredToken();
-    const check: Promise<string | null> = stored
-      ? call<{ username: string }>(stored, "/api/admin/me").then((me) => {
-          setUsername(me.username);
-          return stored;
-        })
-      : Promise.resolve(null);
-    check.catch(() => null).then(setToken);
+    call<{ username: string }>("/api/admin/me")
+      .then((me) => setUsername(me.username))
+      .catch(() => setUsername(null));
   }, []);
 
-  const logout = useCallback(() => {
+  const logout = useCallback(async () => {
+    await call("/api/admin/logout", { method: "POST" }).catch(() => undefined);
+    setUsername(null);
+  }, []);
+
+  const adminFetch = useCallback<AdminFetch>(async (path, init) => {
     try {
-      sessionStorage.removeItem(STORAGE_KEY);
-    } catch {
-      /* storage unavailable */
+      return await call(path, init);
+    } catch (e) {
+      if (e instanceof AdminApiError && e.status === 401) setUsername(null);
+      throw e;
     }
-    setToken(null);
   }, []);
 
-  const adminFetch = useCallback<AdminFetch>(
-    async (path, init) => {
-      if (!token) throw new AdminApiError(401, "Не сте влезли");
-      try {
-        return await call(token, path, init);
-      } catch (e) {
-        if (e instanceof AdminApiError && e.status === 401) logout();
-        throw e;
-      }
-    },
-    [token, logout],
-  );
+  const value = useMemo(() => ({ username: username ?? "", adminFetch, logout }), [username, adminFetch, logout]);
 
-  const value = useMemo(() => ({ username, adminFetch, logout }), [username, adminFetch, logout]);
-
-  if (token === undefined) {
+  if (username === undefined) {
     return <p className="p-10 text-center text-sm text-muted">Зареждане…</p>;
   }
-  if (token === null) {
-    return (
-      <LoginForm
-        onLogin={(t, user) => {
-          try {
-            sessionStorage.setItem(STORAGE_KEY, t);
-          } catch {
-            /* storage unavailable: stay logged in for this page only */
-          }
-          setUsername(user);
-          setToken(t);
-        }}
-      />
-    );
+  if (username === null) {
+    return <LoginForm onLogin={setUsername} />;
   }
   return <AdminContext.Provider value={value}>{children}</AdminContext.Provider>;
 }
 
-function LoginForm({ onLogin }: { onLogin: (token: string, username: string) => void }) {
+function LoginForm({ onLogin }: { onLogin: (username: string) => void }) {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const form = new FormData(e.currentTarget);
-    const user = String(form.get("username") ?? "");
-    const bytes = new TextEncoder().encode(`${user}:${form.get("password") ?? ""}`);
-    const token = btoa(String.fromCharCode(...bytes)); // UTF-8 safe Basic token
     setBusy(true);
     setError(null);
     try {
-      const me = await call<{ username: string }>(token, "/api/admin/me");
-      onLogin(token, me.username);
+      await call("/api/admin/csrf"); // sets the XSRF-TOKEN cookie
+      const me = await call<{ username: string }>("/api/admin/login", {
+        method: "POST",
+        body: JSON.stringify({ username: form.get("username"), password: form.get("password") }),
+      });
+      onLogin(me.username);
     } catch (err) {
-      setError(
-        err instanceof AdminApiError && err.status === 401
-          ? "Грешно потребителско име или парола"
-          : "Няма връзка с бекенда. Стартиран ли е на " + PUBLIC_API_URL + "?",
-      );
+      setError(err instanceof Error ? err.message : "Грешка");
     } finally {
       setBusy(false);
     }

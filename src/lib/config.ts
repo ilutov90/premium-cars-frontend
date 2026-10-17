@@ -1,2 +1,5 @@
-/** Browser-facing API URL, safe to use in client components. Set NEXT_PUBLIC_API_URL in .env.local. */
-export const PUBLIC_API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080";
+/**
+ * Browser-facing API base: empty = the same origin. Next.js forwards /api and /media to the backend
+ * (next.config.ts), so client components call "/api/..." and the admin session cookie stays first-party.
+ */
+export const PUBLIC_API_URL = "";
