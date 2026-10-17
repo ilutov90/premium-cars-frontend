@@ -26,9 +26,12 @@ Run `npm run lint` and `npm run build` before finishing a change.
 - UI text is Bulgarian; code and comments are English.
 - Server Components fetch public data through `src/lib/api.ts`. Anything that awaits `params`, `searchParams`
   or calls the API must sit inside `<Suspense>` (Cache Components rule).
-- Client components import the API URL from `src/lib/config.ts` only (never `lib/api.ts`).
+- The browser calls the backend only through this server: `/api` and `/media` are rewrites to `API_URL`
+  (`next.config.ts`), so client code uses relative URLs (`PUBLIC_API_URL` in `src/lib/config.ts` is "").
+  Server components use `src/lib/api.ts` (direct to `API_URL`).
 - Admin pages (`src/app/admin/**`) are client components; all admin calls go through `useAdmin().adminFetch`
-  (HTTP Basic credentials in sessionStorage — MVP only).
+  (session cookie from the backend + `X-XSRF-TOKEN` header from the `XSRF-TOKEN` cookie). Never store passwords
+  or tokens in the browser; the frontend has no secrets.
 - API types in `src/lib/types.ts` mirror the backend DTOs (`CarDtos`, `InquiryDtos`). Change both together.
 - Labels for enums (fuel, transmission, statuses) live in `src/lib/format.ts`.
 - The car type is nested like the API: `car.specs.*` (title, make, EV fields …) and, for admin, `car.pricing.*`.

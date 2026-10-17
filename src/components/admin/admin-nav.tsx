@@ -8,6 +8,7 @@ const links: [string, string][] = [
   ["/admin", "Коли и импорт"],
   ["/admin/pricing", "Цени"],
   ["/admin/inquiries", "Запитвания"],
+  ["/admin/account", "Профил"],
 ];
 
 export function AdminNav() {
