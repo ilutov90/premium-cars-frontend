@@ -1,0 +1,51 @@
+@import "tailwindcss";
+
+/*
+ * Design tokens. Warm paper background, near-black ink, one copper accent.
+ * Change the brand here; components only use these names (bg-paper, text-ink, bg-accent, ...).
+ */
+@theme {
+  --font-sans: "Onest Variable", ui-sans-serif, system-ui, sans-serif;
+
+  --color-paper: #f4f1ec;
+  --color-card: #fffdfa;
+  --color-ink: #121316;
+  --color-ink-soft: #2a2c31;
+  --color-muted: #6c6f76;
+  --color-line: #e3ded5;
+  --color-accent: #c8552b;
+  --color-accent-dark: #a5431f;
+  --color-ok: #2f7d4f;
+  --color-warn: #b7791f;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--color-paper);
+  color: var(--color-ink);
+  /* tnum: aligned digits for prices; locl off: keep standard Cyrillic letterforms with lang="bg" */
+  font-feature-settings: "tnum" 1, "locl" 0;
+}
+
+/* Shared form controls and buttons (catalog filters, inquiry form, admin). */
+@utility field {
+  @apply w-full rounded-xl border border-line bg-card px-3.5 py-2.5 text-[15px] text-ink outline-none transition placeholder:text-muted/70 focus:border-ink focus:ring-2 focus:ring-ink/10;
+}
+@utility label {
+  @apply mb-1.5 block text-xs font-semibold tracking-wide text-muted uppercase;
+}
+@utility btn {
+  @apply inline-flex items-center justify-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-50;
+}
+@utility btn-primary {
+  @apply btn bg-ink text-paper hover:bg-ink-soft;
+}
+@utility btn-accent {
+  @apply btn bg-accent text-white hover:bg-accent-dark;
+}
+@utility btn-ghost {
+  @apply btn border border-line bg-card text-ink hover:border-ink;
+}
