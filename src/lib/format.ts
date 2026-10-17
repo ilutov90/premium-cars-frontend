@@ -1,4 +1,4 @@
-import type { CarStatus, Drivetrain, FuelType, InquiryStatus, Origin, PriceProfile, StepMode, Transmission } from "./types";
+import type { CarStatus, Drivetrain, FuelType, InquiryStatus, Origin, PriceProfile, Transmission } from "./types";
 
 // Bulgarian labels for everything the API returns as codes or English source text.
 
@@ -142,10 +142,4 @@ export function formatDate(iso: string): string {
 export const priceProfileLabels: Record<PriceProfile, string> = {
   AUTOHOME: "Autohome (Китай)",
   AUTOWINI: "Autowini (Южна Корея)",
-};
-
-export const stepModeLabels: Record<StepMode, string> = {
-  STARTED: "за всеки започнати",
-  FULL: "само за пълни",
-  PROPORTIONAL: "пропорционално",
 };
