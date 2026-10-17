@@ -1,14 +1,18 @@
 import Link from "next/link";
 import type { CarSummary } from "@/lib/types";
-import { formatEur, formatKm, fuelLabels, originLabels, transmissionLabels } from "@/lib/format";
+import { formatEur, formatKm, formatKwh, fuelShortLabels, originLabels, transmissionLabels } from "@/lib/format";
 import { CarImage } from "./car-image";
 
 export function CarCard({ car }: { car: CarSummary }) {
   const facts = [
     car.year?.toString(),
     car.mileageKm != null ? formatKm(car.mileageKm) : null,
-    car.fuelType ? fuelLabels[car.fuelType] : null,
+    car.fuelType ? fuelShortLabels[car.fuelType] : null,
     car.transmission ? transmissionLabels[car.transmission] : null,
+  ].filter(Boolean);
+  const ev = [
+    car.electricRangeKm != null ? `${car.electricRangeKm} км пробег` : null,
+    car.batteryKwh != null ? formatKwh(car.batteryKwh) : null,
   ].filter(Boolean);
 
   return (
@@ -38,6 +42,7 @@ export function CarCard({ car }: { car: CarSummary }) {
       <div className="flex flex-1 flex-col p-4">
         <h3 className="line-clamp-2 text-[15px] leading-snug font-bold">{car.title}</h3>
         <p className="mt-1.5 text-[13px] text-muted">{facts.join(" · ")}</p>
+        {ev.length > 0 && <p className="mt-1 text-[13px] font-semibold text-ok">⚡ {ev.join(" · ")}</p>}
         <div className="mt-auto flex items-end justify-between pt-4">
           <div>
             <p className="text-[11px] font-semibold tracking-wide text-muted uppercase">Крайна цена в БГ</p>

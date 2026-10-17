@@ -4,9 +4,10 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { use, useEffect, useState } from "react";
 import { useAdmin } from "./admin-context";
+import { SocialPostPanel } from "./social-post-panel";
 import { StatusBadge } from "./status-badge";
-import { formatEur, fuelLabels, statusLabels, transmissionLabels } from "@/lib/format";
-import type { AdminCar, CarStatus, FuelType, Transmission } from "@/lib/types";
+import { drivetrainLabels, formatEur, fuelLabels, statusLabels, transmissionLabels } from "@/lib/format";
+import type { AdminCar, CarSpecs, CarStatus, Drivetrain, FuelType, PricingInputs, Transmission } from "@/lib/types";
 
 const statusActions: [CarStatus, string][] = [
   ["PUBLISHED", "Публикувай"],
@@ -15,6 +16,62 @@ const statusActions: [CarStatus, string][] = [
   ["ARCHIVED", "Архивирай"],
   ["DRAFT", "Върни в чернова"],
 ];
+
+/** Reads the form into the API shape: { specs, pricing }. Empty inputs become null. */
+function readForm(form: HTMLFormElement): { specs: CarSpecs; pricing: PricingInputs } {
+  const f = new FormData(form);
+  const text = (k: string) => {
+    const v = String(f.get(k) ?? "").trim();
+    return v === "" ? null : v;
+  };
+  const number = (k: string) => {
+    const v = text(k);
+    return v === null ? null : Number(v);
+  };
+  const specKeys = f.getAll("specKey").map(String);
+  const specValues = f.getAll("specValue").map(String);
+  const extraSpecs = Object.fromEntries(
+    specKeys.map((k, i) => [k.trim(), specValues[i]?.trim() ?? ""]).filter(([k, v]) => k && v),
+  );
+  const extraDuty = number("extraDutyPercent");
+  return {
+    specs: {
+      title: text("title") ?? "",
+      make: text("make"),
+      model: text("model"),
+      trim: text("trim"),
+      year: number("year"),
+      firstRegistration: text("firstRegistration"),
+      mileageKm: number("mileageKm"),
+      fuelType: text("fuelType") as FuelType | null,
+      transmission: text("transmission") as Transmission | null,
+      drivetrain: text("drivetrain") as Drivetrain | null,
+      engineCc: number("engineCc"),
+      engine: text("engine"),
+      powerHp: number("powerHp"),
+      batteryKwh: number("batteryKwh"),
+      electricRangeKm: number("electricRangeKm"),
+      rangeStandard: text("rangeStandard"),
+      motorPowerKw: number("motorPowerKw"),
+      bodyType: text("bodyType"),
+      seats: number("seats"),
+      doors: number("doors"),
+      color: text("color"),
+      curbWeightKg: number("curbWeightKg"),
+      dimensions: text("dimensions"),
+      description: text("description"),
+      extraSpecs,
+    },
+    pricing: {
+      sourcePrice: number("sourcePrice"),
+      sourceCurrency: text("sourceCurrency"),
+      shippingEur: number("shippingEur"),
+      marginEur: number("marginEur"),
+      // entered as percent in the form, stored as a fraction
+      extraDutyRate: extraDuty === null ? null : extraDuty / 100,
+    },
+  };
+}
 
 export function CarEditor({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -48,44 +105,12 @@ export function CarEditor({ params }: { params: Promise<{ id: string }> }) {
 
   if (!car) return error ? <p className="text-accent-dark">{error}</p> : <p className="text-sm text-muted">Зареждане…</p>;
 
+  const s = car.specs;
+  const p = car.pricing;
+
   function onSave(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    const f = new FormData(e.currentTarget);
-    const text = (k: string) => {
-      const v = String(f.get(k) ?? "").trim();
-      return v === "" ? null : v;
-    };
-    const number = (k: string) => {
-      const v = text(k);
-      return v === null ? null : Number(v);
-    };
-    const specKeys = f.getAll("specKey").map(String);
-    const specValues = f.getAll("specValue").map(String);
-    const specs = Object.fromEntries(
-      specKeys.map((k, i) => [k.trim(), specValues[i]?.trim() ?? ""]).filter(([k, v]) => k && v),
-    );
-    const body = {
-      title: text("title") ?? "",
-      make: text("make"),
-      model: text("model"),
-      trim: text("trim"),
-      year: number("year"),
-      mileageKm: number("mileageKm"),
-      fuelType: text("fuelType"),
-      transmission: text("transmission"),
-      bodyType: text("bodyType"),
-      engine: text("engine"),
-      powerHp: number("powerHp"),
-      color: text("color"),
-      description: text("description"),
-      specs,
-      sourcePrice: number("sourcePrice"),
-      sourceCurrency: text("sourceCurrency"),
-      shippingEur: number("shippingEur"),
-      marginEur: number("marginEur"),
-      // entered as percent in the form, stored as a fraction
-      extraDutyRate: number("extraDutyPercent") === null ? null : Number(f.get("extraDutyPercent")) / 100,
-    };
+    const body = readForm(e.currentTarget);
     void run(
       () => adminFetch<AdminCar>(`/api/admin/cars/${car!.id}`, { method: "PUT", body: JSON.stringify(body) }),
       "saved",
@@ -101,11 +126,13 @@ export function CarEditor({ params }: { params: Promise<{ id: string }> }) {
           <Link href="/admin" className="text-sm font-semibold text-muted hover:text-ink">
             ← Всички коли
           </Link>
-          <h1 className="mt-2 text-2xl font-extrabold tracking-tight">{car.title}</h1>
+          <h1 className="mt-2 text-2xl font-extrabold tracking-tight">{s.title}</h1>
           <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-muted">
             <StatusBadge status={car.status} />
             <span>#{car.id}</span>
             <span>· {car.source}</span>
+            {car.sourceRef && <span>· {car.sourceRef}</span>}
+            {car.sourceLocation && <span>· {car.sourceLocation}</span>}
             {car.sourceUrl && (
               <a href={car.sourceUrl} target="_blank" rel="noreferrer" className="underline underline-offset-2">
                 оригинална обява ↗
@@ -120,22 +147,22 @@ export function CarEditor({ params }: { params: Promise<{ id: string }> }) {
         </div>
         <div className="flex flex-wrap gap-1.5">
           {statusActions
-            .filter(([s]) => s !== car.status)
-            .map(([s, label]) => (
+            .filter(([st]) => st !== car.status)
+            .map(([st, label]) => (
               <button
-                key={s}
+                key={st}
                 type="button"
                 disabled={busy}
                 onClick={() =>
                   run(() =>
                     adminFetch<AdminCar>(`/api/admin/cars/${car.id}/status`, {
                       method: "POST",
-                      body: JSON.stringify({ status: s }),
+                      body: JSON.stringify({ status: st }),
                     }),
                   )
                 }
-                className={s === "PUBLISHED" ? "btn-accent px-4! py-2!" : "btn-ghost px-4! py-2!"}
-                title={statusLabels[s]}
+                className={st === "PUBLISHED" ? "btn-accent px-4! py-2!" : "btn-ghost px-4! py-2!"}
+                title={statusLabels[st]}
               >
                 {label}
               </button>
@@ -148,46 +175,61 @@ export function CarEditor({ params }: { params: Promise<{ id: string }> }) {
       <div className="grid gap-8 lg:grid-cols-[1fr_340px]">
         <form key={car.updatedAt} onSubmit={onSave} className="space-y-8">
           <Fieldset title="Основни данни">
-            <Field label="Заглавие" name="title" value={car.title} required wide />
-            <Field label="Марка" name="make" value={car.make} />
-            <Field label="Модел" name="model" value={car.model} />
-            <Field label="Версия" name="trim" value={car.trim} wide />
-            <Field label="Година" name="year" value={car.year} type="number" />
-            <Field label="Пробег, км" name="mileageKm" value={car.mileageKm} type="number" />
-            <Choice label="Гориво" name="fuelType" value={car.fuelType} options={fuelLabels as Record<FuelType, string>} />
-            <Choice
-              label="Скоростна кутия"
-              name="transmission"
-              value={car.transmission}
-              options={transmissionLabels as Record<Transmission, string>}
-            />
-            <Field label="Купе" name="bodyType" value={car.bodyType} />
-            <Field label="Двигател" name="engine" value={car.engine} />
-            <Field label="Мощност, к.с." name="powerHp" value={car.powerHp} type="number" />
-            <Field label="Цвят" name="color" value={car.color} />
+            <Field label="Заглавие" name="title" value={s.title} required wide />
+            <Field label="Марка" name="make" value={s.make} />
+            <Field label="Модел" name="model" value={s.model} />
+            <Field label="Версия" name="trim" value={s.trim} wide />
+            <Field label="Година" name="year" value={s.year} type="number" />
+            <Field label="Първа регистрация (ГГГГ-ММ)" name="firstRegistration" value={s.firstRegistration} />
+            <Field label="Пробег, км" name="mileageKm" value={s.mileageKm} type="number" />
+            <Choice label="Гориво" name="fuelType" value={s.fuelType} options={fuelLabels} />
+            <Choice label="Скоростна кутия" name="transmission" value={s.transmission} options={transmissionLabels} />
+            <Choice label="Задвижване" name="drivetrain" value={s.drivetrain} options={drivetrainLabels} />
+          </Fieldset>
+
+          <Fieldset title="Двигател и купе">
+            <Field label="Обем, см³" name="engineCc" value={s.engineCc} type="number" />
+            <Field label="Двигател (текст, напр. 1.5T)" name="engine" value={s.engine} />
+            <Field label="Мощност общо, к.с." name="powerHp" value={s.powerHp} type="number" />
+            <Field label="Купе (Sedan, SUV …)" name="bodyType" value={s.bodyType} />
+            <Field label="Места" name="seats" value={s.seats} type="number" />
+            <Field label="Врати" name="doors" value={s.doors} type="number" />
+            <Field label="Цвят" name="color" value={s.color} />
+            <Field label="Тегло, кг" name="curbWeightKg" value={s.curbWeightKg} type="number" />
+            <Field label="Размери, мм (Д × Ш × В)" name="dimensions" value={s.dimensions} wide />
+          </Fieldset>
+
+          <Fieldset title="Електрическо задвижване (електромобили и хибриди)">
+            <Field label="Батерия, kWh" name="batteryKwh" value={s.batteryKwh} type="number" step="0.1" />
+            <Field label="Пробег на ток, км" name="electricRangeKm" value={s.electricRangeKm} type="number" />
+            <Field label="Стандарт (CLTC, NEDC, WLTP, EPA)" name="rangeStandard" value={s.rangeStandard} />
+            <Field label="Електромотор(и), kW" name="motorPowerKw" value={s.motorPowerKw} type="number" />
+          </Fieldset>
+
+          <Fieldset title="Бележки към описанието">
             <div className="sm:col-span-2">
               <label className="label" htmlFor="description">
-                Описание
+                Показват се под описанието в сайта (по желание)
               </label>
-              <textarea id="description" name="description" rows={6} defaultValue={car.description ?? ""} className="field" />
+              <textarea id="description" name="description" rows={4} defaultValue={s.description ?? ""} className="field" />
             </div>
           </Fieldset>
 
           <Fieldset title="Цена">
-            <Field label="Цена при източника" name="sourcePrice" value={car.sourcePrice} type="number" step="0.01" />
-            <Field label="Валута (USD, CNY, KRW, EUR)" name="sourceCurrency" value={car.sourceCurrency} />
-            <Field label="Транспорт, € (празно = по подразбиране)" name="shippingEur" value={car.shippingEur} type="number" />
-            <Field label="Марж, € (празно = по подразбиране)" name="marginEur" value={car.marginEur} type="number" />
+            <Field label="Цена при източника" name="sourcePrice" value={p.sourcePrice} type="number" step="0.01" />
+            <Field label="Валута (USD, CNY, KRW, EUR)" name="sourceCurrency" value={p.sourceCurrency} />
+            <Field label="Транспорт, € (празно = по подразбиране)" name="shippingEur" value={p.shippingEur} type="number" />
+            <Field label="Марж, € (празно = по подразбиране)" name="marginEur" value={p.marginEur} type="number" />
             <Field
               label="Допълнително мито, % (напр. EV от Китай)"
               name="extraDutyPercent"
-              value={car.extraDutyRate == null ? null : +(car.extraDutyRate * 100).toFixed(2)}
+              value={p.extraDutyRate == null ? null : +(p.extraDutyRate * 100).toFixed(2)}
               type="number"
               step="0.1"
             />
           </Fieldset>
 
-          <SpecsEditor specs={car.specs} />
+          <SpecsEditor specs={s.extraSpecs} />
 
           <div className="sticky bottom-4 flex items-center gap-3 rounded-2xl border border-line bg-card/95 p-3 backdrop-blur">
             <button type="submit" className="btn-primary" disabled={busy}>
@@ -212,6 +254,7 @@ export function CarEditor({ params }: { params: Promise<{ id: string }> }) {
 
         <aside className="space-y-6">
           <PriceSummary car={car} />
+          <SocialPostPanel car={car} />
           <section>
             <h2 className="mb-3 font-bold">Снимки ({car.images.length})</h2>
             {car.images.length === 0 && <p className="text-sm text-muted">Няма снимки.</p>}
@@ -301,7 +344,7 @@ function SpecsEditor({ specs }: { specs: Record<string, string> }) {
     return entries.length ? entries : [["", ""]];
   });
   return (
-    <Fieldset title="Характеристики (импортирани от страницата)">
+    <Fieldset title="Допълнителни характеристики (етикет → стойност)">
       <div className="space-y-2 sm:col-span-2">
         {rows.map(([k, v], i) => (
           <div key={i} className="flex gap-2">

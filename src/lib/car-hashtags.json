@@ -1,0 +1,804 @@
+{
+ "kia": {
+  "brand_tags": "#kia #киа",
+  "models": {
+   "sportage": "#sportage #kiasportage",
+   "sorento": "#sorento #kiasorento",
+   "ceed": "#ceed #kiaceed",
+   "proceed": "#proceed #kiaproceed",
+   "stinger": "#stinger #kiastinger",
+   "ev6": "#ev6 #kiaev6",
+   "ev9": "#ev9 #kiaev9",
+   "niro": "#niro #kianiro",
+   "seltos": "#seltos #kiaseltos",
+   "carnival": "#carnival #kiacarnival",
+   "picanto": "#picanto #kiapicanto",
+   "rio": "#rio #kiario",
+   "forte": "#forte #kiaforte",
+   "cerato": "#cerato #kiacerato",
+   "optima": "#optima #kiaoptima",
+   "k5": "#k5 #kiak5",
+   "k3": "#k3 #kiak3",
+   "k7": "#k7 #kiak7",
+   "k8": "#k8 #kiak8",
+   "k9": "#k9 #kiak9",
+   "telluride": "#telluride #kiatelluride",
+   "mohave": "#mohave #kiamohave",
+   "soul": "#soul #kiasoul",
+   "stonic": "#stonic #kiastonic",
+   "xceed": "#xceed #kiaxceed",
+   "ray": "#ray #kiaray",
+   "bongo": "#bongo #kiabongo"
+  }
+ },
+ "hyundai": {
+  "brand_tags": "#hyundai #хюндай",
+  "models": {
+   "tucson": "#tucson #hyundaitucson",
+   "santafe": "#santafe #hyundaisantafe",
+   "santa fe": "#santafe #hyundaisantafe",
+   "sonata": "#sonata #hyundaisonata",
+   "elantra": "#elantra #hyundaielantra",
+   "avante": "#avante #hyundaiavante",
+   "ioniq": "#ioniq #hyundaioniq",
+   "ioniq5": "#ioniq5 #hyundaioniq5",
+   "ioniq 5": "#ioniq5 #hyundaioniq5",
+   "ioniq6": "#ioniq6 #hyundaioniq6",
+   "ioniq 6": "#ioniq6 #hyundaioniq6",
+   "kona": "#kona #hyundaikona",
+   "palisade": "#palisade #hyundaipalisade",
+   "venue": "#venue #hyundaivenue",
+   "i30": "#i30 #hyundaii30",
+   "i20": "#i20 #hyundaii20",
+   "i10": "#i10 #hyundaii10",
+   "accent": "#accent #hyundaiaccent",
+   "creta": "#creta #hyundaicreta",
+   "genesis": "#genesis #hyundaigenesis",
+   "grandeur": "#grandeur #hyundaigrandeur",
+   "azera": "#azera #hyundaiazera",
+   "starex": "#starex #hyundaistarex",
+   "staria": "#staria #hyundaistaria",
+   "nexo": "#nexo #hyundainexo",
+   "bayon": "#bayon #hyundaibayon",
+   "casper": "#casper #hyundaicasper",
+   "veracruz": "#veracruz #hyundaiveracruz",
+   "terracan": "#terracan #hyundaiterracan"
+  }
+ },
+ "mercedes": {
+  "brand_tags": "#mercedes #mercedesbenz #мерцедес",
+  "models": {
+   "a class": "#aclass #mercedesa",
+   "a-class": "#aclass #mercedesa",
+   "b class": "#bclass #mercedesb",
+   "b-class": "#bclass #mercedesb",
+   "c class": "#cclass #mercedesc",
+   "c-class": "#cclass #mercedesc",
+   "e class": "#eclass #mercedese",
+   "e-class": "#eclass #mercedese",
+   "s class": "#sclass #mercedess",
+   "s-class": "#sclass #mercedess",
+   "g class": "#gclass #gwagon #mercedesg",
+   "g-class": "#gclass #gwagon #mercedesg",
+   "g-wagen": "#gclass #gwagon #mercedesg",
+   "gle": "#gle #mercedesgle",
+   "glc": "#glc #mercedesglc",
+   "gla": "#gla #mercedesgla",
+   "glb": "#glb #mercedesglb",
+   "gls": "#gls #mercedesgls",
+   "cls": "#cls #mercedescls",
+   "cla": "#cla #mercedescla",
+   "amg gt": "#amggt #mercedesamggt",
+   "amg": "#amg #mercedesamg",
+   "eqe": "#eqe #mercedeseqe",
+   "eqs": "#eqs #mercedeseqs",
+   "eqb": "#eqb #mercedeseqb",
+   "eqa": "#eqa #mercedeseqa",
+   "maybach": "#maybach #mercedesmaybach",
+   "sprinter": "#sprinter #mercedessprinter",
+   "vito": "#vito #mercedesvito",
+   "v class": "#vclass #mercedesvclass",
+   "v-class": "#vclass #mercedesvclass",
+   "sl": "#sl #mercedessl",
+   "slk": "#slk #mercedesslk",
+   "ml": "#ml #mercedesml",
+   "gl": "#gl #mercedesgl"
+  }
+ },
+ "bmw": {
+  "brand_tags": "#bmw #бмв",
+  "models": {
+   "1 series": "#1series #bmw1",
+   "2 series": "#2series #bmw2",
+   "3 series": "#3series #bmw3",
+   "4 series": "#4series #bmw4",
+   "5 series": "#5series #bmw5",
+   "6 series": "#6series #bmw6",
+   "7 series": "#7series #bmw7",
+   "8 series": "#8series #bmw8",
+   "x1": "#x1 #bmwx1",
+   "x2": "#x2 #bmwx2",
+   "x3": "#x3 #bmwx3",
+   "x4": "#x4 #bmwx4",
+   "x5": "#x5 #bmwx5",
+   "x6": "#x6 #bmwx6",
+   "x7": "#x7 #bmwx7",
+   "xm": "#xm #bmwxm",
+   "z4": "#z4 #bmwz4",
+   "m2": "#m2 #bmwm2",
+   "m3": "#m3 #bmwm3",
+   "m4": "#m4 #bmwm4",
+   "m5": "#m5 #bmwm5",
+   "m8": "#m8 #bmwm8",
+   "i3": "#i3 #bmwi3",
+   "i4": "#i4 #bmwi4",
+   "i5": "#i5 #bmwi5",
+   "i7": "#i7 #bmwi7",
+   "ix": "#ix #bmwix",
+   "ix3": "#ix3 #bmwix3"
+  }
+ },
+ "chevrolet": {
+  "brand_tags": "#chevrolet #шевролет",
+  "models": {
+   "camaro": "#camaro #chevroletcamaro",
+   "corvette": "#corvette #chevroletcorvette",
+   "tahoe": "#tahoe #chevrolettahoe",
+   "suburban": "#suburban #chevroletsuburban",
+   "silverado": "#silverado #chevroletsilverado",
+   "equinox": "#equinox #chevroletequinox",
+   "traverse": "#traverse #chevrolettraverse",
+   "blazer": "#blazer #chevroletblazer",
+   "trax": "#trax #chevrolettrax",
+   "malibu": "#malibu #chevroletmalibu",
+   "spark": "#spark #chevrioletspark",
+   "captiva": "#captiva #chevroletcaptiva",
+   "orlando": "#orlando #chevroletorlando",
+   "cruze": "#cruze #chevroletcruze",
+   "aveo": "#aveo #chevroletaveo",
+   "trailblazer": "#trailblazer #chevrolettrailblazer",
+   "bolt": "#bolt #chevroletbolt",
+   "colorado": "#colorado #chevroletcolorado"
+  }
+ },
+ "kgm": {
+  "brand_tags": "#kgm #ssangyong #санг",
+  "models": {
+   "torres evx": "#torresevx #kgmtorresevx",
+   "torres": "#torres #kgmtorres",
+   "rexton": "#rexton #ssangyongrexton",
+   "tivoli": "#tivoli #ssangyongtivoli",
+   "korando": "#korando #ssangyongkorando",
+   "musso": "#musso #ssangyongmusso",
+   "actyon": "#actyon #ssangyongactyon",
+   "rodius": "#rodius #ssangyongrodius",
+   "chairman": "#chairman #ssangyongchairman"
+  }
+ },
+ "audi": {
+  "brand_tags": "#audi #ауди",
+  "models": {
+   "a1": "#a1 #audia1",
+   "a3": "#a3 #audia3",
+   "a4": "#a4 #audia4",
+   "a5": "#a5 #audia5",
+   "a6": "#a6 #audia6",
+   "a7": "#a7 #audia7",
+   "a8": "#a8 #audia8",
+   "q2": "#q2 #audiq2",
+   "q3": "#q3 #audiq3",
+   "q4": "#q4 #audiq4",
+   "q5": "#q5 #audiq5",
+   "q7": "#q7 #audiq7",
+   "q8": "#q8 #audiq8",
+   "e-tron": "#etron #audietron",
+   "etron": "#etron #audietron",
+   "rs3": "#rs3 #audirs3",
+   "rs4": "#rs4 #audirs4",
+   "rs5": "#rs5 #audirs5",
+   "rs6": "#rs6 #audirs6",
+   "rs7": "#rs7 #audirs7",
+   "rsq8": "#rsq8 #audirsq8",
+   "s3": "#s3 #audis3",
+   "s4": "#s4 #audis4",
+   "s5": "#s5 #audis5",
+   "s6": "#s6 #audis6",
+   "s7": "#s7 #audis7",
+   "s8": "#s8 #audis8",
+   "sq5": "#sq5 #audisq5",
+   "sq7": "#sq7 #audisq7",
+   "sq8": "#sq8 #audisq8",
+   "tt": "#tt #auditt",
+   "r8": "#r8 #audir8"
+  }
+ },
+ "toyota": {
+  "brand_tags": "#toyota #тойота",
+  "models": {
+   "camry": "#camry #toyotacamry",
+   "corolla": "#corolla #toyotacorolla",
+   "rav4": "#rav4 #toyotarav4",
+   "highlander": "#highlander #toyotahighlander",
+   "land cruiser": "#landcruiser #toyotalandcruiser",
+   "prado": "#prado #toyotaprado",
+   "prius": "#prius #toyotaprius",
+   "supra": "#supra #toyotasupra",
+   "yaris": "#yaris #toyotayaris",
+   "chr": "#chr #toyotachr",
+   "c-hr": "#chr #toyotachr",
+   "avalon": "#avalon #toyotaavalon",
+   "tacoma": "#tacoma #toyotatacoma",
+   "tundra": "#tundra #toyotatundra",
+   "4runner": "#4runner #toyota4runner",
+   "sequoia": "#sequoia #toyotasequoia",
+   "sienna": "#sienna #toyotasienna",
+   "hilux": "#hilux #toyotahilux",
+   "fortuner": "#fortuner #toyotafortuner",
+   "venza": "#venza #toyotavenza",
+   "bz4x": "#bz4x #toyotabz4x",
+   "gr86": "#gr86 #toyotagr86",
+   "alphard": "#alphard #toyotaalphard"
+  }
+ },
+ "volkswagen": {
+  "brand_tags": "#volkswagen #vw #фолксваген",
+  "models": {
+   "golf": "#golf #vwgolf",
+   "passat": "#passat #vwpassat",
+   "tiguan": "#tiguan #vwtiguan",
+   "touareg": "#touareg #vwtouareg",
+   "polo": "#polo #vwpolo",
+   "arteon": "#arteon #vwarteon",
+   "t-roc": "#troc #vwtroc",
+   "t-cross": "#tcross #vwtcross",
+   "id.3": "#id3 #vwid3",
+   "id.4": "#id4 #vwid4",
+   "id.5": "#id5 #vwid5",
+   "id.buzz": "#idbuzz #vwidbuzz",
+   "jetta": "#jetta #vwjetta",
+   "atlas": "#atlas #vwatlas",
+   "taos": "#taos #vwtaos",
+   "multivan": "#multivan #vwmultivan",
+   "transporter": "#transporter #vwtransporter",
+   "caddy": "#caddy #vwcaddy",
+   "cc": "#cc #vwcc",
+   "scirocco": "#scirocco #vwscirocco",
+   "touran": "#touran #vwtouran",
+   "phaeton": "#phaeton #vwphaeton"
+  }
+ },
+ "land rover": {
+  "brand_tags": "#landrover #ландровер",
+  "models": {
+   "range rover sport": "#rangeroversport",
+   "range rover velar": "#rangerovervelar",
+   "range rover evoque": "#rangeroverevoque",
+   "range rover": "#rangerover",
+   "defender": "#defender #landroverdefender",
+   "discovery sport": "#discoverysport",
+   "discovery": "#discovery #landroverdiscovery",
+   "freelander": "#freelander #landroverfreelander"
+  }
+ },
+ "jeep": {
+  "brand_tags": "#jeep #джип",
+  "models": {
+   "grand cherokee": "#grandcherokee #jeepgrandcherokee",
+   "wrangler": "#wrangler #jeepwrangler",
+   "cherokee": "#cherokee #jeepcherokee",
+   "compass": "#compass #jeepcompass",
+   "renegade": "#renegade #jeeprenegade",
+   "gladiator": "#gladiator #jeepgladiator",
+   "commander": "#commander #jeepcommander",
+   "avenger": "#avenger #jeepavenger"
+  }
+ },
+ "porsche": {
+  "brand_tags": "#porsche #порше",
+  "models": {
+   "911": "#911 #porsche911",
+   "cayenne": "#cayenne #porschecayenne",
+   "macan": "#macan #porschemacan",
+   "panamera": "#panamera #porschepanamera",
+   "taycan": "#taycan #porschetaycan",
+   "718": "#718 #porsche718",
+   "boxster": "#boxster #porscheboxster",
+   "cayman": "#cayman #porschecayman"
+  }
+ },
+ "volvo": {
+  "brand_tags": "#volvo #волво",
+  "models": {
+   "xc90": "#xc90 #volvoxc90",
+   "xc60": "#xc60 #volvoxc60",
+   "xc40": "#xc40 #volvoxc40",
+   "s90": "#s90 #volvos90",
+   "s60": "#s60 #volvos60",
+   "v90": "#v90 #volvov90",
+   "v60": "#v60 #volvov60",
+   "v40": "#v40 #volvov40",
+   "c40": "#c40 #volvoc40",
+   "ex30": "#ex30 #volvoex30",
+   "ex90": "#ex90 #volvoex90"
+  }
+ },
+ "lexus": {
+  "brand_tags": "#lexus #лексус",
+  "models": {
+   "rx": "#rx #lexusrx",
+   "nx": "#nx #lexusnx",
+   "es": "#es #lexuses",
+   "is": "#is #lexusis",
+   "ls": "#ls #lexusls",
+   "ux": "#ux #lexusux",
+   "lx": "#lx #lexuslx",
+   "gx": "#gx #lexusgx",
+   "lc": "#lc #lexuslc",
+   "rc": "#rc #lexusrc",
+   "rz": "#rz #lexusrz"
+  }
+ },
+ "honda": {
+  "brand_tags": "#honda #хонда",
+  "models": {
+   "civic": "#civic #hondacivic",
+   "accord": "#accord #hondaaccord",
+   "cr-v": "#crv #hondacrv",
+   "crv": "#crv #hondacrv",
+   "hr-v": "#hrv #hondahrv",
+   "hrv": "#hrv #hondahrv",
+   "pilot": "#pilot #hondapilot",
+   "odyssey": "#odyssey #hondaodyssey",
+   "fit": "#fit #hondafit",
+   "jazz": "#jazz #hondajazz",
+   "city": "#city #hondacity",
+   "passport": "#passport #hondapassport",
+   "ridgeline": "#ridgeline #hondaridgeline",
+   "nsx": "#nsx #hondansx",
+   "zr-v": "#zrv #hondazrv"
+  }
+ },
+ "nissan": {
+  "brand_tags": "#nissan #нисан",
+  "models": {
+   "qashqai": "#qashqai #nissanqashqai",
+   "juke": "#juke #nissanjuke",
+   "x-trail": "#xtrail #nissanxtrail",
+   "xtrail": "#xtrail #nissanxtrail",
+   "pathfinder": "#pathfinder #nissanpathfinder",
+   "navara": "#navara #nissannavara",
+   "leaf": "#leaf #nissanleaf",
+   "gt-r": "#gtr #nissangtr",
+   "370z": "#370z #nissan370z",
+   "altima": "#altima #nissanaltima",
+   "sentra": "#sentra #nissansentra",
+   "rogue": "#rogue #nissanrogue",
+   "murano": "#murano #nissanmurano",
+   "armada": "#armada #nissanarmada",
+   "kicks": "#kicks #nissankicks",
+   "patrol": "#patrol #nissanpatrol",
+   "ariya": "#ariya #nissanariya",
+   "note": "#note #nissannote"
+  }
+ },
+ "tesla": {
+  "brand_tags": "#tesla #тесла",
+  "models": {
+   "model 3": "#model3 #teslamodel3",
+   "model y": "#modely #teslamodely",
+   "model s": "#models #teslamodels",
+   "model x": "#modelx #teslamodelx",
+   "cybertruck": "#cybertruck #teslacybertruck",
+   "roadster": "#roadster #teslaroadster"
+  }
+ },
+ "lincoln": {
+  "brand_tags": "#lincoln #линкълн",
+  "models": {
+   "navigator": "#navigator #lincolnnavigator",
+   "aviator": "#aviator #lincolnaviator",
+   "corsair": "#corsair #lincolncorsair",
+   "nautilus": "#nautilus #lincolnnautilus",
+   "continental": "#continental #lincolncontinental",
+   "mkz": "#mkz #lincolnmkz",
+   "mkx": "#mkx #lincolnmkx",
+   "mkc": "#mkc #lincolnmkc",
+   "town car": "#towncar #lincolntowncar"
+  }
+ },
+ "peugeot": {
+  "brand_tags": "#peugeot #пежо",
+  "models": {
+   "208": "#208 #peugeot208",
+   "308": "#308 #peugeot308",
+   "408": "#408 #peugeot408",
+   "508": "#508 #peugeot508",
+   "2008": "#2008 #peugeot2008",
+   "3008": "#3008 #peugeot3008",
+   "5008": "#5008 #peugeot5008",
+   "partner": "#partner #peugeotpartner",
+   "rifter": "#rifter #peugeotrifter"
+  }
+ },
+ "maserati": {
+  "brand_tags": "#maserati #мазерати",
+  "models": {
+   "ghibli": "#ghibli #maseratighibli",
+   "levante": "#levante #maseratilevante",
+   "quattroporte": "#quattroporte #maseratiquattroporte",
+   "mc20": "#mc20 #maseratimc20",
+   "grecale": "#grecale #maseratigrecale",
+   "granturismo": "#granturismo #maseratigranturismo",
+   "grancabrio": "#grancabrio #maseratigrancabrio"
+  }
+ },
+ "jaguar": {
+  "brand_tags": "#jaguar #ягуар",
+  "models": {
+   "f-pace": "#fpace #jaguarfpace",
+   "e-pace": "#epace #jaguarepace",
+   "i-pace": "#ipace #jaguaripace",
+   "xe": "#xe #jaguarxe",
+   "xf": "#xf #jaguarxf",
+   "xj": "#xj #jaguarxj",
+   "f-type": "#ftype #jaguarftype"
+  }
+ },
+ "suzuki": {
+  "brand_tags": "#suzuki #сузуки",
+  "models": {
+   "swift": "#swift #suzukiswift",
+   "vitara": "#vitara #suzukivitara",
+   "jimny": "#jimny #suzukijimny",
+   "sx4": "#sx4 #suzukisx4",
+   "s-cross": "#scross #suzukiscross",
+   "ignis": "#ignis #suzukiignis",
+   "across": "#across #suzukiacross",
+   "baleno": "#baleno #suzukibaleno",
+   "alto": "#alto #suzukialto"
+  }
+ },
+ "infiniti": {
+  "brand_tags": "#infiniti #инфинити",
+  "models": {
+   "q50": "#q50 #infinitiq50",
+   "q60": "#q60 #infinitiq60",
+   "q70": "#q70 #infinitiq70",
+   "qx50": "#qx50 #infinitiqx50",
+   "qx55": "#qx55 #infinitiqx55",
+   "qx60": "#qx60 #infinitiqx60",
+   "qx80": "#qx80 #infinitiqx80",
+   "fx": "#fx #infinitifx",
+   "ex": "#ex #infinitiex"
+  }
+ },
+ "mitsubishi": {
+  "brand_tags": "#mitsubishi #мицубиши",
+  "models": {
+   "outlander": "#outlander #mitsubishioutlander",
+   "eclipse cross": "#eclipsecross #mitsubishieclipsecross",
+   "asx": "#asx #mitsubishiasx",
+   "pajero": "#pajero #mitsubishipajero",
+   "l200": "#l200 #mitsubishil200",
+   "lancer": "#lancer #mitsubishilancer",
+   "colt": "#colt #mitsubishicolt",
+   "space star": "#spacestar #mitsubishispacestar",
+   "mirage": "#mirage #mitsubishimirage",
+   "delica": "#delica #mitsubishidelica"
+  }
+ },
+ "bentley": {
+  "brand_tags": "#bentley #бентли",
+  "models": {
+   "continental": "#continental #bentleycontinental",
+   "bentayga": "#bentayga #bentleybentayga",
+   "flying spur": "#flyingspur #bentleyflyingspur",
+   "mulsanne": "#mulsanne #bentleymulsanne"
+  }
+ },
+ "citroen": {
+  "brand_tags": "#citroen #ситроен",
+  "models": {
+   "c5 aircross": "#c5aircross #citroenc5aircross",
+   "c3 aircross": "#c3aircross #citroenc3aircross",
+   "c3": "#c3 #citroenc3",
+   "c4": "#c4 #citroenc4",
+   "c5": "#c5 #citroenc5",
+   "berlingo": "#berlingo #citroenberlingo",
+   "ds3": "#ds3 #citroenDS3",
+   "ds4": "#ds4 #citroenDS4",
+   "ds5": "#ds5 #citroenDS5",
+   "ds7": "#ds7 #citroenDS7"
+  }
+ },
+ "dodge": {
+  "brand_tags": "#dodge #додж",
+  "models": {
+   "charger": "#charger #dodgecharger",
+   "challenger": "#challenger #dodgechallenger",
+   "durango": "#durango #dodgedurango",
+   "ram": "#ram #dodgeram",
+   "viper": "#viper #dodgeviper",
+   "journey": "#journey #dodgejourney",
+   "hornet": "#hornet #dodgehornet"
+  }
+ },
+ "rolls royce": {
+  "brand_tags": "#rollsroyce #ролсройс",
+  "models": {
+   "phantom": "#phantom #rollsroycephantom",
+   "ghost": "#ghost #rollsroyceghost",
+   "wraith": "#wraith #rollsroycewraith",
+   "dawn": "#dawn #rollsroycedawn",
+   "cullinan": "#cullinan #rollsroycecullinan",
+   "spectre": "#spectre #rollsroycespectre"
+  }
+ },
+ "gmc": {
+  "brand_tags": "#gmc",
+  "models": {
+   "sierra": "#sierra #gmcsierra",
+   "yukon": "#yukon #gmcyukon",
+   "terrain": "#terrain #gmcterrain",
+   "acadia": "#acadia #gmcacadia",
+   "canyon": "#canyon #gmccanyon",
+   "hummer": "#hummer #gmchummer",
+   "savana": "#savana #gmcsavana"
+  }
+ },
+ "lamborghini": {
+  "brand_tags": "#lamborghini #ламборгини",
+  "models": {
+   "urus": "#urus #lamborghiniurus",
+   "huracan": "#huracan #lamborghinihuracan",
+   "aventador": "#aventador #lamborghiniaventador",
+   "revuelto": "#revuelto #lamborghinirevuelto",
+   "gallardo": "#gallardo #lamborghinigallardo"
+  }
+ },
+ "ferrari": {
+  "brand_tags": "#ferrari #ферари",
+  "models": {
+   "roma": "#roma #ferrariroma",
+   "portofino": "#portofino #ferrariportofino",
+   "f8": "#f8 #ferrarif8",
+   "sf90": "#sf90 #ferrarisf90",
+   "296": "#296 #ferrari296",
+   "812": "#812 #ferrari812",
+   "488": "#488 #ferrari488",
+   "458": "#458 #ferrari458",
+   "purosangue": "#purosangue #ferraripurosangue",
+   "california": "#california #ferraricalifornia",
+   "laferrari": "#laferrari"
+  }
+ },
+ "mclaren": {
+  "brand_tags": "#mclaren #макларен",
+  "models": {
+   "720s": "#720s #mclaren720s",
+   "765lt": "#765lt #mclaren765lt",
+   "artura": "#artura #mcarenartura",
+   "gt": "#mclarengt",
+   "570s": "#570s #mclaren570s",
+   "600lt": "#600lt #mclaren600lt",
+   "p1": "#p1 #mclarenp1"
+  }
+ },
+ "acura": {
+  "brand_tags": "#acura #акура",
+  "models": {
+   "mdx": "#mdx #acuramdx",
+   "rdx": "#rdx #acurardx",
+   "tlx": "#tlx #acuratlx",
+   "integra": "#integra #acuraintegra",
+   "nsx": "#nsx #acuransx",
+   "zdx": "#zdx #acurazdx",
+   "ilx": "#ilx #acurailx",
+   "tsx": "#tsx #acuratsx",
+   "rl": "#rl #acurarl"
+  }
+ },
+ "byd": {
+  "brand_tags": "#byd #бид",
+  "models": {
+   "tang": "#tang #bydtang",
+   "han": "#han #bydhan",
+   "song plus": "#songplus #bydsongplus",
+   "song pro": "#songpro #bydsongpro",
+   "song l": "#songl #bydsongl",
+   "song": "#song #bydsong",
+   "seal u": "#sealu #bydsealu",
+   "seal": "#seal #bydseal",
+   "sealion": "#sealion #bydsealion",
+   "dolphin": "#dolphin #byddolphin",
+   "seagull": "#seagull #bydseagull",
+   "atto 3": "#atto3 #bydatto3",
+   "yuan plus": "#yuanplus #bydyuanplus",
+   "yuan": "#yuan #bydyuan",
+   "qin plus": "#qinplus #bydqinplus",
+   "qin": "#qin #bydqin",
+   "destroyer": "#destroyer05 #byddestroyer",
+   "frigate": "#frigate07 #bydfrigate"
+  }
+ },
+ "denza": {
+  "brand_tags": "#denza #byd",
+  "models": {
+   "d9": "#d9 #denzad9",
+   "n7": "#n7 #denzan7",
+   "n8": "#n8 #denzan8",
+   "z9": "#z9 #denzaz9"
+  }
+ },
+ "geely": {
+  "brand_tags": "#geely #джийли",
+  "models": {
+   "monjaro": "#monjaro #geelymonjaro",
+   "xingyue l": "#xingyuel #geelymonjaro",
+   "tugella": "#tugella #geelytugella",
+   "xingyue": "#xingyue #geelytugella",
+   "coolray": "#coolray #geelycoolray",
+   "boyue": "#boyue #geelyboyue",
+   "emgrand": "#emgrand #geelyemgrand",
+   "galaxy": "#galaxy #geelygalaxy",
+   "preface": "#preface #geelypreface",
+   "atlas": "#atlas #geelyatlas"
+  }
+ },
+ "zeekr": {
+  "brand_tags": "#zeekr #зийкр",
+  "models": {
+   "001": "#zeekr001",
+   "007": "#zeekr007",
+   "009": "#zeekr009",
+   "7x": "#zeekr7x",
+   "x": "#zeekrx"
+  }
+ },
+ "lynk": {
+  "brand_tags": "#lynkco #линкико",
+  "models": {
+   "01": "#lynkco01",
+   "03": "#lynkco03",
+   "05": "#lynkco05",
+   "06": "#lynkco06",
+   "08": "#lynkco08",
+   "09": "#lynkco09"
+  }
+ },
+ "chery": {
+  "brand_tags": "#chery #чери",
+  "models": {
+   "tiggo 9": "#tiggo9 #cherytiggo9",
+   "tiggo 8": "#tiggo8 #cherytiggo8",
+   "tiggo 7": "#tiggo7 #cherytiggo7",
+   "tiggo 4": "#tiggo4 #cherytiggo4",
+   "arrizo": "#arrizo #cheryarrizo"
+  }
+ },
+ "haval": {
+  "brand_tags": "#haval #хавал",
+  "models": {
+   "h6": "#h6 #havalh6",
+   "jolion": "#jolion #havaljolion",
+   "dargo": "#dargo #havaldargo",
+   "big dog": "#dargo #havaldargo",
+   "h9": "#h9 #havalh9",
+   "raptor": "#raptor #havalraptor"
+  }
+ },
+ "great wall": {
+  "brand_tags": "#greatwall #грейтуол",
+  "models": {
+   "poer": "#poer #greatwallpoer",
+   "cannon": "#cannon #greatwallcannon"
+  }
+ },
+ "tank": {
+  "brand_tags": "#tank #танк",
+  "models": {
+   "300": "#tank300",
+   "400": "#tank400",
+   "500": "#tank500",
+   "700": "#tank700"
+  }
+ },
+ "li auto": {
+  "brand_tags": "#liauto #lixiang",
+  "models": {
+   "l6": "#l6 #liautol6",
+   "l7": "#l7 #liautol7",
+   "l8": "#l8 #liautol8",
+   "l9": "#l9 #liautol9",
+   "mega": "#mega #liautomega",
+   "one": "#one #liautoone"
+  }
+ },
+ "nio": {
+  "brand_tags": "#nio #нио",
+  "models": {
+   "es6": "#es6 #nioes6",
+   "es7": "#es7 #nioes7",
+   "es8": "#es8 #nioes8",
+   "ec6": "#ec6 #nioec6",
+   "ec7": "#ec7 #nioec7",
+   "et5": "#et5 #nioet5",
+   "et7": "#et7 #nioet7",
+   "et9": "#et9 #nioet9"
+  }
+ },
+ "xpeng": {
+  "brand_tags": "#xpeng #иксПенг",
+  "models": {
+   "g6": "#g6 #xpengg6",
+   "g9": "#g9 #xpengg9",
+   "p7": "#p7 #xpengp7",
+   "x9": "#x9 #xpengx9",
+   "mona": "#mona #xpengmona"
+  }
+ },
+ "changan": {
+  "brand_tags": "#changan #чанган",
+  "models": {
+   "uni-k": "#unik #changanunik",
+   "uni-t": "#unit #changanunit",
+   "uni-v": "#univ #changanuniv",
+   "cs75": "#cs75 #changancs75",
+   "cs55": "#cs55 #changancs55",
+   "cs35": "#cs35 #changancs35"
+  }
+ },
+ "hongqi": {
+  "brand_tags": "#hongqi #хонгчи",
+  "models": {
+   "e-hs9": "#ehs9 #hongqiehs9",
+   "hs5": "#hs5 #hongqihs5",
+   "hs7": "#hs7 #hongqihs7",
+   "h9": "#h9 #hongqih9",
+   "h5": "#h5 #hongqih5"
+  }
+ },
+ "aito": {
+  "brand_tags": "#aito #huawei",
+  "models": {
+   "m5": "#m5 #aitom5",
+   "m7": "#m7 #aitom7",
+   "m9": "#m9 #aitom9"
+  }
+ },
+ "voyah": {
+  "brand_tags": "#voyah #воя",
+  "models": {
+   "free": "#free #voyahfree",
+   "dreamer": "#dreamer #voyahdreamer",
+   "passion": "#passion #voyahpassion"
+  }
+ },
+ "xiaomi": {
+  "brand_tags": "#xiaomi #шаоми",
+  "models": {
+   "su7": "#su7 #xiaomisu7",
+   "yu7": "#yu7 #xiaomiyu7"
+  }
+ },
+ "jetour": {
+  "brand_tags": "#jetour #джетур",
+  "models": {
+   "traveller": "#traveller #jetourtraveller",
+   "dashing": "#dashing #jetourdashing",
+   "x70": "#x70 #jetourx70",
+   "x90": "#x90 #jetourx90"
+  }
+ },
+ "mg": {
+  "brand_tags": "#mg #емджи",
+  "models": {
+   "zs": "#zs #mgzs",
+   "hs": "#hs #mghs",
+   "mg4": "#mg4",
+   "mg5": "#mg5",
+   "cyberster": "#cyberster #mgcyberster",
+   "marvel": "#marvelr #mgmarvelr"
+  }
+ }
+}
