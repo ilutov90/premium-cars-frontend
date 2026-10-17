@@ -266,7 +266,8 @@ export function CarEditor({ params }: { params: Promise<{ id: string }> }) {
 
         <aside className="space-y-6">
           <PriceSummary car={car} />
-          <SocialPostPanel car={car} />
+          {/* new text after every save */}
+          <SocialPostPanel key={car.updatedAt} car={car} />
           <section>
             <h2 className="mb-3 font-bold">Снимки ({car.images.length})</h2>
             {car.images.length === 0 && <p className="text-sm text-muted">Няма снимки.</p>}

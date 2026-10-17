@@ -52,7 +52,7 @@ export function SiteFooter() {
         </div>
       </div>
       <div className="border-t border-paper/10 py-5 text-center text-xs text-paper/50">
-        Цените са ориентировъчни и се потвърждават преди покупка.
+        Цените са крайни: включват транспорта и всички разходи до България.
       </div>
     </footer>
   );

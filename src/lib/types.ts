@@ -171,3 +171,22 @@ export interface AdminInquiry {
   status: InquiryStatus;
   createdAt: string;
 }
+
+export type SocialNetwork = "FACEBOOK" | "INSTAGRAM";
+
+/** A car published to Facebook/Instagram from the admin panel (backend SocialPost). */
+export interface SocialPost {
+  id: number;
+  carId: number;
+  network: SocialNetwork;
+  externalId: string;
+  permalink: string | null;
+  photos: number;
+  createdAt: string;
+}
+
+/** Which networks the backend can publish to (backend SocialPublisher.Status). */
+export interface SocialStatus {
+  facebook: boolean;
+  instagram: boolean;
+}
