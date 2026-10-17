@@ -75,7 +75,6 @@ export interface CarSpecs {
 
 /** Price formula of a source site (backend PriceProfile). */
 export type PriceProfile = "AUTOHOME" | "AUTOWINI";
-export type StepMode = "STARTED" | "FULL" | "PROPORTIONAL";
 
 /** Admin-only price inputs (backend PricingInputs). */
 export interface PricingInputs {
@@ -85,14 +84,13 @@ export interface PricingInputs {
   profile: PriceProfile | null;
 }
 
-/** final price = car + baseCosts + stepCost × steps above threshold + profit, all EUR (backend PricingProfile). */
+/** final price = car + baseCosts + stepCost × (car − threshold) / step + profit, all EUR; proportional above the threshold. */
 export interface PricingProfile {
   id: PriceProfile;
   baseCosts: number;
   threshold: number;
   step: number;
   stepCost: number;
-  stepMode: StepMode;
   profit: number;
   updatedAt: string;
 }
