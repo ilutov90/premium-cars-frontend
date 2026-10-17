@@ -2,7 +2,7 @@ import Form from "next/form";
 import Link from "next/link";
 import type { CarSearch } from "@/lib/api";
 import type { FilterOptions } from "@/lib/types";
-import { fuelLabels, originLabels, transmissionLabels } from "@/lib/format";
+import { fuelShortLabels, originLabels, transmissionLabels } from "@/lib/format";
 
 /** GET form: filters live in the URL, so every filtered view can be shared and indexed. */
 export function CatalogFilters({ options, current }: { options: FilterOptions; current: CarSearch }) {
@@ -34,7 +34,7 @@ export function CatalogFilters({ options, current }: { options: FilterOptions; c
       <Select id="f-fuel" name="fuelType" label="Гориво" value={current.fuelType}>
         {options.fuelTypes.map((f) => (
           <option key={f} value={f}>
-            {fuelLabels[f]}
+            {fuelShortLabels[f]}
           </option>
         ))}
       </Select>

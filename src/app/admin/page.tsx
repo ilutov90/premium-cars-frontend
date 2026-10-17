@@ -106,6 +106,8 @@ export default function AdminCarsPage() {
 function ImportPanel({ onImported }: { onImported: () => void }) {
   const { adminFetch } = useAdmin();
   const [url, setUrl] = useState("");
+  const [price, setPrice] = useState("");
+  const [currency, setCurrency] = useState("EUR");
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<ImportResult | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -118,10 +120,11 @@ function ImportPanel({ onImported }: { onImported: () => void }) {
     try {
       const r = await adminFetch<ImportResult>("/api/admin/imports", {
         method: "POST",
-        body: JSON.stringify({ url }),
+        body: JSON.stringify({ url, price: price.trim() ? Number(price) : null, currency }),
       });
       setResult(r);
       setUrl("");
+      setPrice("");
       onImported();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Импортът не успя");
@@ -135,6 +138,7 @@ function ImportPanel({ onImported }: { onImported: () => void }) {
       <h2 className="text-xl font-extrabold">Импорт по линк</h2>
       <p className="mt-1 text-sm text-paper/60">
         Поставете линк към кола от global.autohome.com.cn или autowini.com. Колата се създава като чернова.
+        Autowini крие цената, затова за него я въведете тук (за autohome цената се чете от сайта).
       </p>
       <form onSubmit={onSubmit} className="mt-5 flex flex-col gap-2 sm:flex-row">
         <input
@@ -145,8 +149,28 @@ function ImportPanel({ onImported }: { onImported: () => void }) {
           placeholder="https://global.autohome.com.cn/en/…"
           className="field flex-1 border-paper/15! bg-paper/10! text-paper! placeholder:text-paper/40!"
         />
+        <input
+          type="number"
+          min={0}
+          step="any"
+          value={price}
+          onChange={(e) => setPrice(e.target.value)}
+          placeholder="Цена (по желание)"
+          aria-label="Цена при източника"
+          className="field border-paper/15! bg-paper/10! text-paper! placeholder:text-paper/40! sm:w-44"
+        />
+        <select
+          value={currency}
+          onChange={(e) => setCurrency(e.target.value)}
+          aria-label="Валута"
+          className="field border-paper/15! bg-paper/10! text-paper! sm:w-24 [&>option]:text-ink"
+        >
+          {["EUR", "USD", "KRW", "CNY"].map((c) => (
+            <option key={c}>{c}</option>
+          ))}
+        </select>
         <button type="submit" className="btn-accent" disabled={busy}>
-          {busy ? "Импортиране… (до 1 мин.)" : "Импортирай"}
+          {busy ? "Импортиране… (до 2 мин.)" : "Импортирай"}
         </button>
       </form>
       {error && <p className="mt-3 text-sm font-medium text-[#ffb59a]">{error}</p>}
@@ -155,7 +179,7 @@ function ImportPanel({ onImported }: { onImported: () => void }) {
           <p className="font-semibold">
             {result.alreadyImported ? "Тази кола вече е импортирана: " : "Създадена чернова: "}
             <Link href={`/admin/cars/${result.car.id}`} className="underline underline-offset-2">
-              {result.car.title}
+              {result.car.specs.title}
             </Link>{" "}
             {!result.alreadyImported && `(${result.importedImages} снимки)`}
           </p>

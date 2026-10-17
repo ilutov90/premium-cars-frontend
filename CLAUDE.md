@@ -31,6 +31,11 @@ Run `npm run lint` and `npm run build` before finishing a change.
   (HTTP Basic credentials in sessionStorage — MVP only).
 - API types in `src/lib/types.ts` mirror the backend DTOs (`CarDtos`, `InquiryDtos`). Change both together.
 - Labels for enums (fuel, transmission, statuses) live in `src/lib/format.ts`.
+- The car type is nested like the API: `car.specs.*` (title, make, EV fields …) and, for admin, `car.pricing.*`.
+- Car descriptions and the Facebook/Instagram post text come from `src/lib/description.ts` (a port of
+  `build_post_text` / `generate_hashtags` in `autowini_poster_parallel.py`; keep the output identical).
+  Business details (brand, phone, Viber, office) and the "why us" bullets live in `src/lib/site.ts`.
+- Docs (README, CLAUDE.md) and code comments are English.
 - Design tokens are in `src/app/globals.css` (`@theme`: paper, card, ink, muted, line, accent). Use them
   (`bg-card`, `text-muted`, `bg-accent`, ...) instead of raw colours. Shared utilities: `field`, `label`,
   `btn-primary`, `btn-accent`, `btn-ghost`.

@@ -1,11 +1,12 @@
 # premium-cars-frontend
 
-Публичният сайт и админ панелът на Premium Cars Import.
+Public website and admin panel of Premium Cars Import.
 Next.js 16 · React 19 · TypeScript · Tailwind CSS 4.
 
-Пълната инструкция за локален старт на трите части е в репото **premium-cars-infra** (`README.md`).
+The site's texts are in Bulgarian (the customers are in Bulgaria); code, comments and docs are in English.
+The full guide for running all three parts locally is in the **premium-cars-infra** repo (`README.md`).
 
-## Бърз старт
+## Quick start
 
 ```bash
 cp .env.example .env.local     # Windows PowerShell: Copy-Item .env.example .env.local
@@ -13,28 +14,42 @@ npm install
 npm run dev
 ```
 
-- http://localhost:3000 — сайтът (бекендът трябва да върви на :8080)
-- http://localhost:3000/admin — админ панел (`admin` / паролата от бекенда)
+- http://localhost:3000 — the site (the backend must be running on :8080)
+- http://localhost:3000/admin — admin panel (`admin` / the password configured in the backend)
 
-Проверки преди commit: `npm run lint` и `npm run build`.
+Before committing: `npm run lint` and `npm run build`.
 
-## Структура
+## Structure
 
-| Път | Какво |
+| Path | What |
 |---|---|
-| `src/app/page.tsx` | начало: hero, последни коли, „Как работи вносът“, форма „Намери ми кола“ |
-| `src/app/cars/page.tsx` | каталог; филтрите са в URL-а |
-| `src/app/cars/[slug]/page.tsx` | страница на колата: галерия, характеристики, разбивка на цената, запитване |
-| `src/app/admin/**` | админ: импорт по линк, редакция, снимки, статуси, запитвания |
-| `src/lib/api.ts` | заявки към публичното API (сървърни компоненти) |
-| `src/lib/types.ts` | типове, огледални на DTO-тата в бекенда |
-| `src/app/globals.css` | цветове, шрифт и общите класове (`btn-primary`, `field` …) |
+| `src/app/page.tsx` | home: hero, latest cars, how import works, "find me a car" form |
+| `src/app/cars/page.tsx` | catalog; filters live in the URL |
+| `src/app/cars/[slug]/page.tsx` | car page: gallery, EV stats, specs, description, price breakdown, inquiry form |
+| `src/app/admin/**` | admin: import by link (autohome, autowini, other sites), edit car, photos, statuses, inquiries |
+| `src/components/admin/social-post-panel.tsx` | ready-to-copy Facebook/Instagram post for a car |
+| `src/lib/api.ts` | calls to the public API (server components) |
+| `src/lib/types.ts` | types mirroring the backend DTOs (`CarSpecs`, `PricingInputs`, `CarDetail`, `AdminCar` …) |
+| `src/lib/format.ts` | Bulgarian labels for enums, number/power/range/battery formatting |
+| `src/lib/description.ts` | car description and social post text, same format as `autowini_poster_parallel.py` |
+| `src/lib/site.ts` | business details (brand, phone, Viber link, office) and the "why us" bullets |
+| `src/lib/car-hashtags.json` | hashtag table exported from the posting script |
+| `src/app/globals.css` | colours, font and shared utilities (`btn-primary`, `field` …) |
 
-## Конфигурация
+## Electric cars and hybrids
+
+Cars carry optional EV fields: battery (kWh), electric range with its test cycle (CLTC/NEDC/WLTP/EPA) and
+motor power (kW). They are shown as a dark stat band on the car page, as a line on the catalog card and in
+the description. For combustion cars the fields stay empty and nothing is shown.
+
+## Configuration
 
 `.env.local`:
 
-| Променлива | Какво |
+| Variable | What |
 |---|---|
-| `NEXT_PUBLIC_API_URL` | адрес на бекенда, както го вижда браузърът (по подразбиране `http://localhost:8080`) |
-| `API_URL` | по желание: адрес, който Next.js сървърът ползва (напр. `http://backend:8080` в Docker) |
+| `NEXT_PUBLIC_API_URL` | backend URL as the browser sees it (default `http://localhost:8080`); baked in at build time |
+| `API_URL` | optional: URL the Next.js server uses (e.g. `http://backend:8080` in Docker) |
+| `NEXT_PUBLIC_BRAND_NAME` | optional, default `Premium Cars Import` |
+| `NEXT_PUBLIC_CONTACT_PHONE` | optional, default `0878131990` |
+| `NEXT_PUBLIC_VIBER_LINK` | optional, the Viber channel link |
