@@ -73,23 +73,28 @@ export interface CarSpecs {
   extraSpecs: Record<string, string>;
 }
 
+/** Price formula of a source site (backend PriceProfile). */
+export type PriceProfile = "AUTOHOME" | "AUTOWINI";
+export type StepMode = "STARTED" | "FULL" | "PROPORTIONAL";
+
 /** Admin-only price inputs (backend PricingInputs). */
 export interface PricingInputs {
   sourcePrice: number | null;
   sourceCurrency: string | null;
-  shippingEur: number | null;
-  marginEur: number | null;
-  /** fraction, e.g. 0.17 */
-  extraDutyRate: number | null;
+  /** null = the formula of the car's source site */
+  profile: PriceProfile | null;
 }
 
-export interface PublicPrice {
-  carPriceEur: number;
-  shippingEur: number;
-  customsDutyEur: number;
-  vatEur: number;
-  serviceEur: number;
-  totalEur: number;
+/** final price = car + baseCosts + stepCost × steps above threshold + profit, all EUR (backend PricingProfile). */
+export interface PricingProfile {
+  id: PriceProfile;
+  baseCosts: number;
+  threshold: number;
+  step: number;
+  stepCost: number;
+  stepMode: StepMode;
+  profit: number;
+  updatedAt: string;
 }
 
 export interface CarDetail {
@@ -99,7 +104,8 @@ export interface CarDetail {
   origin: Origin | null;
   specs: CarSpecs;
   imageUrls: string[];
-  price: PublicPrice | null;
+  /** final price with everything included; the only price customers see */
+  priceEur: number | null;
 }
 
 export interface FilterOptions {
@@ -109,17 +115,16 @@ export interface FilterOptions {
   origins: Origin[];
 }
 
+/** How the final price was built (admin only). */
 export interface PriceBreakdown {
+  profile: PriceProfile;
   sourcePrice: number;
   sourceCurrency: string;
   carPriceEur: number;
-  shippingEur: number;
-  customsDutyRate: number;
-  customsDutyEur: number;
-  vatRate: number;
-  vatEur: number;
-  feesEur: number;
-  marginEur: number;
+  baseCostsEur: number;
+  steps: number;
+  stepCostsEur: number;
+  profitEur: number;
   totalEur: number;
 }
 

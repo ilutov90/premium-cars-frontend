@@ -6,8 +6,25 @@ import { use, useEffect, useState } from "react";
 import { useAdmin } from "./admin-context";
 import { SocialPostPanel } from "./social-post-panel";
 import { StatusBadge } from "./status-badge";
-import { drivetrainLabels, formatEur, fuelLabels, statusLabels, transmissionLabels } from "@/lib/format";
-import type { AdminCar, CarSpecs, CarStatus, Drivetrain, FuelType, PricingInputs, Transmission } from "@/lib/types";
+import {
+  drivetrainLabels,
+  formatEur,
+  formatNumber,
+  fuelLabels,
+  priceProfileLabels,
+  statusLabels,
+  transmissionLabels,
+} from "@/lib/format";
+import type {
+  AdminCar,
+  CarSpecs,
+  CarStatus,
+  Drivetrain,
+  FuelType,
+  PriceProfile,
+  PricingInputs,
+  Transmission,
+} from "@/lib/types";
 
 const statusActions: [CarStatus, string][] = [
   ["PUBLISHED", "Публикувай"],
@@ -33,7 +50,6 @@ function readForm(form: HTMLFormElement): { specs: CarSpecs; pricing: PricingInp
   const extraSpecs = Object.fromEntries(
     specKeys.map((k, i) => [k.trim(), specValues[i]?.trim() ?? ""]).filter(([k, v]) => k && v),
   );
-  const extraDuty = number("extraDutyPercent");
   return {
     specs: {
       title: text("title") ?? "",
@@ -65,10 +81,7 @@ function readForm(form: HTMLFormElement): { specs: CarSpecs; pricing: PricingInp
     pricing: {
       sourcePrice: number("sourcePrice"),
       sourceCurrency: text("sourceCurrency"),
-      shippingEur: number("shippingEur"),
-      marginEur: number("marginEur"),
-      // entered as percent in the form, stored as a fraction
-      extraDutyRate: extraDuty === null ? null : extraDuty / 100,
+      profile: text("profile") as PriceProfile | null,
     },
   };
 }
@@ -218,15 +231,14 @@ export function CarEditor({ params }: { params: Promise<{ id: string }> }) {
           <Fieldset title="Цена">
             <Field label="Цена при източника" name="sourcePrice" value={p.sourcePrice} type="number" step="0.01" />
             <Field label="Валута (USD, CNY, KRW, EUR)" name="sourceCurrency" value={p.sourceCurrency} />
-            <Field label="Транспорт, € (празно = по подразбиране)" name="shippingEur" value={p.shippingEur} type="number" />
-            <Field label="Марж, € (празно = по подразбиране)" name="marginEur" value={p.marginEur} type="number" />
-            <Field
-              label="Допълнително мито, % (напр. EV от Китай)"
-              name="extraDutyPercent"
-              value={p.extraDutyRate == null ? null : +(p.extraDutyRate * 100).toFixed(2)}
-              type="number"
-              step="0.1"
-            />
+            <Choice label="Ценова формула" name="profile" value={p.profile} options={priceProfileLabels} />
+            <p className="self-end pb-2.5 text-xs text-muted">
+              Разходите и надценката се променят в{" "}
+              <Link href="/admin/pricing" className="font-semibold text-accent hover:underline">
+                Цени
+              </Link>
+              .
+            </p>
           </Fieldset>
 
           <SpecsEditor specs={s.extraSpecs} />
@@ -314,12 +326,10 @@ function PriceSummary({ car }: { car: AdminCar }) {
     );
   }
   const rows: [string, number][] = [
-    [`Кола (${p.sourcePrice} ${p.sourceCurrency})`, p.carPriceEur],
-    ["Транспорт", p.shippingEur],
-    [`Мито (${+(p.customsDutyRate * 100).toFixed(2)}%)`, p.customsDutyEur],
-    [`ДДС (${+(p.vatRate * 100).toFixed(2)}%)`, p.vatEur],
-    ["Такси", p.feesEur],
-    ["Твоят марж", p.marginEur],
+    [`Кола (${formatNumber(p.sourcePrice)} ${p.sourceCurrency})`, p.carPriceEur],
+    ["Разходи", p.baseCostsEur],
+    [`Разходи над прага (× ${formatNumber(p.steps)})`, p.stepCostsEur],
+    ["Надценка", p.profitEur],
   ];
   return (
     <div className="rounded-2xl bg-ink p-5 text-paper">
@@ -333,7 +343,9 @@ function PriceSummary({ car }: { car: AdminCar }) {
           </div>
         ))}
       </dl>
-      <p className="mt-3 text-xs text-paper/50">Клиентът вижда марж + такси като „Обслужване“.</p>
+      <p className="mt-3 text-xs text-paper/50">
+        {priceProfileLabels[p.profile]}. Клиентът вижда само крайната цена.
+      </p>
     </div>
   );
 }

@@ -21,7 +21,7 @@ import {
 import { CarGallery } from "@/components/car-gallery";
 import { CarDescription } from "@/components/car-description";
 import { InquiryForm } from "@/components/inquiry-form";
-import { PriceBreakdownCard } from "@/components/price-breakdown";
+import { PriceCard } from "@/components/price-card";
 import type { CarSpecs } from "@/lib/types";
 
 export async function generateMetadata({ params }: PageProps<"/cars/[slug]">): Promise<Metadata> {
@@ -113,7 +113,7 @@ async function CarDetailView({ params }: { params: PageProps<"/cars/[slug]">["pa
             ))}
         </dl>
 
-        <CarDescription specs={s} origin={car.origin} priceEur={car.price?.totalEur ?? null} />
+        <CarDescription specs={s} origin={car.origin} priceEur={car.priceEur} />
 
         {extra.length > 0 && (
           <section className="mt-10">
@@ -131,7 +131,7 @@ async function CarDetailView({ params }: { params: PageProps<"/cars/[slug]">["pa
       </div>
 
       <aside className="space-y-5 lg:sticky lg:top-24 lg:self-start">
-        <PriceBreakdownCard price={car.price} />
+        <PriceCard priceEur={car.priceEur} />
         <div className="rounded-2xl border border-line bg-card p-5">
           <p className="mb-4 text-lg font-bold">Интересувате се?</p>
           <InquiryForm carId={car.id} carTitle={s.title} />
