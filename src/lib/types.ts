@@ -97,6 +97,10 @@ export interface PricingInputs {
   sourceCurrency: string | null;
   /** null = the formula of the car's source site */
   profile: PriceProfile | null;
+  /** profit for this car instead of the formula's; null = the formula's */
+  profitEur: number | null;
+  /** final price set by hand, replacing the calculation; null = calculated */
+  fixedTotalEur: number | null;
 }
 
 /** final price = car + baseCosts + stepCost × (car − threshold) / step + profit, all EUR; proportional above the threshold. */
@@ -129,16 +133,22 @@ export interface FilterOptions {
 }
 
 /** How the final price was built (admin only). */
+/** How the final price was built. The calculated parts are null when the price was set by hand without a source price. */
 export interface PriceBreakdown {
-  profile: PriceProfile;
-  sourcePrice: number;
-  sourceCurrency: string;
-  carPriceEur: number;
-  baseCostsEur: number;
-  steps: number;
-  stepCostsEur: number;
-  profitEur: number;
+  profile: PriceProfile | null;
+  sourcePrice: number | null;
+  sourceCurrency: string | null;
+  carPriceEur: number | null;
+  baseCostsEur: number | null;
+  steps: number | null;
+  stepCostsEur: number | null;
+  profitEur: number | null;
+  profitOverridden: boolean;
+  /** what the formula gives; null when it cannot be calculated */
+  calculatedTotalEur: number | null;
   totalEur: number;
+  /** totalEur was set by hand */
+  fixedTotal: boolean;
 }
 
 export interface AdminImage {
