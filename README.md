@@ -29,7 +29,7 @@ Before committing: `npm run lint` and `npm run build`.
 | `src/app/admin/**` | admin: import by link (autohome, autowini, other sites), car list with the source listing (link, id; search by either), edit car, photos, statuses, inquiries |
 | `src/app/admin/pricing/page.tsx` | price formula per site: costs, costs per 10 000 € above the threshold, profit |
 | `src/app/admin/account/page.tsx` | change the admin password |
-| `src/app/admin/templates/page.tsx` | post templates per network (Facebook, Instagram, Viber): placeholders, preview with a car |
+| `src/app/admin/templates/page.tsx` | post templates per network (Facebook, Instagram, Viber): placeholders, preview with a car; the shared phone, Viber channel link and office (`{{phone}}`, `{{viber_link}}`, `{{office}}`, stored in the backend) |
 | `src/lib/post-template.ts` | placeholders, default templates (the posting script's text), filling them in for a car |
 | `src/components/admin/social-post-panel.tsx` | publish to Facebook / Instagram / Viber through a confirmation dialog (text from the template, editable; 1-10 photos picked), connecting the Viber channel, earlier posts, share/download photos |
 | `src/components/share-buttons.tsx` | share buttons on the car page: Facebook, Viber, the phone's share sheet (Instagram …), copy link |
