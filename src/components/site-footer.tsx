@@ -1,7 +1,10 @@
 import Link from "next/link";
-import { phoneHref, site } from "@/lib/site";
+import { Suspense } from "react";
+import { getContact } from "@/lib/api";
+import { contactDetails, phoneHref, site, type Contact } from "@/lib/site";
 
-// Static footer: no current-year call here, because with Cache Components the shell is prerendered.
+// The shell is prerendered (Cache Components): the contact details saved in the admin panel stream in, and the
+// defaults from site.ts show until then (or when the backend is down).
 export function SiteFooter() {
   return (
     <footer className="mt-24 border-t border-line bg-ink text-paper/80">
@@ -34,26 +37,38 @@ export function SiteFooter() {
         </div>
         <div className="text-sm">
           <p className="mb-3 font-semibold text-paper">Контакти</p>
-          <ul className="space-y-2">
-            <li>
-              Телефон:{" "}
-              <a href={phoneHref(site.phone)} className="hover:text-paper">
-                {site.phone}
-              </a>{" "}
-              (и Viber)
-            </li>
-            <li>
-              <a href={site.viberLink} target="_blank" rel="noreferrer" className="hover:text-paper">
-                Viber канал →
-              </a>
-            </li>
-            <li>Офис {site.office}, България</li>
-          </ul>
+          <Suspense fallback={<ContactList contact={contactDetails(null)} />}>
+            <SavedContact />
+          </Suspense>
         </div>
       </div>
       <div className="border-t border-paper/10 py-5 text-center text-xs text-paper/50">
         Цените са крайни: включват транспорта и всички разходи до България.
       </div>
     </footer>
+  );
+}
+
+async function SavedContact() {
+  return <ContactList contact={contactDetails(await getContact())} />;
+}
+
+function ContactList({ contact }: { contact: Contact }) {
+  return (
+    <ul className="space-y-2">
+      <li>
+        Телефон:{" "}
+        <a href={phoneHref(contact.phone)} className="hover:text-paper">
+          {contact.phone}
+        </a>{" "}
+        (и Viber)
+      </li>
+      <li>
+        <a href={contact.viberLink} target="_blank" rel="noreferrer" className="hover:text-paper">
+          Viber канал →
+        </a>
+      </li>
+      <li>Офис {contact.office}, България</li>
+    </ul>
   );
 }
