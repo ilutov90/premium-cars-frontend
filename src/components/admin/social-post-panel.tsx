@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useAdmin } from "./admin-context";
-import { socialPostText } from "@/lib/description";
+import { socialPostText, viberPostText } from "@/lib/description";
 import { formatDate, listingId as sourceListingId } from "@/lib/format";
 import type { AdminCar, Origin, SocialNetwork, SocialPost, SocialStatus, ViberConnectResponse } from "@/lib/types";
 
@@ -13,15 +13,18 @@ const networkLabels: Record<SocialNetwork, string> = { FACEBOOK: "Facebook", INS
 const INSTAGRAM_CAPTION_MAX = 2200;
 const VIBER_TEXT_MAX = 7000;
 const MAX_PHOTOS = 10;
-const VIBER_MAX_PHOTOS = 6;
+const VIBER_PHOTO_CHOICES = [3, 5, 8, 10, 15, 20];
 
 /** The generated post text for the car (editable), publishing to Facebook/Instagram/Viber, sharing and the list of posts. */
 export function SocialPostPanel({ car }: { car: AdminCar }) {
   const { adminFetch } = useAdmin();
   const listingId = sourceListingId(car.source, car.sourceRef);
   const generated = socialPostText(car.specs, originOf(car), car.price?.totalEur ?? null, listingId);
+  const generatedViber = viberPostText(car.specs, originOf(car), car.price?.totalEur ?? null, listingId);
 
   const [text, setText] = useState(generated);
+  const [viberText, setViberText] = useState(generatedViber);
+  const [viberPhotos, setViberPhotos] = useState(Math.min(10, Math.max(1, car.images.length)));
   const [status, setStatus] = useState<SocialStatus | null>(null);
   const [posts, setPosts] = useState<SocialPost[]>([]);
   const [busy, setBusy] = useState<string | null>(null);
@@ -33,6 +36,7 @@ export function SocialPostPanel({ car }: { car: AdminCar }) {
   }, [adminFetch, car.id]);
 
   async function publish(network: SocialNetwork) {
+    const isViber = network === "VIBER";
     const earlier = posts.find((p) => p.network === network);
     if (earlier && !window.confirm(`Колата вече е публикувана в ${networkLabels[network]} на ${formatDate(earlier.createdAt)}. Публикувай отново?`)) {
       return;
@@ -42,7 +46,9 @@ export function SocialPostPanel({ car }: { car: AdminCar }) {
     try {
       const post = await adminFetch<SocialPost>(`/api/admin/cars/${car.id}/social-posts`, {
         method: "POST",
-        body: JSON.stringify({ network, text }),
+        body: JSON.stringify(
+          isViber ? { network, text: viberText, photoCount: viberPhotos } : { network, text },
+        ),
       });
       setPosts((list) => [post, ...list]);
       setMessage({ ok: true, text: `Публикувано в ${networkLabels[network]} ✓ (${post.photos} снимки)` });
@@ -101,7 +107,7 @@ export function SocialPostPanel({ car }: { car: AdminCar }) {
   }
 
   const tooLongForInstagram = text.length > INSTAGRAM_CAPTION_MAX;
-  const tooLongForViber = text.length > VIBER_TEXT_MAX;
+  const tooLongForViber = viberText.length > VIBER_TEXT_MAX;
   const noPhotos = car.images.length === 0;
 
   return (
@@ -148,14 +154,6 @@ export function SocialPostPanel({ car }: { car: AdminCar }) {
         >
           {busy === "INSTAGRAM" ? "Публикуване…" : "Публикувай в Instagram"}
         </button>
-        <button
-          type="button"
-          className="btn-primary col-span-2 px-3! py-2! text-sm!"
-          disabled={!status?.viber || noPhotos || tooLongForViber || busy !== null}
-          onClick={() => publish("VIBER")}
-        >
-          {busy === "VIBER" ? "Публикуване във Viber…" : "Публикувай във Viber"}
-        </button>
       </div>
       {status && (!status.facebook || !status.instagram || !status.viber) && (
         <p className="mt-2 text-xs text-muted">
@@ -165,11 +163,57 @@ export function SocialPostPanel({ car }: { car: AdminCar }) {
           Виж README на бекенда.
         </p>
       )}
-      <p className="mt-1 text-xs text-muted">
-        Публикуват се до {MAX_PHOTOS} снимки в реда от галерията (във Viber до {VIBER_MAX_PHOTOS}, всяка като
-        отделно съобщение, а след тях текстът).
-      </p>
-      {status?.viber && <ViberConnect onMessage={setMessage} />}
+      <p className="mt-1 text-xs text-muted">Публикуват се до {MAX_PHOTOS} снимки в реда от галерията.</p>
+
+      <div className="mt-4 border-t border-line pt-4">
+        <div className="mb-2 flex items-center justify-between gap-2">
+          <h3 className="text-sm font-bold">Viber канал</h3>
+          {viberText !== generatedViber && (
+            <button type="button" onClick={() => setViberText(generatedViber)} className="btn-ghost px-3! py-1.5! text-xs!">
+              Възстанови
+            </button>
+          )}
+        </div>
+        <textarea
+          value={viberText}
+          onChange={(e) => setViberText(e.target.value)}
+          rows={8}
+          className="field font-mono text-xs! leading-relaxed"
+          aria-label="Текст за Viber"
+        />
+        <div className="mt-2 flex flex-wrap items-center gap-2">
+          <label className="text-xs text-muted" htmlFor="viber-photos">
+            Снимки (първите от галерията):
+          </label>
+          <select
+            id="viber-photos"
+            value={viberPhotos}
+            onChange={(e) => setViberPhotos(Number(e.target.value))}
+            className="field w-auto! py-1! text-xs!"
+          >
+            {Array.from(new Set([...VIBER_PHOTO_CHOICES, viberPhotos]))
+              .sort((a, b) => a - b)
+              .map((n) => (
+                <option key={n} value={n}>
+                  {n}
+                  {n > car.images.length ? ` (има ${car.images.length})` : ""}
+                </option>
+              ))}
+          </select>
+          <button
+            type="button"
+            className="btn-primary ml-auto px-3! py-2! text-sm!"
+            disabled={!status?.viber || noPhotos || tooLongForViber || busy !== null}
+            onClick={() => publish("VIBER")}
+          >
+            {busy === "VIBER" ? "Публикуване във Viber…" : "Публикувай във Viber"}
+          </button>
+        </div>
+        <p className="mt-1 text-xs text-muted">
+          Всяка снимка е отделно съобщение в канала, а след тях текстът. Редът е като в галерията (корицата е първа).
+        </p>
+        {status?.viber && <ViberConnect onMessage={setMessage} />}
+      </div>
 
       <div className="mt-3 flex flex-wrap gap-2">
         <button type="button" className="btn-ghost px-3! py-1.5! text-xs!" disabled={noPhotos || busy !== null} onClick={shareWithPhotos}>

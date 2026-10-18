@@ -133,14 +133,8 @@ export function socialPostText(
   const modelForTags = [specs.model, specs.trim].filter(Boolean).join(" ");
   let tags = hashtags(specs.make, modelForTags || specs.title);
   if (listingId) tags += ` #${listingId}`;
-  const location = locationLine(origin);
   const lines = [
-    `🎯${shortTitle(specs)}`,
-    priceEur != null
-      ? `🔢Крайна цена: 💰 ${enNumber.format(Math.round(priceEur))} евро с включен транспорт и всички допълнителни разходи до България + Карго застраховка и Технотест‼️`
-      : "🔢Крайна цена: при запитване",
-    ...descriptionLines(specs).map((l) => `${l.icon}${l.label}: ${l.text}`),
-    ...(location ? [location] : []),
+    ...carLines(specs, origin, priceEur),
     `❓ Защо ${site.brandName} 👑`,
     ...whyUs.map((w) => `${w.icon} ${w.text}`),
     `📞 За контакти: Офис ${site.office} - ${site.phone} или на Viber`,
@@ -150,4 +144,31 @@ export function socialPostText(
     tags,
   ];
   return lines.join("\n");
+}
+
+/** Title, final price, specs and location: the part of the post about the car itself. */
+function carLines(specs: CarSpecs, origin: Origin | null, priceEur: number | null): string[] {
+  const location = locationLine(origin);
+  return [
+    `🎯${shortTitle(specs)}`,
+    priceEur != null
+      ? `🔢Крайна цена: 💰 ${enNumber.format(Math.round(priceEur))} евро с включен транспорт и всички допълнителни разходи до България + Карго застраховка и Технотест‼️`
+      : "🔢Крайна цена: при запитване",
+    ...descriptionLines(specs).map((l) => `${l.icon}${l.label}: ${l.text}`),
+    ...(location ? [location] : []),
+  ];
+}
+
+/**
+ * The shorter Viber channel post: the car part of {@link socialPostText} (title, price, specs, location) and the
+ * listing id as a hashtag; no "why us", contacts or other hashtags (the channel already is the business's).
+ */
+export function viberPostText(
+  specs: CarSpecs,
+  origin: Origin | null,
+  priceEur: number | null,
+  listingId?: string | null,
+): string {
+  const lines = carLines(specs, origin, priceEur);
+  return listingId ? `${lines.join("\n")}\n\n#${listingId}` : lines.join("\n");
 }

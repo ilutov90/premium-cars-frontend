@@ -83,6 +83,8 @@ function readForm(form: HTMLFormElement): { specs: CarSpecs; pricing: PricingInp
       sourcePrice: number("sourcePrice"),
       sourceCurrency: text("sourceCurrency"),
       profile: text("profile") as PriceProfile | null,
+      profitEur: number("profitEur"),
+      fixedTotalEur: number("fixedTotalEur"),
     },
   };
 }
@@ -230,11 +232,17 @@ export function CarEditor({ params }: { params: Promise<{ id: string }> }) {
             <Field label="Валута (USD, CNY, KRW, EUR)" name="sourceCurrency" value={p.sourceCurrency} />
             <Choice label="Ценова формула" name="profile" value={p.profile} options={priceProfileLabels} />
             <p className="self-end pb-2.5 text-xs text-muted">
-              Разходите и надценката се променят в{" "}
+              Разходите и надценката за всички коли се променят в{" "}
               <Link href="/admin/pricing" className="font-semibold text-accent hover:underline">
                 Цени
               </Link>
               .
+            </p>
+            <Field label="Надценка за тази кола, € (празно = от формулата)" name="profitEur" value={p.profitEur} type="number" step="1" />
+            <Field label="Крайна цена ръчно, € (празно = изчислената)" name="fixedTotalEur" value={p.fixedTotalEur} type="number" step="1" />
+            <p className="text-xs text-muted sm:col-span-2">
+              „Крайна цена ръчно“ замества цялото изчисление; изчислената цена остава видима вдясно. Изчисти полето, за да
+              се върнеш към формулата.
             </p>
           </Fieldset>
 
@@ -323,26 +331,40 @@ function PriceSummary({ car }: { car: AdminCar }) {
       </div>
     );
   }
-  const rows: [string, number][] = [
-    [`Кола (${formatNumber(p.sourcePrice)} ${p.sourceCurrency})`, p.carPriceEur],
-    ["Разходи", p.baseCostsEur],
-    [`Разходи над прага (× ${formatNumber(p.steps)})`, p.stepCostsEur],
-    ["Надценка", p.profitEur],
-  ];
+  const rows: [string, number | null][] =
+    p.carPriceEur == null
+      ? []
+      : [
+          [`Кола (${formatNumber(p.sourcePrice ?? 0)} ${p.sourceCurrency ?? ""})`, p.carPriceEur],
+          ["Разходи", p.baseCostsEur],
+          [`Разходи над прага (× ${formatNumber(p.steps ?? 0)})`, p.stepCostsEur],
+          [p.profitOverridden ? "Надценка (за тази кола)" : "Надценка", p.profitEur],
+        ];
   return (
     <div className="rounded-2xl bg-ink p-5 text-paper">
-      <p className="text-[11px] font-semibold tracking-wide text-paper/60 uppercase">Крайна цена за клиента</p>
+      <p className="text-[11px] font-semibold tracking-wide text-paper/60 uppercase">
+        Крайна цена за клиента{p.fixedTotal && " · ръчна"}
+      </p>
       <p className="mt-1 text-3xl font-extrabold">{formatEur(p.totalEur)}</p>
-      <dl className="mt-4 space-y-1.5 text-sm">
-        {rows.map(([label, value]) => (
-          <div key={label} className="flex justify-between gap-3">
-            <dt className="text-paper/60">{label}</dt>
-            <dd className="font-semibold">{formatEur(value)}</dd>
-          </div>
-        ))}
-      </dl>
+      {p.fixedTotal && (
+        <p className="mt-1 text-xs text-paper/60">
+          {p.calculatedTotalEur != null
+            ? `Изчислена по формулата: ${formatEur(p.calculatedTotalEur)}`
+            : "Няма цена при източника за изчисление."}
+        </p>
+      )}
+      {rows.length > 0 && (
+        <dl className="mt-4 space-y-1.5 text-sm">
+          {rows.map(([label, value]) => (
+            <div key={label} className="flex justify-between gap-3">
+              <dt className="text-paper/60">{label}</dt>
+              <dd className="font-semibold">{formatEur(value)}</dd>
+            </div>
+          ))}
+        </dl>
+      )}
       <p className="mt-3 text-xs text-paper/50">
-        {priceProfileLabels[p.profile]}. Клиентът вижда само крайната цена.
+        {p.profile ? `${priceProfileLabels[p.profile]}. ` : ""}Клиентът вижда само крайната цена.
       </p>
     </div>
   );
