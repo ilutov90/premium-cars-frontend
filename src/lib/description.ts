@@ -1,8 +1,7 @@
-// Car descriptions in the format of the Facebook/Instagram posts (port of build_post_text() and
+// Car descriptions in the format of the posting script (port of build_post_text() and
 // generate_hashtags() from autowini_poster_parallel.py). Texts are Bulgarian: they are shown to customers.
 import hashtagTable from "./car-hashtags.json";
 import { fuelLabels, hasTractionBattery, transmissionLabels } from "./format";
-import { site, whyUs } from "./site";
 import type { CarSpecs, Origin } from "./types";
 
 export interface DescriptionLine {
@@ -121,54 +120,4 @@ export function hashtags(make: string | null, model: string | null): string {
     }
   }
   return extra.length ? `${base} ${extra.join(" ")}` : base;
-}
-
-/** The full Facebook/Instagram post, line for line as the posting script writes it. */
-export function socialPostText(
-  specs: CarSpecs,
-  origin: Origin | null,
-  priceEur: number | null,
-  listingId?: string | null,
-): string {
-  const modelForTags = [specs.model, specs.trim].filter(Boolean).join(" ");
-  let tags = hashtags(specs.make, modelForTags || specs.title);
-  if (listingId) tags += ` #${listingId}`;
-  const lines = [
-    ...carLines(specs, origin, priceEur),
-    `❓ Защо ${site.brandName} 👑`,
-    ...whyUs.map((w) => `${w.icon} ${w.text}`),
-    `📞 За контакти: Офис ${site.office} - ${site.phone} или на Viber`,
-    "💬 Влез във Viber канала ни от линка:",
-    site.viberLink,
-    "",
-    tags,
-  ];
-  return lines.join("\n");
-}
-
-/** Title, final price, specs and location: the part of the post about the car itself. */
-function carLines(specs: CarSpecs, origin: Origin | null, priceEur: number | null): string[] {
-  const location = locationLine(origin);
-  return [
-    `🎯${shortTitle(specs)}`,
-    priceEur != null
-      ? `🔢Крайна цена: 💰 ${enNumber.format(Math.round(priceEur))} евро с включен транспорт и всички допълнителни разходи до България + Карго застраховка и Технотест‼️`
-      : "🔢Крайна цена: при запитване",
-    ...descriptionLines(specs).map((l) => `${l.icon}${l.label}: ${l.text}`),
-    ...(location ? [location] : []),
-  ];
-}
-
-/**
- * The shorter Viber channel post: the car part of {@link socialPostText} (title, price, specs, location) and the
- * listing id as a hashtag; no "why us", contacts or other hashtags (the channel already is the business's).
- */
-export function viberPostText(
-  specs: CarSpecs,
-  origin: Origin | null,
-  priceEur: number | null,
-  listingId?: string | null,
-): string {
-  const lines = carLines(specs, origin, priceEur);
-  return listingId ? `${lines.join("\n")}\n\n#${listingId}` : lines.join("\n");
 }
