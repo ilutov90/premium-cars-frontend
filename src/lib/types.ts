@@ -224,6 +224,13 @@ export interface PostTemplate {
   updatedAt: string;
 }
 
+/** Business details shared by all post templates (backend PostSettings); null = the default from site.ts. */
+export interface PostSettings {
+  phone: string | null;
+  viberLink: string | null;
+  office: string | null;
+}
+
 export interface ViberConnectResponse {
   callbackUrl: string;
 }

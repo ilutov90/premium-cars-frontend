@@ -7,7 +7,15 @@ import { useAdmin } from "./admin-context";
 import { CarImage } from "@/components/car-image";
 import { formatDate } from "@/lib/format";
 import { defaultTemplates, networkLabels, renderTemplate, templateValues } from "@/lib/post-template";
-import type { AdminCar, PostTemplate, SocialNetwork, SocialPost, SocialStatus, ViberConnectResponse } from "@/lib/types";
+import type {
+  AdminCar,
+  PostSettings,
+  PostTemplate,
+  SocialNetwork,
+  SocialPost,
+  SocialStatus,
+  ViberConnectResponse,
+} from "@/lib/types";
 
 /** Text limits of the networks (Facebook allows far more; 5000 keeps posts readable). */
 const TEXT_MAX: Record<SocialNetwork, number> = { FACEBOOK: 5000, INSTAGRAM: 2200, VIBER: 7000 };
@@ -21,6 +29,7 @@ export function SocialPostPanel({ car }: { car: AdminCar }) {
   const { adminFetch } = useAdmin();
   const [status, setStatus] = useState<SocialStatus | null>(null);
   const [templates, setTemplates] = useState<Record<SocialNetwork, string>>(defaultTemplates);
+  const [settings, setSettings] = useState<PostSettings | null>(null);
   const [posts, setPosts] = useState<SocialPost[]>([]);
   const [dialog, setDialog] = useState<SocialNetwork | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
@@ -36,10 +45,11 @@ export function SocialPostPanel({ car }: { car: AdminCar }) {
         setTemplates(t);
       })
       .catch(() => undefined);
+    adminFetch<PostSettings>("/api/admin/post-settings").then(setSettings).catch(() => setSettings(null));
   }, [adminFetch, car.id]);
 
   const origin = typeof window !== "undefined" ? window.location.origin : undefined;
-  const textFor = (network: SocialNetwork) => renderTemplate(templates[network], templateValues(car, origin));
+  const textFor = (network: SocialNetwork) => renderTemplate(templates[network], templateValues(car, origin, settings));
   const noPhotos = car.images.length === 0;
   const configured = (n: SocialNetwork) =>
     n === "FACEBOOK" ? status?.facebook : n === "INSTAGRAM" ? status?.instagram : status?.viber;

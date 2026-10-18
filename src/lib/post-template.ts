@@ -13,7 +13,7 @@ import {
   transmissionLabels,
 } from "./format";
 import { site, whyUs } from "./site";
-import type { AdminCar, Origin, SocialNetwork } from "./types";
+import type { AdminCar, Origin, PostSettings, SocialNetwork } from "./types";
 
 const enNumber = new Intl.NumberFormat("en-US");
 
@@ -47,7 +47,19 @@ export const placeholders: { key: string; description: string; example: string }
   { key: "listing_id", description: "Номер на обявата при източника", example: "IC5548563" },
   { key: "hashtags", description: "Хаштагове (марка, модел и номер на обявата)", example: "#вноснаколи #cars #автомобили #kia #киа #sportage #kiasportage #IC5548563" },
   { key: "link", description: "Линк към колата в сайта (само за публикувани коли)", example: "https://…/cars/kia-sportage-2024-7" },
+  { key: "phone", description: "Телефон (общ за всички коли, от „Общи данни“)", example: site.phone },
+  { key: "viber_link", description: "Линк към Viber канала (общ, от „Общи данни“)", example: site.viberLink },
+  { key: "office", description: "Офис (общ, от „Общи данни“)", example: site.office },
 ];
+
+/** The shared details with the site.ts defaults filled in where nothing is saved. */
+export function effectiveSettings(saved: PostSettings | null | undefined): { phone: string; viberLink: string; office: string } {
+  return {
+    phone: saved?.phone ?? site.phone,
+    viberLink: saved?.viberLink ?? site.viberLink,
+    office: saved?.office ?? site.office,
+  };
+}
 
 const KNOWN = new Set(placeholders.map((p) => p.key));
 const PLACEHOLDER = /\{\{\s*([a-zA-Z_]+)\s*\}\}/g;
@@ -69,9 +81,9 @@ const fullPost = [
   ...carPart,
   `❓ Защо ${site.brandName} 👑`,
   ...whyUs.map((w) => `${w.icon} ${w.text}`),
-  `📞 За контакти: Офис ${site.office} - ${site.phone} или на Viber`,
+  "📞 За контакти: Офис {{office}} - {{phone}} или на Viber",
   "💬 Влез във Viber канала ни от линка:",
-  site.viberLink,
+  "{{viber_link}}",
   "",
   "{{hashtags}}",
 ].join("\n");
@@ -90,8 +102,14 @@ const originOf = (car: AdminCar): Origin | null =>
  * The placeholder values of a car; "" = unknown (lines using it are left out).
  *
  * @param siteOrigin the site's address for {{link}} (e.g. window.location.origin)
+ * @param settings   the saved shared details (phone, Viber link, office); missing ones fall back to site.ts
  */
-export function templateValues(car: AdminCar, siteOrigin?: string): Record<string, string> {
+export function templateValues(
+  car: AdminCar,
+  siteOrigin?: string,
+  settings?: PostSettings | null,
+): Record<string, string> {
+  const shared = effectiveSettings(settings);
   const s = car.specs;
   const origin = originOf(car);
   const id = listingId(car.source, car.sourceRef);
@@ -128,6 +146,9 @@ export function templateValues(car: AdminCar, siteOrigin?: string): Record<strin
     listing_id: id ?? "",
     hashtags: tags,
     link: publicCar && siteOrigin ? `${siteOrigin}/cars/${car.slug}` : "",
+    phone: shared.phone,
+    viber_link: shared.viberLink,
+    office: shared.office,
   };
 }
 

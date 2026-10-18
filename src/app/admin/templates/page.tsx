@@ -5,13 +5,15 @@ import { useAdmin } from "@/components/admin/admin-context";
 import { formatDate } from "@/lib/format";
 import {
   defaultTemplates,
+  effectiveSettings,
   networkLabels,
   placeholders,
   renderTemplate,
   templateValues,
   unknownPlaceholders,
 } from "@/lib/post-template";
-import type { AdminCar, AdminCarSummary, PageResponse, PostTemplate, SocialNetwork } from "@/lib/types";
+import { site } from "@/lib/site";
+import type { AdminCar, AdminCarSummary, PageResponse, PostSettings, PostTemplate, SocialNetwork } from "@/lib/types";
 
 const networks: SocialNetwork[] = ["FACEBOOK", "INSTAGRAM", "VIBER"];
 
@@ -27,6 +29,7 @@ export default function AdminTemplatesPage() {
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null);
   const editor = useRef<HTMLTextAreaElement>(null);
+  const [settings, setSettings] = useState<PostSettings | null>(null);
 
   useEffect(() => {
     adminFetch<PostTemplate[]>("/api/admin/post-templates")
@@ -41,6 +44,7 @@ export default function AdminTemplatesPage() {
         });
       })
       .catch((e: Error) => setMessage({ ok: false, text: e.message }));
+    adminFetch<PostSettings>("/api/admin/post-settings").then(setSettings).catch(() => setSettings(null));
     adminFetch<PageResponse<AdminCarSummary>>("/api/admin/cars?size=30")
       .then((page) => {
         setCars(page.items);
@@ -60,7 +64,7 @@ export default function AdminTemplatesPage() {
   const isDefault = !saved[network];
   const unknown = unknownPlaceholders(draft);
   const origin = typeof window !== "undefined" ? window.location.origin : undefined;
-  const preview = sample ? renderTemplate(draft, templateValues(sample, origin)) : null;
+  const preview = sample ? renderTemplate(draft, templateValues(sample, origin, settings)) : null;
 
   function setDraft(value: string) {
     setDrafts((d) => ({ ...d, [network]: value }));
@@ -126,7 +130,9 @@ export default function AdminTemplatesPage() {
         липсващ пробег), не се показва. Преди публикуване текстът винаги се вижда и може да се промени.
       </p>
 
-      <div className="mt-5 flex flex-wrap gap-1.5">
+      <SharedDetails saved={settings} onSaved={setSettings} />
+
+      <div className="mt-6 flex flex-wrap gap-1.5">
         {networks.map((n) => (
           <button
             key={n}
@@ -232,5 +238,105 @@ export default function AdminTemplatesPage() {
         </section>
       </div>
     </div>
+  );
+}
+
+/** Phone, Viber channel link and office: the same for every car ({{phone}}, {{viber_link}}, {{office}}). */
+function SharedDetails({ saved, onSaved }: { saved: PostSettings | null; onSaved: (s: PostSettings) => void }) {
+  const { adminFetch } = useAdmin();
+  const current = effectiveSettings(saved);
+  const [form, setForm] = useState(current);
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null);
+
+  // show the saved values once they arrive
+  const [loadedFrom, setLoadedFrom] = useState<PostSettings | null>(null);
+  if (saved !== loadedFrom) {
+    setLoadedFrom(saved);
+    setForm(effectiveSettings(saved));
+  }
+
+  const dirty = form.phone !== current.phone || form.viberLink !== current.viberLink || form.office !== current.office;
+
+  async function save(e: React.FormEvent) {
+    e.preventDefault();
+    setBusy(true);
+    setMessage(null);
+    try {
+      // a value equal to the built-in default is stored as "default", so changing site.ts still applies
+      const body: PostSettings = {
+        phone: form.phone.trim() === site.phone ? null : form.phone,
+        viberLink: form.viberLink.trim() === site.viberLink ? null : form.viberLink,
+        office: form.office.trim() === site.office ? null : form.office,
+      };
+      const next = await adminFetch<PostSettings>("/api/admin/post-settings", {
+        method: "PUT",
+        body: JSON.stringify(body),
+      });
+      onSaved(next);
+      setMessage({ ok: true, text: "Общите данни са записани ✓" });
+    } catch (err) {
+      setMessage({ ok: false, text: err instanceof Error ? err.message : "Грешка" });
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <form onSubmit={save} className="mt-5 rounded-2xl border border-line bg-card p-4">
+      <h2 className="font-bold">Общи данни за всички коли</h2>
+      <p className="mt-1 text-xs text-muted">
+        Използват се в шаблоните като <code>{"{{phone}}"}</code>, <code>{"{{viber_link}}"}</code> и{" "}
+        <code>{"{{office}}"}</code>. Празно поле = стойността по подразбиране.
+      </p>
+      <div className="mt-3 grid gap-3 sm:grid-cols-[1fr_2fr_1fr]">
+        <div>
+          <label className="label" htmlFor="set-phone">
+            Телефон
+          </label>
+          <input
+            id="set-phone"
+            value={form.phone}
+            onChange={(e) => setForm({ ...form, phone: e.target.value })}
+            placeholder={site.phone}
+            maxLength={50}
+            className="field"
+          />
+        </div>
+        <div>
+          <label className="label" htmlFor="set-viber">
+            Линк към Viber канала
+          </label>
+          <input
+            id="set-viber"
+            type="url"
+            value={form.viberLink}
+            onChange={(e) => setForm({ ...form, viberLink: e.target.value })}
+            placeholder={site.viberLink}
+            maxLength={300}
+            className="field"
+          />
+        </div>
+        <div>
+          <label className="label" htmlFor="set-office">
+            Офис
+          </label>
+          <input
+            id="set-office"
+            value={form.office}
+            onChange={(e) => setForm({ ...form, office: e.target.value })}
+            placeholder={site.office}
+            maxLength={100}
+            className="field"
+          />
+        </div>
+      </div>
+      <div className="mt-3 flex items-center gap-3">
+        <button type="submit" className="btn-primary px-4! py-2! text-sm!" disabled={busy || !dirty}>
+          {busy ? "Записване…" : "Запиши общите данни"}
+        </button>
+        {message && <span className={`text-sm font-semibold ${message.ok ? "text-ok" : "text-warn"}`}>{message.text}</span>}
+      </div>
+    </form>
   );
 }
