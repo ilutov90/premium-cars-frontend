@@ -7,6 +7,26 @@ export const site = {
   office: "София",
 };
 
+export interface Contact {
+  phone: string;
+  viberLink: string;
+  office: string;
+}
+
+/**
+ * The contact details saved in the admin panel ("Шаблони → Общи данни"), with the defaults above where nothing
+ * is saved. Used by the footer and the post templates.
+ */
+export function contactDetails(
+  saved: { phone: string | null; viberLink: string | null; office: string | null } | null | undefined,
+): Contact {
+  return {
+    phone: saved?.phone ?? site.phone,
+    viberLink: saved?.viberLink ?? site.viberLink,
+    office: saved?.office ?? site.office,
+  };
+}
+
 /** "0878131990" -> "tel:+359878131990" */
 export function phoneHref(phone: string): string {
   const digits = phone.replace(/[^\d+]/g, "");

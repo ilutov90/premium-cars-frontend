@@ -1,6 +1,6 @@
 // Server-side calls to the public API. Used from Server Components inside <Suspense>,
 // so every request gets fresh data (an admin change is visible on the next page load).
-import type { CarDetail, CarSummary, FilterOptions, PageResponse } from "./types";
+import type { CarDetail, CarSummary, FilterOptions, PageResponse, PostSettings } from "./types";
 /** URL the Next.js server uses; differs from the public one inside Docker/Kubernetes. */
 /** Server components call the backend directly (not through the /api rewrite). */
 const SERVER_API_URL = process.env.API_URL ?? "http://localhost:8080";
@@ -72,4 +72,13 @@ export async function getCar(slug: string): Promise<CarDetail | null> {
 
 export function getFilterOptions() {
   return get<FilterOptions>("/api/public/filters");
+}
+
+/** Phone, Viber channel link and office saved in the admin panel; null when the backend cannot be reached. */
+export async function getContact(): Promise<PostSettings | null> {
+  try {
+    return await get<PostSettings>("/api/public/contact");
+  } catch {
+    return null;
+  }
 }

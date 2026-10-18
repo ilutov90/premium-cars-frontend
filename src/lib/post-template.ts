@@ -12,7 +12,7 @@ import {
   originLabels,
   transmissionLabels,
 } from "./format";
-import { site, whyUs } from "./site";
+import { contactDetails, site, whyUs } from "./site";
 import type { AdminCar, Origin, PostSettings, SocialNetwork } from "./types";
 
 const enNumber = new Intl.NumberFormat("en-US");
@@ -53,13 +53,7 @@ export const placeholders: { key: string; description: string; example: string }
 ];
 
 /** The shared details with the site.ts defaults filled in where nothing is saved. */
-export function effectiveSettings(saved: PostSettings | null | undefined): { phone: string; viberLink: string; office: string } {
-  return {
-    phone: saved?.phone ?? site.phone,
-    viberLink: saved?.viberLink ?? site.viberLink,
-    office: saved?.office ?? site.office,
-  };
-}
+export const effectiveSettings = (saved: PostSettings | null | undefined) => contactDetails(saved);
 
 const KNOWN = new Set(placeholders.map((p) => p.key));
 const PLACEHOLDER = /\{\{\s*([a-zA-Z_]+)\s*\}\}/g;

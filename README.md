@@ -37,7 +37,7 @@ Before committing: `npm run lint` and `npm run build`.
 | `src/lib/types.ts` | types mirroring the backend DTOs (`CarSpecs`, `PricingInputs`, `CarDetail`, `AdminCar` …) |
 | `src/lib/format.ts` | Bulgarian labels for enums, number/power/range/battery formatting |
 | `src/lib/description.ts` | car description lines and hashtags, same format as `autowini_poster_parallel.py` |
-| `src/lib/site.ts` | business details (brand, phone, Viber link, office) and the "why us" bullets |
+| `src/lib/site.ts` | business details (brand, phone, Viber link, office) and the "why us" bullets; the phone, Viber link and office saved in the admin panel override them (posts and footer) |
 | `src/lib/car-hashtags.json` | hashtag table exported from the posting script |
 | `src/app/globals.css` | colours, font and shared utilities (`btn-primary`, `field` …) |
 

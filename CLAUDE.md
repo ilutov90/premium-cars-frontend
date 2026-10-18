@@ -42,7 +42,9 @@ Run `npm run lint` and `npm run build` before finishing a change.
   (`/api/admin/cars/{id}/social-posts`). The car page shows every known spec and hides empty ones.
 - Car descriptions come from `src/lib/description.ts` (a port of `build_post_text` / `generate_hashtags` in
   `autowini_poster_parallel.py`); the default Facebook/Instagram template renders the script's post exactly.
-  Business details (brand, phone, Viber, office) and the "why us" bullets live in `src/lib/site.ts`.
+  Business details (brand, phone, Viber, office) and the "why us" bullets live in `src/lib/site.ts`; the phone,
+  Viber link and office saved in the admin panel ("Шаблони → Общи данни") override them in the posts and in the
+  footer (`getContact()`, `contactDetails()`).
 - Docs (README, CLAUDE.md) and code comments are English.
 - Design tokens are in `src/app/globals.css` (`@theme`: paper, card, ink, muted, line, accent). Use them
   (`bg-card`, `text-muted`, `bg-accent`, ...) instead of raw colours. Shared utilities: `field`, `label`,
