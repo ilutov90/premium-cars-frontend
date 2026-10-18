@@ -35,11 +35,13 @@ Run `npm run lint` and `npm run build` before finishing a change.
 - API types in `src/lib/types.ts` mirror the backend DTOs (`CarDtos`, `InquiryDtos`). Change both together.
 - Labels for enums (fuel, transmission, statuses) live in `src/lib/format.ts`.
 - The car type is nested like the API: `car.specs.*` (title, make, EV fields …) and, for admin, `car.pricing.*`.
-- Customers never see the Facebook/Instagram/Viber text; it lives only in the admin car editor (`social-post-panel.tsx`),
-  which also publishes through the backend (`/api/admin/cars/{id}/social-posts`). The car page shows every known
-  spec and hides empty ones.
-- Car descriptions and the Facebook/Instagram post text come from `src/lib/description.ts` (a port of
-  `build_post_text` / `generate_hashtags` in `autowini_poster_parallel.py`; keep the output identical).
+- Customers never see the Facebook/Instagram/Viber text. It comes from templates (`src/lib/post-template.ts`:
+  placeholders, defaults, rendering; saved ones in the backend `post_template`, edited under `/admin/templates`).
+  Rendering drops a line whose placeholder is empty for the car. Publishing always goes through the confirmation
+  dialog in `social-post-panel.tsx` (text editable, 1-10 photos picked) and the backend
+  (`/api/admin/cars/{id}/social-posts`). The car page shows every known spec and hides empty ones.
+- Car descriptions come from `src/lib/description.ts` (a port of `build_post_text` / `generate_hashtags` in
+  `autowini_poster_parallel.py`); the default Facebook/Instagram template renders the script's post exactly.
   Business details (brand, phone, Viber, office) and the "why us" bullets live in `src/lib/site.ts`.
 - Docs (README, CLAUDE.md) and code comments are English.
 - Design tokens are in `src/app/globals.css` (`@theme`: paper, card, ink, muted, line, accent). Use them
@@ -54,5 +56,5 @@ Run `npm run lint` and `npm run build` before finishing a change.
 | `src/app/page.tsx` | home: hero, latest cars, how import works, "find me a car" form |
 | `src/app/cars/page.tsx` | catalog with filters in the URL (GET form) |
 | `src/app/cars/[slug]/page.tsx` | car page: gallery, share buttons, grouped specs, notes, final price (only `priceEur`), inquiry form |
-| `src/app/admin/**` | admin: import by link, edit car, photos, statuses, price formulas (`pricing/`), inquiries |
+| `src/app/admin/**` | admin: import by link, edit car, photos, statuses, price formulas (`pricing/`), post templates (`templates/`), inquiries |
 | `src/components/**` | shared components; `admin/` for admin-only ones |

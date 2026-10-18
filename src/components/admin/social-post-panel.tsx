@@ -1,68 +1,53 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { useAdmin } from "./admin-context";
-import { socialPostText, viberPostText } from "@/lib/description";
-import { formatDate, listingId as sourceListingId } from "@/lib/format";
-import type { AdminCar, Origin, SocialNetwork, SocialPost, SocialStatus, ViberConnectResponse } from "@/lib/types";
+import { CarImage } from "@/components/car-image";
+import { formatDate } from "@/lib/format";
+import { defaultTemplates, networkLabels, renderTemplate, templateValues } from "@/lib/post-template";
+import type { AdminCar, PostTemplate, SocialNetwork, SocialPost, SocialStatus, ViberConnectResponse } from "@/lib/types";
 
-const originOf = (car: AdminCar): Origin | null =>
-  car.source === "AUTOHOME" ? "CN" : car.source === "AUTOWINI" ? "KR" : null;
-
-const networkLabels: Record<SocialNetwork, string> = { FACEBOOK: "Facebook", INSTAGRAM: "Instagram", VIBER: "Viber" };
-const INSTAGRAM_CAPTION_MAX = 2200;
-const VIBER_TEXT_MAX = 7000;
+/** Text limits of the networks (Facebook allows far more; 5000 keeps posts readable). */
+const TEXT_MAX: Record<SocialNetwork, number> = { FACEBOOK: 5000, INSTAGRAM: 2200, VIBER: 7000 };
 const MAX_PHOTOS = 10;
-const VIBER_PHOTO_CHOICES = [3, 5, 8, 10, 15, 20];
+const networks: SocialNetwork[] = ["FACEBOOK", "INSTAGRAM", "VIBER"];
 
-/** The generated post text for the car (editable), publishing to Facebook/Instagram/Viber, sharing and the list of posts. */
+type Message = { ok: boolean; text: string };
+
+/** Publishing the car to Facebook / Instagram / Viber (through a confirmation step), sharing and earlier posts. */
 export function SocialPostPanel({ car }: { car: AdminCar }) {
   const { adminFetch } = useAdmin();
-  const listingId = sourceListingId(car.source, car.sourceRef);
-  const generated = socialPostText(car.specs, originOf(car), car.price?.totalEur ?? null, listingId);
-  const generatedViber = viberPostText(car.specs, originOf(car), car.price?.totalEur ?? null, listingId);
-
-  const [text, setText] = useState(generated);
-  const [viberText, setViberText] = useState(generatedViber);
-  const [viberPhotos, setViberPhotos] = useState(Math.min(10, Math.max(1, car.images.length)));
   const [status, setStatus] = useState<SocialStatus | null>(null);
+  const [templates, setTemplates] = useState<Record<SocialNetwork, string>>(defaultTemplates);
   const [posts, setPosts] = useState<SocialPost[]>([]);
+  const [dialog, setDialog] = useState<SocialNetwork | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
-  const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null);
+  const [message, setMessage] = useState<Message | null>(null);
 
   useEffect(() => {
     adminFetch<SocialStatus>("/api/admin/social/status").then(setStatus).catch(() => setStatus(null));
     adminFetch<SocialPost[]>(`/api/admin/cars/${car.id}/social-posts`).then(setPosts).catch(() => setPosts([]));
+    adminFetch<PostTemplate[]>("/api/admin/post-templates")
+      .then((list) => {
+        const t = { ...defaultTemplates };
+        for (const saved of list) t[saved.network] = saved.body;
+        setTemplates(t);
+      })
+      .catch(() => undefined);
   }, [adminFetch, car.id]);
 
-  async function publish(network: SocialNetwork) {
-    const isViber = network === "VIBER";
-    const earlier = posts.find((p) => p.network === network);
-    if (earlier && !window.confirm(`Колата вече е публикувана в ${networkLabels[network]} на ${formatDate(earlier.createdAt)}. Публикувай отново?`)) {
-      return;
-    }
-    setBusy(network);
-    setMessage(null);
-    try {
-      const post = await adminFetch<SocialPost>(`/api/admin/cars/${car.id}/social-posts`, {
-        method: "POST",
-        body: JSON.stringify(
-          isViber ? { network, text: viberText, photoCount: viberPhotos } : { network, text },
-        ),
-      });
-      setPosts((list) => [post, ...list]);
-      setMessage({ ok: true, text: `Публикувано в ${networkLabels[network]} ✓ (${post.photos} снимки)` });
-    } catch (e) {
-      setMessage({ ok: false, text: e instanceof Error ? e.message : "Грешка" });
-    } finally {
-      setBusy(null);
-    }
-  }
+  const origin = typeof window !== "undefined" ? window.location.origin : undefined;
+  const textFor = (network: SocialNetwork) => renderTemplate(templates[network], templateValues(car, origin));
+  const noPhotos = car.images.length === 0;
+  const configured = (n: SocialNetwork) =>
+    n === "FACEBOOK" ? status?.facebook : n === "INSTAGRAM" ? status?.instagram : status?.viber;
 
   async function copy() {
     try {
-      await navigator.clipboard.writeText(text);
-      setMessage({ ok: true, text: "Текстът е копиран ✓" });
+      await navigator.clipboard.writeText(textFor("FACEBOOK"));
+      setMessage({ ok: true, text: "Текстът (Facebook шаблон) е копиран ✓" });
     } catch {
       setMessage({ ok: false, text: "Неуспешно копиране" });
     }
@@ -73,6 +58,7 @@ export function SocialPostPanel({ car }: { car: AdminCar }) {
     setBusy("share");
     setMessage(null);
     try {
+      const text = textFor("FACEBOOK");
       const files = await photoFiles(car);
       const data: ShareData = { text, files };
       if (!navigator.canShare?.(data)) {
@@ -106,54 +92,30 @@ export function SocialPostPanel({ car }: { car: AdminCar }) {
     }
   }
 
-  const tooLongForInstagram = text.length > INSTAGRAM_CAPTION_MAX;
-  const tooLongForViber = viberText.length > VIBER_TEXT_MAX;
-  const noPhotos = car.images.length === 0;
-
   return (
     <section className="rounded-2xl border border-line bg-card p-4">
-      <div className="mb-2 flex items-center justify-between gap-2">
+      <div className="mb-3 flex items-center justify-between gap-2">
         <h2 className="font-bold">Социални мрежи</h2>
-        <div className="flex gap-1.5">
-          {text !== generated && (
-            <button type="button" onClick={() => setText(generated)} className="btn-ghost px-3! py-1.5! text-xs!">
-              Възстанови
-            </button>
-          )}
-          <button type="button" onClick={copy} className="btn-ghost px-3! py-1.5! text-xs!">
-            Копирай текста
-          </button>
-        </div>
+        <Link href="/admin/templates" className="text-xs font-semibold text-accent hover:underline">
+          Шаблони
+        </Link>
       </div>
-      <textarea
-        value={text}
-        onChange={(e) => setText(e.target.value)}
-        rows={12}
-        className="field font-mono text-xs! leading-relaxed"
-        aria-label="Текст за публикация"
-      />
-      <p className={`mt-1 text-xs ${tooLongForInstagram ? "font-semibold text-warn" : "text-muted"}`}>
-        {text.length} знака{tooLongForInstagram ? ` — над лимита на Instagram (${INSTAGRAM_CAPTION_MAX})` : ""}.
-        Генерира се от данните след „Запиши“; можеш да го редактираш преди публикуване.
-      </p>
 
-      <div className="mt-3 grid grid-cols-2 gap-2">
-        <button
-          type="button"
-          className="btn-primary px-3! py-2! text-sm!"
-          disabled={!status?.facebook || noPhotos || busy !== null}
-          onClick={() => publish("FACEBOOK")}
-        >
-          {busy === "FACEBOOK" ? "Публикуване…" : "Публикувай във Facebook"}
-        </button>
-        <button
-          type="button"
-          className="btn-primary px-3! py-2! text-sm!"
-          disabled={!status?.instagram || noPhotos || tooLongForInstagram || busy !== null}
-          onClick={() => publish("INSTAGRAM")}
-        >
-          {busy === "INSTAGRAM" ? "Публикуване…" : "Публикувай в Instagram"}
-        </button>
+      <div className="grid gap-2">
+        {networks.map((n) => (
+          <button
+            key={n}
+            type="button"
+            className="btn-primary px-3! py-2! text-sm!"
+            disabled={!configured(n) || noPhotos || busy !== null}
+            onClick={() => {
+              setMessage(null);
+              setDialog(n);
+            }}
+          >
+            Публикувай в{n === "FACEBOOK" || n === "VIBER" ? "ъв" : ""} {networkLabels[n]}…
+          </button>
+        ))}
       </div>
       {status && (!status.facebook || !status.instagram || !status.viber) && (
         <p className="mt-2 text-xs text-muted">
@@ -163,59 +125,14 @@ export function SocialPostPanel({ car }: { car: AdminCar }) {
           Виж README на бекенда.
         </p>
       )}
-      <p className="mt-1 text-xs text-muted">Публикуват се до {MAX_PHOTOS} снимки в реда от галерията.</p>
-
-      <div className="mt-4 border-t border-line pt-4">
-        <div className="mb-2 flex items-center justify-between gap-2">
-          <h3 className="text-sm font-bold">Viber канал</h3>
-          {viberText !== generatedViber && (
-            <button type="button" onClick={() => setViberText(generatedViber)} className="btn-ghost px-3! py-1.5! text-xs!">
-              Възстанови
-            </button>
-          )}
-        </div>
-        <textarea
-          value={viberText}
-          onChange={(e) => setViberText(e.target.value)}
-          rows={8}
-          className="field font-mono text-xs! leading-relaxed"
-          aria-label="Текст за Viber"
-        />
-        <div className="mt-2 flex flex-wrap items-center gap-2">
-          <label className="text-xs text-muted" htmlFor="viber-photos">
-            Снимки (първите от галерията):
-          </label>
-          <select
-            id="viber-photos"
-            value={viberPhotos}
-            onChange={(e) => setViberPhotos(Number(e.target.value))}
-            className="field w-auto! py-1! text-xs!"
-          >
-            {Array.from(new Set([...VIBER_PHOTO_CHOICES, viberPhotos]))
-              .sort((a, b) => a - b)
-              .map((n) => (
-                <option key={n} value={n}>
-                  {n}
-                  {n > car.images.length ? ` (има ${car.images.length})` : ""}
-                </option>
-              ))}
-          </select>
-          <button
-            type="button"
-            className="btn-primary ml-auto px-3! py-2! text-sm!"
-            disabled={!status?.viber || noPhotos || tooLongForViber || busy !== null}
-            onClick={() => publish("VIBER")}
-          >
-            {busy === "VIBER" ? "Публикуване във Viber…" : "Публикувай във Viber"}
-          </button>
-        </div>
-        <p className="mt-1 text-xs text-muted">
-          Всяка снимка е отделно съобщение в канала, а след тях текстът. Редът е като в галерията (корицата е първа).
-        </p>
-        {status?.viber && <ViberConnect onMessage={setMessage} />}
-      </div>
+      <p className="mt-2 text-xs text-muted">
+        Преди публикуване се показват текстът от шаблона (може да се промени) и снимките за избор.
+      </p>
 
       <div className="mt-3 flex flex-wrap gap-2">
+        <button type="button" onClick={copy} className="btn-ghost px-3! py-1.5! text-xs!">
+          Копирай текста
+        </button>
         <button type="button" className="btn-ghost px-3! py-1.5! text-xs!" disabled={noPhotos || busy !== null} onClick={shareWithPhotos}>
           {busy === "share" ? "Подготовка…" : "Сподели със снимките"}
         </button>
@@ -223,6 +140,8 @@ export function SocialPostPanel({ car }: { car: AdminCar }) {
           {busy === "download" ? "Сваляне…" : "Свали снимките"}
         </button>
       </div>
+
+      {status?.viber && <ViberConnect onMessage={setMessage} />}
 
       {message && (
         <p className={`mt-3 text-sm font-semibold break-words ${message.ok ? "text-ok" : "text-warn"}`}>{message.text}</p>
@@ -244,7 +163,199 @@ export function SocialPostPanel({ car }: { car: AdminCar }) {
           ))}
         </ul>
       )}
+
+      {dialog && (
+        <PublishDialog
+          car={car}
+          network={dialog}
+          initialText={textFor(dialog)}
+          earlier={posts.find((p) => p.network === dialog) ?? null}
+          onClose={() => setDialog(null)}
+          onPublished={(post) => {
+            setPosts((list) => [post, ...list]);
+            setDialog(null);
+            setMessage({ ok: true, text: `Публикувано в ${networkLabels[post.network]} ✓ (${post.photos} снимки)` });
+          }}
+        />
+      )}
     </section>
+  );
+}
+
+/** The confirmation step: the text from the template (editable) and the photos to send (1 to 10, gallery order). */
+function PublishDialog({
+  car,
+  network,
+  initialText,
+  earlier,
+  onClose,
+  onPublished,
+}: {
+  car: AdminCar;
+  network: SocialNetwork;
+  initialText: string;
+  earlier: SocialPost | null;
+  onClose: () => void;
+  onPublished: (post: SocialPost) => void;
+}) {
+  const { adminFetch } = useAdmin();
+  const [text, setText] = useState(initialText);
+  const [selected, setSelected] = useState<Set<number>>(
+    () => new Set(car.images.slice(0, MAX_PHOTOS).map((i) => i.id)),
+  );
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && !busy && onClose();
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [busy, onClose]);
+
+  const ordered = car.images.filter((i) => selected.has(i.id));
+  const max = TEXT_MAX[network];
+  const tooLong = text.length > max;
+  const full = selected.size >= MAX_PHOTOS;
+
+  function toggle(id: number) {
+    setSelected((s) => {
+      const next = new Set(s);
+      if (next.has(id)) next.delete(id);
+      else if (next.size < MAX_PHOTOS) next.add(id);
+      return next;
+    });
+  }
+
+  async function publish() {
+    setBusy(true);
+    setError(null);
+    try {
+      const post = await adminFetch<SocialPost>(`/api/admin/cars/${car.id}/social-posts`, {
+        method: "POST",
+        body: JSON.stringify({ network, text, imageIds: ordered.map((i) => i.id) }),
+      });
+      onPublished(post);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Грешка");
+      setBusy(false);
+    }
+  }
+
+  // rendered into <body>, so no sticky or blurred parent of the editor can paint over it
+  return createPortal(
+    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-ink/50 p-4 sm:p-8" role="dialog" aria-modal="true">
+      <div className="w-full max-w-4xl rounded-2xl bg-card p-5 shadow-xl">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <h2 className="text-lg font-extrabold">Публикуване в {networkLabels[network]}</h2>
+            <p className="text-sm text-muted">{car.specs.title}</p>
+          </div>
+          <button type="button" onClick={onClose} disabled={busy} className="btn-ghost px-3! py-1.5! text-xs!">
+            Затвори
+          </button>
+        </div>
+
+        {earlier && (
+          <p className="mt-3 rounded-xl bg-warn/10 p-3 text-sm text-warn">
+            Колата вече е публикувана в {networkLabels[network]} на {formatDate(earlier.createdAt)}.
+          </p>
+        )}
+
+        <div className="mt-4 grid gap-5 lg:grid-cols-[1fr_1.1fr]">
+          <div>
+            <div className="mb-1 flex items-center justify-between gap-2">
+              <label className="text-sm font-bold" htmlFor="publish-text">
+                Текст
+              </label>
+              {text !== initialText && (
+                <button type="button" onClick={() => setText(initialText)} className="btn-ghost px-2! py-0.5! text-xs!">
+                  От шаблона
+                </button>
+              )}
+            </div>
+            <textarea
+              id="publish-text"
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+              rows={18}
+              className="field font-mono text-xs! leading-relaxed"
+            />
+            <p className={`mt-1 text-xs ${tooLong ? "font-semibold text-warn" : "text-muted"}`}>
+              {text.length} / {max} знака{tooLong ? " — твърде дълъг" : ""}
+            </p>
+          </div>
+
+          <div>
+            <div className="mb-1 flex items-center justify-between gap-2">
+              <span className="text-sm font-bold">
+                Снимки: {selected.size} от {Math.min(MAX_PHOTOS, car.images.length)}
+                <span className="font-normal text-muted"> (макс. {MAX_PHOTOS})</span>
+              </span>
+              <span className="flex gap-1">
+                <button
+                  type="button"
+                  className="btn-ghost px-2! py-0.5! text-xs!"
+                  onClick={() => setSelected(new Set(car.images.slice(0, MAX_PHOTOS).map((i) => i.id)))}
+                >
+                  Първите {Math.min(MAX_PHOTOS, car.images.length)}
+                </button>
+                <button type="button" className="btn-ghost px-2! py-0.5! text-xs!" onClick={() => setSelected(new Set())}>
+                  Нито една
+                </button>
+              </span>
+            </div>
+            <ul className="grid max-h-[26rem] grid-cols-3 gap-2 overflow-y-auto pr-1 sm:grid-cols-4">
+              {car.images.map((img) => {
+                const n = ordered.findIndex((i) => i.id === img.id);
+                const on = n >= 0;
+                const disabled = !on && full;
+                return (
+                  <li key={img.id}>
+                    <button
+                      type="button"
+                      onClick={() => toggle(img.id)}
+                      disabled={disabled}
+                      aria-pressed={on}
+                      className={`relative block aspect-[4/3] w-full overflow-hidden rounded-lg ring-2 ${
+                        on ? "ring-accent" : "ring-transparent"
+                      } ${disabled ? "opacity-40" : "hover:ring-ink/40"}`}
+                    >
+                      <CarImage src={img.url} alt="" className={`h-full w-full object-cover ${on ? "" : "opacity-60"}`} />
+                      {on && (
+                        <span className="absolute top-1 left-1 grid h-6 w-6 place-items-center rounded-full bg-accent text-xs font-bold text-white">
+                          {n + 1}
+                        </span>
+                      )}
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+            <p className="mt-1 text-xs text-muted">
+              Клик избира или маха снимка. Изпращат се в реда от галерията
+              {network === "VIBER" ? "; във Viber всяка снимка е отделно съобщение, а след тях текстът" : ""}.
+            </p>
+          </div>
+        </div>
+
+        {error && <p className="mt-3 text-sm font-semibold break-words text-warn">{error}</p>}
+
+        <div className="mt-5 flex flex-wrap justify-end gap-2 border-t border-line pt-4">
+          <button type="button" onClick={onClose} disabled={busy} className="btn-ghost">
+            Откажи
+          </button>
+          <button
+            type="button"
+            onClick={publish}
+            disabled={busy || selected.size < 1 || tooLong || !text.trim()}
+            className="btn-primary"
+          >
+            {busy ? "Публикуване…" : `Публикувай (${selected.size} ${selected.size === 1 ? "снимка" : "снимки"})`}
+          </button>
+        </div>
+      </div>
+    </div>,
+    document.body,
   );
 }
 
@@ -252,7 +363,7 @@ export function SocialPostPanel({ car }: { car: AdminCar }) {
  * Viber accepts channel posts only after a callback URL is registered, and checks it right away: the site must be
  * reachable over HTTPS (locally through a temporary tunnel such as cloudflared). Needed once per channel.
  */
-function ViberConnect({ onMessage }: { onMessage: (m: { ok: boolean; text: string }) => void }) {
+function ViberConnect({ onMessage }: { onMessage: (m: Message) => void }) {
   const { adminFetch } = useAdmin();
   const [siteUrl, setSiteUrl] = useState(() =>
     typeof window !== "undefined" && window.location.protocol === "https:" ? window.location.origin : "",
@@ -301,7 +412,7 @@ function ViberConnect({ onMessage }: { onMessage: (m: { ok: boolean; text: strin
   );
 }
 
-/** The car's photos as files, in gallery order (the same ones the publish buttons send). */
+/** The car's first photos as files, in gallery order (for sharing and downloading). */
 async function photoFiles(car: AdminCar): Promise<File[]> {
   const files: File[] = [];
   for (const [i, img] of car.images.slice(0, MAX_PHOTOS).entries()) {

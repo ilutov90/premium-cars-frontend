@@ -217,6 +217,13 @@ export interface SocialStatus {
   viber: boolean;
 }
 
+/** A post text template saved in the admin panel (backend PostTemplate). */
+export interface PostTemplate {
+  network: SocialNetwork;
+  body: string;
+  updatedAt: string;
+}
+
 export interface ViberConnectResponse {
   callbackUrl: string;
 }
