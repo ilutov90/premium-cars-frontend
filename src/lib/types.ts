@@ -42,6 +42,21 @@ export interface CarSummary {
   coverImageUrl: string | null;
 }
 
+/** A row of the admin car list (backend AdminCarSummary): where the car was imported from, too. */
+export interface AdminCarSummary {
+  id: number;
+  slug: string;
+  title: string;
+  year: number | null;
+  mileageKm: number | null;
+  status: CarStatus;
+  totalPriceEur: number | null;
+  coverImageUrl: string | null;
+  source: CarSource;
+  sourceRef: string | null;
+  sourceUrl: string | null;
+}
+
 /** Public description of a car (backend CarSpecs). */
 export interface CarSpecs {
   title: string;
@@ -172,9 +187,9 @@ export interface AdminInquiry {
   createdAt: string;
 }
 
-export type SocialNetwork = "FACEBOOK" | "INSTAGRAM";
+export type SocialNetwork = "FACEBOOK" | "INSTAGRAM" | "VIBER";
 
-/** A car published to Facebook/Instagram from the admin panel (backend SocialPost). */
+/** A car published to Facebook/Instagram/Viber from the admin panel (backend SocialPost). */
 export interface SocialPost {
   id: number;
   carId: number;
@@ -189,4 +204,9 @@ export interface SocialPost {
 export interface SocialStatus {
   facebook: boolean;
   instagram: boolean;
+  viber: boolean;
+}
+
+export interface ViberConnectResponse {
+  callbackUrl: string;
 }

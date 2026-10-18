@@ -1,4 +1,4 @@
-import type { CarStatus, Drivetrain, FuelType, InquiryStatus, Origin, PriceProfile, Transmission } from "./types";
+import type { CarSource, CarStatus, Drivetrain, FuelType, InquiryStatus, Origin, PriceProfile, Transmission } from "./types";
 
 // Bulgarian labels for everything the API returns as codes or English source text.
 
@@ -31,6 +31,20 @@ export const originLabels: Record<Origin, string> = {
   KR: "Южна Корея",
   CN: "Китай",
 };
+
+/** Where a car was imported from (admin only). */
+export const sourceLabels: Record<CarSource, string> = {
+  AUTOHOME: "autohome",
+  AUTOWINI: "autowini",
+  OTHER: "друг сайт",
+  MANUAL: "ръчно",
+};
+
+/** The source listing's id as the posting script writes it (autohome ids get an "AH" prefix). */
+export function listingId(source: CarSource, sourceRef: string | null | undefined): string | null {
+  if (!sourceRef) return null;
+  return source === "AUTOHOME" ? `AH${sourceRef}` : sourceRef;
+}
 
 export const statusLabels: Record<CarStatus, string> = {
   DRAFT: "Чернова",
