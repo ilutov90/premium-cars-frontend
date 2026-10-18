@@ -3,20 +3,22 @@
 import { useEffect, useState } from "react";
 import { useAdmin } from "./admin-context";
 import { socialPostText } from "@/lib/description";
-import { formatDate } from "@/lib/format";
-import type { AdminCar, Origin, SocialNetwork, SocialPost, SocialStatus } from "@/lib/types";
+import { formatDate, listingId as sourceListingId } from "@/lib/format";
+import type { AdminCar, Origin, SocialNetwork, SocialPost, SocialStatus, ViberConnectResponse } from "@/lib/types";
 
 const originOf = (car: AdminCar): Origin | null =>
   car.source === "AUTOHOME" ? "CN" : car.source === "AUTOWINI" ? "KR" : null;
 
-const networkLabels: Record<SocialNetwork, string> = { FACEBOOK: "Facebook", INSTAGRAM: "Instagram" };
+const networkLabels: Record<SocialNetwork, string> = { FACEBOOK: "Facebook", INSTAGRAM: "Instagram", VIBER: "Viber" };
 const INSTAGRAM_CAPTION_MAX = 2200;
+const VIBER_TEXT_MAX = 7000;
 const MAX_PHOTOS = 10;
+const VIBER_MAX_PHOTOS = 6;
 
-/** The generated FB/IG text for the car (editable), publishing to the page, sharing and the list of posts. */
+/** The generated post text for the car (editable), publishing to Facebook/Instagram/Viber, sharing and the list of posts. */
 export function SocialPostPanel({ car }: { car: AdminCar }) {
   const { adminFetch } = useAdmin();
-  const listingId = car.sourceRef ? (car.source === "AUTOHOME" ? `AH${car.sourceRef}` : car.sourceRef) : null;
+  const listingId = sourceListingId(car.source, car.sourceRef);
   const generated = socialPostText(car.specs, originOf(car), car.price?.totalEur ?? null, listingId);
 
   const [text, setText] = useState(generated);
@@ -99,12 +101,13 @@ export function SocialPostPanel({ car }: { car: AdminCar }) {
   }
 
   const tooLongForInstagram = text.length > INSTAGRAM_CAPTION_MAX;
+  const tooLongForViber = text.length > VIBER_TEXT_MAX;
   const noPhotos = car.images.length === 0;
 
   return (
     <section className="rounded-2xl border border-line bg-card p-4">
       <div className="mb-2 flex items-center justify-between gap-2">
-        <h2 className="font-bold">Facebook / Instagram</h2>
+        <h2 className="font-bold">Социални мрежи</h2>
         <div className="flex gap-1.5">
           {text !== generated && (
             <button type="button" onClick={() => setText(generated)} className="btn-ghost px-3! py-1.5! text-xs!">
@@ -145,15 +148,28 @@ export function SocialPostPanel({ car }: { car: AdminCar }) {
         >
           {busy === "INSTAGRAM" ? "Публикуване…" : "Публикувай в Instagram"}
         </button>
+        <button
+          type="button"
+          className="btn-primary col-span-2 px-3! py-2! text-sm!"
+          disabled={!status?.viber || noPhotos || tooLongForViber || busy !== null}
+          onClick={() => publish("VIBER")}
+        >
+          {busy === "VIBER" ? "Публикуване във Viber…" : "Публикувай във Viber"}
+        </button>
       </div>
-      {status && (!status.facebook || !status.instagram) && (
+      {status && (!status.facebook || !status.instagram || !status.viber) && (
         <p className="mt-2 text-xs text-muted">
           {!status.facebook && "Facebook не е настроен (FB_PAGE_ID, FB_ACCESS_TOKEN). "}
           {!status.instagram && "Instagram не е настроен (IG_USER_ID, FB_ACCESS_TOKEN, IMGBB_API_KEY). "}
+          {!status.viber && "Viber не е настроен (VIBER_CHANNEL_TOKEN, IMGBB_API_KEY). "}
           Виж README на бекенда.
         </p>
       )}
-      <p className="mt-1 text-xs text-muted">Публикуват се до {MAX_PHOTOS} снимки в реда от галерията.</p>
+      <p className="mt-1 text-xs text-muted">
+        Публикуват се до {MAX_PHOTOS} снимки в реда от галерията (във Viber до {VIBER_MAX_PHOTOS}, всяка като
+        отделно съобщение, а след тях текстът).
+      </p>
+      {status?.viber && <ViberConnect onMessage={setMessage} />}
 
       <div className="mt-3 flex flex-wrap gap-2">
         <button type="button" className="btn-ghost px-3! py-1.5! text-xs!" disabled={noPhotos || busy !== null} onClick={shareWithPhotos}>
@@ -165,7 +181,7 @@ export function SocialPostPanel({ car }: { car: AdminCar }) {
       </div>
 
       {message && (
-        <p className={`mt-3 text-sm font-semibold ${message.ok ? "text-ok" : "text-warn"}`}>{message.text}</p>
+        <p className={`mt-3 text-sm font-semibold break-words ${message.ok ? "text-ok" : "text-warn"}`}>{message.text}</p>
       )}
 
       {posts.length > 0 && (
@@ -185,6 +201,59 @@ export function SocialPostPanel({ car }: { car: AdminCar }) {
         </ul>
       )}
     </section>
+  );
+}
+
+/**
+ * Viber accepts channel posts only after a callback URL is registered, and checks it right away: the site must be
+ * reachable over HTTPS (locally through a temporary tunnel such as cloudflared). Needed once per channel.
+ */
+function ViberConnect({ onMessage }: { onMessage: (m: { ok: boolean; text: string }) => void }) {
+  const { adminFetch } = useAdmin();
+  const [siteUrl, setSiteUrl] = useState(() =>
+    typeof window !== "undefined" && window.location.protocol === "https:" ? window.location.origin : "",
+  );
+  const [busy, setBusy] = useState(false);
+
+  async function connect(e: React.FormEvent) {
+    e.preventDefault();
+    setBusy(true);
+    try {
+      const r = await adminFetch<ViberConnectResponse>("/api/admin/social/viber/connect", {
+        method: "POST",
+        body: JSON.stringify({ siteUrl }),
+      });
+      onMessage({ ok: true, text: `Viber каналът е свързан ✓ (${r.callbackUrl})` });
+    } catch (err) {
+      onMessage({ ok: false, text: err instanceof Error ? err.message : "Грешка" });
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <details className="mt-3 rounded-xl border border-line p-3 text-xs">
+      <summary className="cursor-pointer font-semibold">Свържи Viber канала (еднократно)</summary>
+      <p className="mt-2 text-muted">
+        Viber приема публикации само след като провери публичен https адрес на сайта. Локално: пусни{" "}
+        <code>cloudflared tunnel --url http://localhost:3000</code> и постави адреса, който показва
+        (https://….trycloudflare.com). Нужно е само веднъж.
+      </p>
+      <form onSubmit={connect} className="mt-2 flex gap-2">
+        <input
+          type="url"
+          required
+          value={siteUrl}
+          onChange={(e) => setSiteUrl(e.target.value)}
+          placeholder="https://….trycloudflare.com"
+          className="field flex-1 py-1.5! text-xs!"
+          aria-label="Публичен адрес на сайта"
+        />
+        <button type="submit" className="btn-ghost px-3! py-1.5! text-xs!" disabled={busy}>
+          {busy ? "Свързване…" : "Свържи"}
+        </button>
+      </form>
+    </details>
   );
 }
 

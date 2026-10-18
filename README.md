@@ -26,10 +26,10 @@ Before committing: `npm run lint` and `npm run build`.
 | `src/app/page.tsx` | home: hero, latest cars, how import works, "find me a car" form |
 | `src/app/cars/page.tsx` | catalog; filters live in the URL |
 | `src/app/cars/[slug]/page.tsx` | car page: gallery, share buttons, EV stats, all known specs in groups (empty ones hidden), notes, final price, inquiry form |
-| `src/app/admin/**` | admin: import by link (autohome, autowini, other sites), edit car, photos, statuses, inquiries |
+| `src/app/admin/**` | admin: import by link (autohome, autowini, other sites), car list with the source listing (link, id; search by either), edit car, photos, statuses, inquiries |
 | `src/app/admin/pricing/page.tsx` | price formula per site: costs, costs per 10 000 € above the threshold, profit |
 | `src/app/admin/account/page.tsx` | change the admin password |
-| `src/components/admin/social-post-panel.tsx` | Facebook/Instagram text (editable), publish buttons, earlier posts, share/download photos |
+| `src/components/admin/social-post-panel.tsx` | post text (editable), publish to Facebook / Instagram / Viber, connecting the Viber channel, earlier posts, share/download photos |
 | `src/components/share-buttons.tsx` | share buttons on the car page: Facebook, Viber, the phone's share sheet (Instagram …), copy link |
 | `src/lib/api.ts` | calls to the public API (server components) |
 | `src/lib/types.ts` | types mirroring the backend DTOs (`CarSpecs`, `PricingInputs`, `CarDetail`, `AdminCar` …) |

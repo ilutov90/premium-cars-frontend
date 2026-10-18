@@ -5,8 +5,8 @@ import { useEffect, useState } from "react";
 import { useAdmin } from "@/components/admin/admin-context";
 import { CarImage } from "@/components/car-image";
 import { StatusBadge } from "@/components/admin/status-badge";
-import { formatEur, formatKm } from "@/lib/format";
-import type { CarStatus, CarSummary, ImportResult, PageResponse } from "@/lib/types";
+import { formatEur, formatKm, listingId, sourceLabels } from "@/lib/format";
+import type { AdminCarSummary, CarStatus, ImportResult, PageResponse } from "@/lib/types";
 
 const tabs: [CarStatus | "", string][] = [
   ["", "Всички"],
@@ -21,7 +21,7 @@ export default function AdminCarsPage() {
   const { adminFetch } = useAdmin();
   const [status, setStatus] = useState<CarStatus | "">("DRAFT");
   const [q, setQ] = useState("");
-  const [cars, setCars] = useState<PageResponse<CarSummary> | null>(null);
+  const [cars, setCars] = useState<PageResponse<AdminCarSummary> | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const [reload, setReload] = useState(0);
@@ -31,7 +31,7 @@ export default function AdminCarsPage() {
     if (status) params.set("status", status);
     if (q.trim()) params.set("q", q.trim());
     let cancelled = false;
-    adminFetch<PageResponse<CarSummary>>(`/api/admin/cars?${params}`)
+    adminFetch<PageResponse<AdminCarSummary>>(`/api/admin/cars?${params}`)
       .then((page) => {
         if (cancelled) return;
         setCars(page);
@@ -58,7 +58,7 @@ export default function AdminCarsPage() {
           <input
             value={q}
             onChange={(e) => setQ(e.target.value)}
-            placeholder="Търсене по име…"
+            placeholder="Име, линк или номер на обява…"
             className="field max-w-xs py-2!"
           />
         </div>
@@ -82,18 +82,32 @@ export default function AdminCarsPage() {
         {cars && cars.items.length > 0 && (
           <ul className="divide-y divide-line overflow-hidden rounded-2xl border border-line bg-card">
             {cars.items.map((car) => (
-              <li key={car.id}>
-                <Link href={`/admin/cars/${car.id}`} className="flex items-center gap-4 p-3 hover:bg-paper">
+              <li key={car.id} className="flex items-center gap-2 pr-3 hover:bg-paper">
+                <Link href={`/admin/cars/${car.id}`} className="flex min-w-0 flex-1 items-center gap-4 p-3">
                   <CarImage src={car.coverImageUrl} alt={car.title} className="h-14 w-20 shrink-0 rounded-lg object-cover" />
                   <div className="min-w-0 flex-1">
                     <p className="truncate font-semibold">{car.title}</p>
-                    <p className="text-xs text-muted">
-                      #{car.id} · {car.year ?? "—"} · {formatKm(car.mileageKm)}
+                    <p className="truncate text-xs text-muted">
+                      #{car.id} · {car.year ?? "—"} · {formatKm(car.mileageKm)} · {sourceLabels[car.source]}
+                      {listingId(car.source, car.sourceRef) && ` ${listingId(car.source, car.sourceRef)}`}
                     </p>
                   </div>
                   <span className="hidden text-sm font-bold sm:block">{formatEur(car.totalPriceEur)}</span>
                   <StatusBadge status={car.status} />
                 </Link>
+                {car.sourceUrl ? (
+                  <a
+                    href={car.sourceUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    title={car.sourceUrl}
+                    className="shrink-0 rounded-full px-2 py-1 text-xs font-semibold text-muted ring-1 ring-line hover:text-ink hover:ring-ink"
+                  >
+                    оригинал ↗
+                  </a>
+                ) : (
+                  <span className="w-[74px] shrink-0" aria-hidden />
+                )}
               </li>
             ))}
           </ul>

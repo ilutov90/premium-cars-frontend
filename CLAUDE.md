@@ -35,7 +35,7 @@ Run `npm run lint` and `npm run build` before finishing a change.
 - API types in `src/lib/types.ts` mirror the backend DTOs (`CarDtos`, `InquiryDtos`). Change both together.
 - Labels for enums (fuel, transmission, statuses) live in `src/lib/format.ts`.
 - The car type is nested like the API: `car.specs.*` (title, make, EV fields …) and, for admin, `car.pricing.*`.
-- Customers never see the Facebook/Instagram text; it lives only in the admin car editor (`social-post-panel.tsx`),
+- Customers never see the Facebook/Instagram/Viber text; it lives only in the admin car editor (`social-post-panel.tsx`),
   which also publishes through the backend (`/api/admin/cars/{id}/social-posts`). The car page shows every known
   spec and hides empty ones.
 - Car descriptions and the Facebook/Instagram post text come from `src/lib/description.ts` (a port of

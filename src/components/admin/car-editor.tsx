@@ -11,6 +11,7 @@ import {
   formatEur,
   formatNumber,
   fuelLabels,
+  listingId,
   priceProfileLabels,
   statusLabels,
   transmissionLabels,
@@ -144,19 +145,15 @@ export function CarEditor({ params }: { params: Promise<{ id: string }> }) {
             <StatusBadge status={car.status} />
             <span>#{car.id}</span>
             <span>· {car.source}</span>
-            {car.sourceRef && <span>· {car.sourceRef}</span>}
+            {listingId(car.source, car.sourceRef) && <span>· {listingId(car.source, car.sourceRef)}</span>}
             {car.sourceLocation && <span>· {car.sourceLocation}</span>}
-            {car.sourceUrl && (
-              <a href={car.sourceUrl} target="_blank" rel="noreferrer" className="underline underline-offset-2">
-                оригинална обява ↗
-              </a>
-            )}
             {publicLink && (
               <Link href={publicLink} target="_blank" className="underline underline-offset-2">
                 виж в сайта ↗
               </Link>
             )}
           </div>
+          {car.sourceUrl && <SourceLink url={car.sourceUrl} />}
         </div>
         <div className="flex flex-wrap gap-1.5">
           {statusActions
@@ -441,6 +438,31 @@ function Choice<T extends string>({
           </option>
         ))}
       </select>
+    </div>
+  );
+}
+
+/** The listing the car was imported from: the full link (admin only) and a copy button. */
+function SourceLink({ url }: { url: string }) {
+  const [copied, setCopied] = useState(false);
+  return (
+    <div className="mt-2 flex max-w-xl items-center gap-2 text-xs">
+      <span className="shrink-0 font-semibold text-muted">Оригинална обява:</span>
+      <a href={url} target="_blank" rel="noreferrer" title={url} className="truncate underline underline-offset-2">
+        {url}
+      </a>
+      <button
+        type="button"
+        className="btn-ghost shrink-0 px-2! py-0.5! text-xs!"
+        onClick={() =>
+          navigator.clipboard.writeText(url).then(
+            () => setCopied(true),
+            () => setCopied(false),
+          )
+        }
+      >
+        {copied ? "Копиран ✓" : "Копирай"}
+      </button>
     </div>
   );
 }
