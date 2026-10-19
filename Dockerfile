@@ -18,7 +18,8 @@ ENV API_URL=$API_URL \
     NEXT_TELEMETRY_DISABLED=1
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
-RUN npm run build
+# the repo has no public/ folder yet; the runtime stage copies it
+RUN mkdir -p public && npm run build
 
 FROM node:22-alpine
 WORKDIR /app
