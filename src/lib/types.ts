@@ -132,7 +132,14 @@ export interface FilterOptions {
   origins: Origin[];
 }
 
-/** How the final price was built (admin only). */
+/** The exchange rates the prices use (backend EcbExchangeRateProvider.Rates): EUR per 1 unit of each currency. */
+export interface ExchangeRates {
+  /** "ECB" = the ECB daily reference rates of `date`; "CONFIG" = the configured fallback (ECB not reached yet) */
+  source: "ECB" | "CONFIG";
+  date: string | null;
+  eurPerUnit: Record<string, number>;
+}
+
 /** How the final price was built. The calculated parts are null when the price was set by hand without a source price. */
 export interface PriceBreakdown {
   profile: PriceProfile | null;

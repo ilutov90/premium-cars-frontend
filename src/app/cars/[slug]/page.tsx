@@ -3,6 +3,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { getCar } from "@/lib/api";
+import { carJsonLd, jsonLdScript } from "@/lib/seo";
+import { site } from "@/lib/site";
 import {
   bodyTypeLabel,
   colorLabel,
@@ -12,6 +14,7 @@ import {
   formatNumber,
   formatPower,
   formatRange,
+  formatEur,
   formatYearMonth,
   fuelLabels,
   hasTractionBattery,
@@ -27,14 +30,37 @@ import type { CarSpecs, Origin } from "@/lib/types";
 export async function generateMetadata({ params }: PageProps<"/cars/[slug]">): Promise<Metadata> {
   const { slug } = await params;
   const car = await getCar(slug).catch(() => null);
-  if (!car) return { title: "Колата не е намерена" };
+  if (!car) return { title: "Колата не е намерена", robots: { index: false } };
   const s = car.specs;
+  const title = s.year && !s.title.includes(String(s.year)) ? `${s.title}, ${s.year}` : s.title;
+  const facts = [
+    s.mileageKm != null ? formatKm(s.mileageKm) : null,
+    s.fuelType ? fuelLabels[s.fuelType] : null,
+    s.transmission ? transmissionLabels[s.transmission] : null,
+  ].filter(Boolean);
+  const description = [
+    car.priceEur != null ? `Крайна цена ${formatEur(car.priceEur)} с доставка до България.` : null,
+    facts.length ? `${facts.join(" · ")}.` : null,
+    `Внос от ${car.origin ? originLabels[car.origin] : "Азия"} с проверка, транспорт и документи.`,
+  ]
+    .filter(Boolean)
+    .join(" ");
+  const url = `/cars/${car.slug}`;
   return {
-    title: s.title,
-    description: `${s.title}${s.year ? `, ${s.year}` : ""} — внос от ${
-      car.origin ? originLabels[car.origin] : "Азия"
-    } с крайна цена в България.`,
-    openGraph: { images: car.imageUrls.slice(0, 1) },
+    title,
+    description,
+    alternates: { canonical: url },
+    // the first photos become the preview when the link is shared (absolute through metadataBase)
+    openGraph: {
+      type: "website",
+      locale: "bg_BG",
+      siteName: site.brandName,
+      url,
+      title,
+      description,
+      images: car.imageUrls.slice(0, 4).map((src) => ({ url: src, alt: s.title })),
+    },
+    twitter: { card: "summary_large_image" },
   };
 }
 
@@ -124,6 +150,7 @@ async function CarDetailView({ params }: { params: PageProps<"/cars/[slug]">["pa
 
   return (
     <div className="mt-4 grid gap-10 lg:grid-cols-[1fr_380px]">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdScript(carJsonLd(car)) }} />
       <div className="min-w-0">
         <CarGallery images={car.imageUrls} title={s.title} />
 
