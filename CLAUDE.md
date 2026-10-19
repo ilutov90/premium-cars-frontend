@@ -50,6 +50,8 @@ Run `npm run lint` and `npm run build` before finishing a change.
   (`bg-card`, `text-muted`, `bg-accent`, ...) instead of raw colours. Shared utilities: `field`, `label`,
   `btn-primary`, `btn-accent`, `btn-ghost`.
 - No new dependencies without a clear need.
+- `Dockerfile` is the production image (CI pushes it to GHCR, built with `API_URL=http://backend:8080`); local
+  development never needs it.
 
 ## Layout
 
