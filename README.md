@@ -65,6 +65,14 @@ the backend database; the breakdown is shown only in the admin car editor.
 | `NEXT_PUBLIC_CONTACT_PHONE` | optional, default `0878131990` |
 | `NEXT_PUBLIC_VIBER_LINK` | optional, the Viber channel link |
 
+## Docker image (production)
+
+`Dockerfile` builds the production image: Next.js standalone server on Node 22, non-root, port 3000. The `/api` and
+`/media` rewrites are fixed at build time, so the image is built with `API_URL=http://backend:8080` (the backend in
+premium-cars-infra's `docker-compose.prod.yml`) and `SITE_URL=https://premiumcarsimport.bg`. CI builds it on every
+pull request and pushes `ghcr.io/ilutov90/premium-cars-frontend:latest` and `:<commit>` on main. Standalone output
+is on only when `NEXT_OUTPUT_STANDALONE=1` (set in the Dockerfile), so `npm run dev` / `npm run build` are unchanged.
+
 ## How the browser reaches the backend
 
 The browser talks only to this Next.js server: `/api/*` and `/media/*` are forwarded to the backend
