@@ -7,6 +7,18 @@ export const site = {
   office: "София",
 };
 
+/** The legal entity behind the site (footer, "За нас", privacy policy). */
+export const company = {
+  name: "Смарт Дигитал 2020 ЕООД",
+  eik: "206792910",
+  address: "гр. София, жк. Левски В, ул. „Станислав Доспевски“ 93",
+  country: "България",
+  email: "premiumcarsdubaibg@gmail.com",
+};
+
+/** Date of the current privacy policy text (change it with the text). */
+export const privacyPolicyDate = "19.10.2026";
+
 export interface Contact {
   phone: string;
   viberLink: string;

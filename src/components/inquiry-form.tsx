@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import Link from "next/link";
+import { useId, useState } from "react";
 import { PUBLIC_API_URL } from "@/lib/config";
 
 type State = { kind: "idle" } | { kind: "sending" } | { kind: "sent" } | { kind: "error"; message: string };
@@ -8,6 +9,8 @@ type State = { kind: "idle" } | { kind: "sending" } | { kind: "sent" } | { kind:
 /** Inquiry about a specific car (carId) or a general "find me a car" request. */
 export function InquiryForm({ carId, carTitle }: { carId?: number; carTitle?: string }) {
   const [state, setState] = useState<State>({ kind: "idle" });
+  // two forms can be on one page (home page), so the ids must differ
+  const id = useId();
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -24,6 +27,7 @@ export function InquiryForm({ carId, carTitle }: { carId?: number; carTitle?: st
           email: form.get("email") || null,
           message: form.get("message"),
           website: form.get("website"), // honeypot
+          privacyAccepted: form.get("privacy") === "on",
         }),
       });
       if (res.status === 429) {
@@ -51,31 +55,31 @@ export function InquiryForm({ carId, carTitle }: { carId?: number; carTitle?: st
   return (
     <form onSubmit={onSubmit} className="space-y-3">
       <div>
-        <label className="label" htmlFor="inq-name">
+        <label className="label" htmlFor={`${id}-name`}>
           Име
         </label>
-        <input id="inq-name" name="name" required maxLength={100} className="field" autoComplete="name" />
+        <input id={`${id}-name`} name="name" required maxLength={100} className="field" autoComplete="name" />
       </div>
       <div className="grid gap-3 sm:grid-cols-2">
         <div>
-          <label className="label" htmlFor="inq-phone">
+          <label className="label" htmlFor={`${id}-phone`}>
             Телефон
           </label>
-          <input id="inq-phone" name="phone" type="tel" maxLength={40} className="field" autoComplete="tel" />
+          <input id={`${id}-phone`} name="phone" type="tel" maxLength={40} className="field" autoComplete="tel" />
         </div>
         <div>
-          <label className="label" htmlFor="inq-email">
+          <label className="label" htmlFor={`${id}-email`}>
             Имейл
           </label>
-          <input id="inq-email" name="email" type="email" maxLength={200} className="field" autoComplete="email" />
+          <input id={`${id}-email`} name="email" type="email" maxLength={200} className="field" autoComplete="email" />
         </div>
       </div>
       <div>
-        <label className="label" htmlFor="inq-message">
+        <label className="label" htmlFor={`${id}-message`}>
           Съобщение
         </label>
         <textarea
-          id="inq-message"
+          id={`${id}-message`}
           name="message"
           rows={4}
           maxLength={4000}
@@ -84,6 +88,16 @@ export function InquiryForm({ carId, carTitle }: { carId?: number; carTitle?: st
           placeholder={carTitle ? undefined : "Марка, модел, година, бюджет…"}
         />
       </div>
+      <label className="flex items-start gap-2.5 text-sm text-muted">
+        <input name="privacy" type="checkbox" required className="mt-0.5 h-4 w-4 shrink-0 accent-accent" />
+        <span>
+          Запознах се с{" "}
+          <Link href="/privacy" target="_blank" className="font-semibold text-ink underline underline-offset-2">
+            Политиката за поверителност
+          </Link>{" "}
+          и съм съгласен данните ми да се използват, за да ми отговорите.
+        </span>
+      </label>
       {/* Honeypot: hidden from people, bots fill it in */}
       <input name="website" tabIndex={-1} autoComplete="off" className="hidden" aria-hidden />
       {state.kind === "error" && <p className="text-sm font-medium text-accent-dark">{state.message}</p>}

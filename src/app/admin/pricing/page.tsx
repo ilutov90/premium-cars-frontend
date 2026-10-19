@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useAdmin } from "@/components/admin/admin-context";
 import { formatDate, formatEur, priceProfileLabels } from "@/lib/format";
-import type { PricingProfile } from "@/lib/types";
+import type { ExchangeRates, PricingProfile } from "@/lib/types";
 
 /** Same formula as the backend PriceCalculator; used only for the live example. */
 function finalPrice(carEur: number, p: Omit<PricingProfile, "id" | "updatedAt">): number {
@@ -33,6 +33,7 @@ export default function AdminPricingPage() {
       </p>
       {error && <p className="mt-4 text-sm font-semibold text-warn">{error}</p>}
       {!profiles && !error && <p className="mt-6 text-sm text-muted">Зареждане…</p>}
+      <RatesCard />
       <div className="mt-6 grid gap-6 lg:grid-cols-2">
         {profiles?.map((p) => (
           <ProfileForm
@@ -45,6 +46,49 @@ export default function AdminPricingPage() {
     </div>
   );
 }
+
+/** The exchange rates in use: the ECB daily rates (new ones reprice every car) or the configured fallback. */
+function RatesCard() {
+  const { adminFetch } = useAdmin();
+  const [rates, setRates] = useState<ExchangeRates | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    adminFetch<ExchangeRates>("/api/admin/pricing-profiles/exchange-rates")
+      .then(setRates)
+      .catch((e: Error) => setError(e.message));
+  }, [adminFetch]);
+
+  if (error) return <p className="mt-4 text-sm font-semibold text-warn">Валутни курсове: {error}</p>;
+  if (!rates) return null;
+  const entries = Object.entries(rates.eurPerUnit).sort(([a], [b]) => a.localeCompare(b));
+  return (
+    <div className="mt-6 rounded-2xl border border-line bg-card p-5">
+      <div className="flex flex-wrap items-baseline justify-between gap-2">
+        <h2 className="font-extrabold">Валутни курсове</h2>
+        <p className={`text-xs font-semibold ${rates.source === "ECB" ? "text-ok" : "text-warn"}`}>
+          {rates.source === "ECB"
+            ? `ЕЦБ, курс от ${rates.date ? new Date(rates.date).toLocaleDateString("bg-BG", { timeZone: "UTC" }) : "—"}`
+            : "Резервни курсове от настройките (ЕЦБ още не е отговорила)"}
+        </p>
+      </div>
+      <dl className="mt-3 grid gap-x-6 gap-y-1 text-sm sm:grid-cols-3">
+        {entries.map(([code, eur]) => (
+          <div key={code} className="flex justify-between gap-4">
+            <dt className="text-muted">1 {code}</dt>
+            <dd className="font-semibold tabular-nums">{rateFormat.format(eur)} €</dd>
+          </div>
+        ))}
+      </dl>
+      <p className="mt-3 text-xs text-muted">
+        Курсовете се обновяват автоматично всеки работен ден (ЕЦБ публикува около 16:00 ч.); при нов курс цените на
+        всички коли се преизчисляват.
+      </p>
+    </div>
+  );
+}
+
+const rateFormat = new Intl.NumberFormat("bg-BG", { maximumSignificantDigits: 5 });
 
 const fields: { name: "baseCosts" | "threshold" | "step" | "stepCost" | "profit"; label: string; hint: string }[] = [
   { name: "baseCosts", label: "Разходи, €", hint: "всички разходи по вноса за кола до прага" },

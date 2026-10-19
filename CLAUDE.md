@@ -60,5 +60,7 @@ Run `npm run lint` and `npm run build` before finishing a change.
 | `src/app/page.tsx` | home: hero, latest cars, how import works, "find me a car" form |
 | `src/app/cars/page.tsx` | catalog with filters in the URL (GET form) |
 | `src/app/cars/[slug]/page.tsx` | car page: gallery, share buttons, grouped specs, notes, final price (only `priceEur`), inquiry form |
+| `src/app/about`, `src/app/privacy` | "За нас" and the privacy policy (company details in `site.ts` → `company`); the inquiry form requires the privacy checkbox (`privacyAccepted`) |
+| `src/app/sitemap.ts`, `robots.ts`, `og/` | SEO: sitemap with the public cars (built per request), robots, the default preview image; `src/lib/seo.ts` has `SITE_URL` and the car JSON-LD |
 | `src/app/admin/**` | admin: import by link, edit car, photos, statuses, price formulas (`pricing/`), post templates (`templates/`), inquiries |
 | `src/components/**` | shared components; `admin/` for admin-only ones |

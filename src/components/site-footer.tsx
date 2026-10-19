@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Suspense } from "react";
 import { getContact } from "@/lib/api";
-import { contactDetails, phoneHref, site, type Contact } from "@/lib/site";
+import { company, contactDetails, phoneHref, site, type Contact } from "@/lib/site";
 
 // The shell is prerendered (Cache Components): the contact details saved in the admin panel stream in, and the
 // defaults from site.ts show until then (or when the backend is down).
@@ -33,6 +33,16 @@ export function SiteFooter() {
                 Намери ми кола
               </Link>
             </li>
+            <li>
+              <Link href="/about" className="hover:text-paper">
+                За нас
+              </Link>
+            </li>
+            <li>
+              <Link href="/privacy" className="hover:text-paper">
+                Политика за поверителност
+              </Link>
+            </li>
           </ul>
         </div>
         <div className="text-sm">
@@ -42,8 +52,11 @@ export function SiteFooter() {
           </Suspense>
         </div>
       </div>
-      <div className="border-t border-paper/10 py-5 text-center text-xs text-paper/50">
-        Цените са крайни: включват транспорта и всички разходи до България.
+      <div className="space-y-1 border-t border-paper/10 px-4 py-5 text-center text-xs text-paper/50">
+        <p>Цените са крайни: включват транспорта и всички разходи до България.</p>
+        <p>
+          {company.name} · ЕИК {company.eik} · {company.address}
+        </p>
       </div>
     </footer>
   );
