@@ -38,8 +38,8 @@ Run `npm run lint` and `npm run build` before finishing a change.
 - Customers never see the Facebook/Instagram/Viber text. It comes from templates (`src/lib/post-template.ts`:
   placeholders, defaults, rendering; saved ones in the backend `post_template`, edited under `/admin/templates`).
   Rendering drops a line whose placeholder is empty for the car. Publishing always goes through the confirmation
-  dialog in `social-post-panel.tsx` (text editable, 1-10 photos picked) and the backend
-  (`/api/admin/cars/{id}/social-posts`). The car page shows every known spec and hides empty ones.
+  dialog in `social-post-panel.tsx` (text editable, 1-10 photos picked, now or scheduled for a date and time) and the
+  backend (`/api/admin/cars/{id}/social-posts`, `/scheduled-posts`). The car page shows every known spec and hides empty ones.
 - Car descriptions come from `src/lib/description.ts` (a port of `build_post_text` / `generate_hashtags` in
   `autowini_poster_parallel.py`); the default Facebook/Instagram template renders the script's post exactly.
   Business details (brand, phone, Viber, office) and the "why us" bullets live in `src/lib/site.ts`; the phone,
@@ -62,5 +62,5 @@ Run `npm run lint` and `npm run build` before finishing a change.
 | `src/app/cars/[slug]/page.tsx` | car page: gallery, share buttons, grouped specs, notes, final price (only `priceEur`), inquiry form |
 | `src/app/about`, `src/app/privacy` | "За нас" and the privacy policy (company details in `site.ts` → `company`); the inquiry form requires the privacy checkbox (`privacyAccepted`) |
 | `src/app/sitemap.ts`, `robots.ts`, `og/` | SEO: sitemap with the public cars (built per request), robots, the default preview image; `src/lib/seo.ts` has `SITE_URL` and the car JSON-LD |
-| `src/app/admin/**` | admin: import by link, edit car, photos, statuses, price formulas (`pricing/`), post templates (`templates/`), inquiries |
+| `src/app/admin/**` | admin: import by link, edit car, photos, statuses, price formulas (`pricing/`), post templates (`templates/`), scheduled posts (`scheduled/`), inquiries, admin users (`users/`, one-time passwords; `admin-context.tsx` forces the password change) |
 | `src/components/**` | shared components; `admin/` for admin-only ones |

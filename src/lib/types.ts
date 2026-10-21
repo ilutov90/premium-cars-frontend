@@ -217,6 +217,54 @@ export interface SocialPost {
   createdAt: string;
 }
 
+export type ScheduledPostStatus = "SCHEDULED" | "PUBLISHING" | "PUBLISHED" | "FAILED" | "CANCELLED";
+
+/** A post planned for later (backend ScheduledPost); the backend publishes it at publishAt. */
+export interface ScheduledPost {
+  id: number;
+  carId: number;
+  carTitle: string;
+  network: SocialNetwork;
+  body: string;
+  /** photos in posting order; empty = the first ones of the gallery */
+  imageIds: number[];
+  publishAt: string;
+  status: ScheduledPostStatus;
+  attempts: number;
+  /** why it failed (FAILED) */
+  error: string | null;
+  socialPostId: number | null;
+  createdBy: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** The logged-in admin (backend AdminAuthController.Me). */
+export interface AdminMe {
+  username: string;
+  /** logged in with a one-time password: must choose an own one before anything else */
+  mustChangePassword: boolean;
+}
+
+/** An admin user (backend AdminUserController.AdminUserView). */
+export interface AdminUser {
+  id: number;
+  username: string;
+  createdAt: string;
+  lastLoginAt: string | null;
+  passwordChangedAt: string;
+  mustChangePassword: boolean;
+  locked: boolean;
+  /** the logged-in admin */
+  you: boolean;
+}
+
+/** A new or reset admin with the one-time password to hand over (shown once). */
+export interface OneTimePassword {
+  user: AdminUser;
+  oneTimePassword: string;
+}
+
 /** Which networks the backend can publish to (backend SocialPublisher.Status). */
 export interface SocialStatus {
   facebook: boolean;
