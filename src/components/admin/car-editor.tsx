@@ -270,7 +270,20 @@ export function CarEditor({ params }: { params: Promise<{ id: string }> }) {
         </form>
 
         <aside className="space-y-6">
-          <PriceSummary car={car} />
+          <PriceSummary
+            car={car}
+            busy={busy}
+            onRecalculate={() => {
+              if (
+                confirm(
+                  "Да преизчисля ли цената с днешния курс и текущата формула? Ако колата вече е публикувана в " +
+                    "Facebook, Instagram или Viber, там ще остане старата цена.",
+                )
+              ) {
+                run(() => adminFetch<AdminCar>(`/api/admin/cars/${car.id}/recalculate-price`, { method: "POST" }));
+              }
+            }}
+          />
           {/* new text after every save */}
           <SocialPostPanel key={car.updatedAt} car={car} />
           <section>
@@ -322,7 +335,9 @@ export function CarEditor({ params }: { params: Promise<{ id: string }> }) {
   );
 }
 
-function PriceSummary({ car }: { car: AdminCar }) {
+const rateFormat = new Intl.NumberFormat("bg-BG", { maximumSignificantDigits: 5 });
+
+function PriceSummary({ car, busy, onRecalculate }: { car: AdminCar; busy: boolean; onRecalculate: () => void }) {
   const p = car.price;
   if (!p) {
     return (
@@ -335,7 +350,12 @@ function PriceSummary({ car }: { car: AdminCar }) {
     p.carPriceEur == null
       ? []
       : [
-          [`Кола (${formatNumber(p.sourcePrice ?? 0)} ${p.sourceCurrency ?? ""})`, p.carPriceEur],
+          [
+            `Кола (${formatNumber(p.sourcePrice ?? 0)} ${p.sourceCurrency ?? ""}${
+              p.eurPerUnit != null && p.sourceCurrency !== "EUR" ? ` × ${rateFormat.format(p.eurPerUnit)}` : ""
+            })`,
+            p.carPriceEur,
+          ],
           ["Разходи", p.baseCostsEur],
           [`Разходи над прага (× ${formatNumber(p.steps ?? 0)})`, p.stepCostsEur],
           [p.profitOverridden ? "Надценка (за тази кола)" : "Надценка", p.profitEur],
@@ -364,8 +384,20 @@ function PriceSummary({ car }: { car: AdminCar }) {
         </dl>
       )}
       <p className="mt-3 text-xs text-paper/50">
-        {p.profile ? `${priceProfileLabels[p.profile]}. ` : ""}Клиентът вижда само крайната цена.
+        {p.profile ? `${priceProfileLabels[p.profile]}. ` : ""}Клиентът вижда само крайната цена. Тя е изчислена
+        веднъж и не се променя от нов курс или нова формула; променя се само ако смените цената на тази кола или
+        натиснете „Преизчисли“.
       </p>
+      {p.carPriceEur != null && !p.fixedTotal && (
+        <button
+          type="button"
+          onClick={onRecalculate}
+          disabled={busy}
+          className="mt-3 rounded-full border border-paper/20 px-3 py-1.5 text-xs font-semibold hover:bg-paper/10"
+        >
+          Преизчисли с днешния курс и формула
+        </button>
+      )}
     </div>
   );
 }

@@ -156,6 +156,8 @@ export interface PriceBreakdown {
   totalEur: number;
   /** totalEur was set by hand */
   fixedTotal: boolean;
+  /** the exchange rate the price was calculated with: EUR per 1 unit of sourceCurrency (null when not calculated) */
+  eurPerUnit?: number | null;
 }
 
 export interface AdminImage {
