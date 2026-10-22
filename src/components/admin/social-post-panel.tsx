@@ -33,6 +33,8 @@ export function SocialPostPanel({ car }: { car: AdminCar }) {
   const [settings, setSettings] = useState<PostSettings | null>(null);
   const [posts, setPosts] = useState<SocialPost[]>([]);
   const [scheduled, setScheduled] = useState<ScheduledPost[]>([]);
+  // posts being published in the background right now: followed until PUBLISHED or FAILED
+  const [following, setFollowing] = useState<number[]>([]);
   const [dialog, setDialog] = useState<SocialNetwork | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [message, setMessage] = useState<Message | null>(null);
@@ -58,6 +60,32 @@ export function SocialPostPanel({ car }: { car: AdminCar }) {
   const noPhotos = car.images.length === 0;
   const configured = (n: SocialNetwork) =>
     n === "FACEBOOK" ? status?.facebook : n === "INSTAGRAM" ? status?.instagram : status?.viber;
+
+  useEffect(() => {
+    if (following.length === 0) return;
+    const timer = setInterval(async () => {
+      let list: ScheduledPost[];
+      try {
+        list = await adminFetch<ScheduledPost[]>(`/api/admin/cars/${car.id}/scheduled-posts`);
+      } catch {
+        return; // try again on the next tick
+      }
+      setScheduled(list);
+      const done = list.filter((p) => following.includes(p.id) && (p.status === "PUBLISHED" || p.status === "FAILED"));
+      if (done.length === 0) return;
+      setFollowing((ids) => ids.filter((id) => !done.some((d) => d.id === id)));
+      if (done.some((p) => p.status === "PUBLISHED")) {
+        adminFetch<SocialPost[]>(`/api/admin/cars/${car.id}/social-posts`).then(setPosts).catch(() => undefined);
+      }
+      const last = done[done.length - 1];
+      setMessage(
+        last.status === "PUBLISHED"
+          ? { ok: true, text: `Публикувано в ${networkLabels[last.network]} ✓` }
+          : { ok: false, text: `${networkLabels[last.network]}: публикуването не успя — ${last.error ?? "грешка"}` },
+      );
+    }, 3000);
+    return () => clearInterval(timer);
+  }, [following, adminFetch, car.id]);
 
   async function cancelScheduled(post: ScheduledPost) {
     if (!confirm(`Да отменя ли насрочената публикация в ${networkLabels[post.network]} за ${formatDate(post.publishAt)}?`)) return;
@@ -221,10 +249,14 @@ export function SocialPostPanel({ car }: { car: AdminCar }) {
           initialText={textFor(dialog)}
           earlier={posts.find((p) => p.network === dialog) ?? null}
           onClose={() => setDialog(null)}
-          onPublished={(post) => {
-            setPosts((list) => [post, ...list]);
+          onPublishing={(post) => {
+            setScheduled((list) => [post, ...list]);
+            setFollowing((ids) => [...ids, post.id]);
             setDialog(null);
-            setMessage({ ok: true, text: `Публикувано в ${networkLabels[post.network]} ✓ (${post.photos} снимки)` });
+            setMessage({
+              ok: true,
+              text: `Публикува се в ${networkLabels[post.network]}… Може да продължите работа, ще се покаже тук, когато е готово.`,
+            });
           }}
           onScheduled={(post) => {
             setScheduled((list) => [post, ...list]);
@@ -244,7 +276,7 @@ function PublishDialog({
   initialText,
   earlier,
   onClose,
-  onPublished,
+  onPublishing,
   onScheduled,
 }: {
   car: AdminCar;
@@ -252,7 +284,7 @@ function PublishDialog({
   initialText: string;
   earlier: SocialPost | null;
   onClose: () => void;
-  onPublished: (post: SocialPost) => void;
+  onPublishing: (post: ScheduledPost) => void;
   onScheduled: (post: ScheduledPost) => void;
 }) {
   const { adminFetch } = useAdmin();
@@ -303,11 +335,12 @@ function PublishDialog({
         });
         onScheduled(post);
       } else {
-        const post = await adminFetch<SocialPost>(`/api/admin/cars/${car.id}/social-posts`, {
+        // answered at once: the server publishes in the background
+        const post = await adminFetch<ScheduledPost>(`/api/admin/cars/${car.id}/social-posts`, {
           method: "POST",
           body: JSON.stringify(body),
         });
-        onPublished(post);
+        onPublishing(post);
       }
     } catch (e) {
       const message = e instanceof Error ? e.message : "Грешка";
@@ -460,7 +493,7 @@ function PublishDialog({
             {busy
               ? when === "later"
                 ? "Насрочване…"
-                : "Публикуване…"
+                : "Изпращане…"
               : `${when === "later" ? "Насрочи" : "Публикувай"} (${selected.size} ${selected.size === 1 ? "снимка" : "снимки"})`}
           </button>
         </div>
