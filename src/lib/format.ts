@@ -1,4 +1,14 @@
-import type { CarSource, CarStatus, Drivetrain, FuelType, InquiryStatus, Origin, PriceProfile, Transmission } from "./types";
+import type {
+  CarSource,
+  CarStatus,
+  Drivetrain,
+  FuelType,
+  InquiryStatus,
+  Origin,
+  PriceProfile,
+  ScheduledPostStatus,
+  Transmission,
+} from "./types";
 
 // Bulgarian labels for everything the API returns as codes or English source text.
 
@@ -152,6 +162,14 @@ export function formatYearMonth(value: string | null | undefined): string | null
 export function formatDate(iso: string): string {
   return new Date(iso).toLocaleString("bg-BG", { dateStyle: "medium", timeStyle: "short" });
 }
+
+export const scheduledStatusLabels: Record<ScheduledPostStatus, string> = {
+  SCHEDULED: "Насрочена",
+  PUBLISHING: "Публикува се",
+  PUBLISHED: "Публикувана",
+  FAILED: "Неуспешна",
+  CANCELLED: "Отменена",
+};
 
 export const priceProfileLabels: Record<PriceProfile, string> = {
   AUTOHOME: "Autohome (Китай)",

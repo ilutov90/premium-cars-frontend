@@ -5,12 +5,13 @@ import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { useAdmin } from "./admin-context";
 import { CarImage } from "@/components/car-image";
-import { formatDate } from "@/lib/format";
+import { formatDate, scheduledStatusLabels } from "@/lib/format";
 import { defaultTemplates, networkLabels, renderTemplate, templateValues } from "@/lib/post-template";
 import type {
   AdminCar,
   PostSettings,
   PostTemplate,
+  ScheduledPost,
   SocialNetwork,
   SocialPost,
   SocialStatus,
@@ -31,6 +32,7 @@ export function SocialPostPanel({ car }: { car: AdminCar }) {
   const [templates, setTemplates] = useState<Record<SocialNetwork, string>>(defaultTemplates);
   const [settings, setSettings] = useState<PostSettings | null>(null);
   const [posts, setPosts] = useState<SocialPost[]>([]);
+  const [scheduled, setScheduled] = useState<ScheduledPost[]>([]);
   const [dialog, setDialog] = useState<SocialNetwork | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [message, setMessage] = useState<Message | null>(null);
@@ -38,6 +40,9 @@ export function SocialPostPanel({ car }: { car: AdminCar }) {
   useEffect(() => {
     adminFetch<SocialStatus>("/api/admin/social/status").then(setStatus).catch(() => setStatus(null));
     adminFetch<SocialPost[]>(`/api/admin/cars/${car.id}/social-posts`).then(setPosts).catch(() => setPosts([]));
+    adminFetch<ScheduledPost[]>(`/api/admin/cars/${car.id}/scheduled-posts`)
+      .then(setScheduled)
+      .catch(() => setScheduled([]));
     adminFetch<PostTemplate[]>("/api/admin/post-templates")
       .then((list) => {
         const t = { ...defaultTemplates };
@@ -53,6 +58,19 @@ export function SocialPostPanel({ car }: { car: AdminCar }) {
   const noPhotos = car.images.length === 0;
   const configured = (n: SocialNetwork) =>
     n === "FACEBOOK" ? status?.facebook : n === "INSTAGRAM" ? status?.instagram : status?.viber;
+
+  async function cancelScheduled(post: ScheduledPost) {
+    if (!confirm(`Да отменя ли насрочената публикация в ${networkLabels[post.network]} за ${formatDate(post.publishAt)}?`)) return;
+    try {
+      await adminFetch(`/api/admin/scheduled-posts/${post.id}`, { method: "DELETE" });
+      setScheduled((list) => list.map((p) => (p.id === post.id ? { ...p, status: "CANCELLED" } : p)));
+    } catch (e) {
+      setMessage({ ok: false, text: e instanceof Error ? e.message : "Грешка" });
+    }
+  }
+
+  // waiting ones, and the failed ones (they need the admin's attention)
+  const shownScheduled = scheduled.filter((p) => p.status === "SCHEDULED" || p.status === "PUBLISHING" || p.status === "FAILED");
 
   async function copy() {
     try {
@@ -136,7 +154,8 @@ export function SocialPostPanel({ car }: { car: AdminCar }) {
         </p>
       )}
       <p className="mt-2 text-xs text-muted">
-        Преди публикуване се показват текстът от шаблона (може да се промени) и снимките за избор.
+        Преди публикуване се показват текстът от шаблона (може да се промени) и снимките за избор. Може да
+        публикувате веднага или да насрочите за ден и час.
       </p>
 
       <div className="mt-3 flex flex-wrap gap-2">
@@ -155,6 +174,27 @@ export function SocialPostPanel({ car }: { car: AdminCar }) {
 
       {message && (
         <p className={`mt-3 text-sm font-semibold break-words ${message.ok ? "text-ok" : "text-warn"}`}>{message.text}</p>
+      )}
+
+      {shownScheduled.length > 0 && (
+        <ul className="mt-3 space-y-1.5 border-t border-line pt-3 text-xs">
+          {shownScheduled.map((p) => (
+            <li key={p.id} className="flex items-start justify-between gap-2">
+              <span className="min-w-0">
+                <span className={p.status === "FAILED" ? "font-semibold text-warn" : "font-semibold"}>
+                  {scheduledStatusLabels[p.status]}
+                </span>{" "}
+                · {networkLabels[p.network]} · {formatDate(p.publishAt)}
+                {p.error && <span className="block break-words text-warn">{p.error}</span>}
+              </span>
+              {p.status === "SCHEDULED" && (
+                <button type="button" onClick={() => cancelScheduled(p)} className="shrink-0 font-semibold text-warn hover:underline">
+                  отмени
+                </button>
+              )}
+            </li>
+          ))}
+        </ul>
       )}
 
       {posts.length > 0 && (
@@ -186,6 +226,11 @@ export function SocialPostPanel({ car }: { car: AdminCar }) {
             setDialog(null);
             setMessage({ ok: true, text: `Публикувано в ${networkLabels[post.network]} ✓ (${post.photos} снимки)` });
           }}
+          onScheduled={(post) => {
+            setScheduled((list) => [post, ...list]);
+            setDialog(null);
+            setMessage({ ok: true, text: `Насрочено за ${networkLabels[post.network]}: ${formatDate(post.publishAt)} ✓` });
+          }}
         />
       )}
     </section>
@@ -200,6 +245,7 @@ function PublishDialog({
   earlier,
   onClose,
   onPublished,
+  onScheduled,
 }: {
   car: AdminCar;
   network: SocialNetwork;
@@ -207,6 +253,7 @@ function PublishDialog({
   earlier: SocialPost | null;
   onClose: () => void;
   onPublished: (post: SocialPost) => void;
+  onScheduled: (post: ScheduledPost) => void;
 }) {
   const { adminFetch } = useAdmin();
   const [text, setText] = useState(initialText);
@@ -215,6 +262,10 @@ function PublishDialog({
   );
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [when, setWhen] = useState<"now" | "later">("now");
+  const [publishAt, setPublishAt] = useState(defaultScheduleTime);
+  // when the dialog opened (render must stay pure); the backend checks the time again when scheduling
+  const [openedAt] = useState(() => Date.now());
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && !busy && onClose();
@@ -236,17 +287,31 @@ function PublishDialog({
     });
   }
 
+  const scheduleDate = when === "later" && publishAt ? new Date(publishAt) : null;
+  const scheduleInvalid =
+    when === "later" && (!scheduleDate || Number.isNaN(scheduleDate.getTime()) || scheduleDate.getTime() < openedAt + 60_000);
+
   async function publish() {
     setBusy(true);
     setError(null);
     try {
-      const post = await adminFetch<SocialPost>(`/api/admin/cars/${car.id}/social-posts`, {
-        method: "POST",
-        body: JSON.stringify({ network, text, imageIds: ordered.map((i) => i.id) }),
-      });
-      onPublished(post);
+      const body = { network, text, imageIds: ordered.map((i) => i.id) };
+      if (when === "later" && scheduleDate) {
+        const post = await adminFetch<ScheduledPost>(`/api/admin/cars/${car.id}/scheduled-posts`, {
+          method: "POST",
+          body: JSON.stringify({ ...body, publishAt: scheduleDate.toISOString() }),
+        });
+        onScheduled(post);
+      } else {
+        const post = await adminFetch<SocialPost>(`/api/admin/cars/${car.id}/social-posts`, {
+          method: "POST",
+          body: JSON.stringify(body),
+        });
+        onPublished(post);
+      }
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Грешка");
+      const message = e instanceof Error ? e.message : "Грешка";
+      setError(message.startsWith("Pick a time") ? "Изберете час поне минута напред (или публикувайте веднага)." : message);
       setBusy(false);
     }
   }
@@ -348,6 +413,38 @@ function PublishDialog({
           </div>
         </div>
 
+        <fieldset className="mt-5 rounded-xl border border-line p-3">
+          <legend className="px-1 text-sm font-bold">Кога</legend>
+          <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-sm">
+            <label className="flex items-center gap-2">
+              <input type="radio" name="when" checked={when === "now"} onChange={() => setWhen("now")} className="accent-accent" />
+              Веднага
+            </label>
+            <label className="flex items-center gap-2">
+              <input type="radio" name="when" checked={when === "later"} onChange={() => setWhen("later")} className="accent-accent" />
+              Насрочи за
+            </label>
+            <input
+              type="datetime-local"
+              value={publishAt}
+              min={toLocalInput(new Date(openedAt + 2 * 60_000))}
+              onChange={(e) => {
+                setPublishAt(e.target.value);
+                setWhen("later");
+              }}
+              className="field w-auto! py-1.5!"
+              aria-label="Дата и час на публикуване"
+            />
+          </div>
+          {when === "later" && (
+            <p className={`mt-2 text-xs ${scheduleInvalid ? "font-semibold text-warn" : "text-muted"}`}>
+              {scheduleInvalid
+                ? "Изберете дата и час поне минута напред."
+                : `Ще се публикува на ${formatDate(scheduleDate!.toISOString())} (по часа на този компютър) с текста и снимките, избрани сега. Отменя се от „Насрочени“.`}
+            </p>
+          )}
+        </fieldset>
+
         {error && <p className="mt-3 text-sm font-semibold break-words text-warn">{error}</p>}
 
         <div className="mt-5 flex flex-wrap justify-end gap-2 border-t border-line pt-4">
@@ -357,10 +454,14 @@ function PublishDialog({
           <button
             type="button"
             onClick={publish}
-            disabled={busy || selected.size < 1 || tooLong || !text.trim()}
+            disabled={busy || selected.size < 1 || tooLong || !text.trim() || scheduleInvalid}
             className="btn-primary"
           >
-            {busy ? "Публикуване…" : `Публикувай (${selected.size} ${selected.size === 1 ? "снимка" : "снимки"})`}
+            {busy
+              ? when === "later"
+                ? "Насрочване…"
+                : "Публикуване…"
+              : `${when === "later" ? "Насрочи" : "Публикувай"} (${selected.size} ${selected.size === 1 ? "снимка" : "снимки"})`}
           </button>
         </div>
       </div>
@@ -420,6 +521,20 @@ function ViberConnect({ onMessage }: { onMessage: (m: Message) => void }) {
       </form>
     </details>
   );
+}
+
+/** "2026-10-22T09:00" in the browser's time zone, the format of <input type="datetime-local">. */
+function toLocalInput(d: Date): string {
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+/** Suggested time: tomorrow at 09:00. */
+function defaultScheduleTime(): string {
+  const d = new Date();
+  d.setDate(d.getDate() + 1);
+  d.setHours(9, 0, 0, 0);
+  return toLocalInput(d);
 }
 
 /** The car's first photos as files, in gallery order (for sharing and downloading). */

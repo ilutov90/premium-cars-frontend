@@ -1,6 +1,8 @@
 "use client";
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import type { AdminMe } from "@/lib/types";
+import { PasswordForm } from "./password-form";
 
 /*
  * Admin login with a server session: the backend sets an HttpOnly session cookie (the password is never stored in
@@ -41,6 +43,8 @@ function csrfToken(): string | null {
 /** Bulgarian texts for the backend's (English) answers the admin sees most. */
 function message(status: number, detail: string | undefined): string {
   if (status === 429) return "Твърде много опити. Опитайте отново след няколко минути.";
+  if (detail === "Set your own password first") return "Първо сменете еднократната парола.";
+  if (detail === "Session ended: log in again") return "Сесията е прекратена. Влезте отново.";
   if (status === 403) return "Сесията е изтекла. Презаредете страницата.";
   if (detail === "Wrong username or password") return "Грешно потребителско име или парола";
   if (detail?.startsWith("Too many wrong passwords")) return "Твърде много грешни пароли. Опитайте след 15 минути.";
@@ -75,40 +79,62 @@ async function call<T>(path: string, init?: RequestInit): Promise<T> {
 
 export function AdminProvider({ children }: { children: React.ReactNode }) {
   // undefined = not checked yet (avoids flashing the login form), null = logged out
-  const [username, setUsername] = useState<string | null | undefined>(undefined);
+  const [me, setMe] = useState<AdminMe | null | undefined>(undefined);
 
   useEffect(() => {
-    call<{ username: string }>("/api/admin/me")
-      .then((me) => setUsername(me.username))
-      .catch(() => setUsername(null));
+    call<AdminMe>("/api/admin/me")
+      .then(setMe)
+      .catch(() => setMe(null));
   }, []);
 
   const logout = useCallback(async () => {
     await call("/api/admin/logout", { method: "POST" }).catch(() => undefined);
-    setUsername(null);
+    setMe(null);
   }, []);
 
   const adminFetch = useCallback<AdminFetch>(async (path, init) => {
     try {
       return await call(path, init);
     } catch (e) {
-      if (e instanceof AdminApiError && e.status === 401) setUsername(null);
+      if (e instanceof AdminApiError && e.status === 401) setMe(null);
       throw e;
     }
   }, []);
 
-  const value = useMemo(() => ({ username: username ?? "", adminFetch, logout }), [username, adminFetch, logout]);
+  const value = useMemo(() => ({ username: me?.username ?? "", adminFetch, logout }), [me, adminFetch, logout]);
 
-  if (username === undefined) {
+  if (me === undefined) {
     return <p className="p-10 text-center text-sm text-muted">Зареждане…</p>;
   }
-  if (username === null) {
-    return <LoginForm onLogin={setUsername} />;
+  if (me === null) {
+    return <LoginForm onLogin={setMe} />;
+  }
+  if (me.mustChangePassword) {
+    // logged in with a one-time password from another admin: nothing else works until it is replaced
+    return (
+      <AdminContext.Provider value={value}>
+        <div className="mx-auto max-w-md px-4 py-16">
+          <h1 className="text-2xl font-extrabold tracking-tight">Изберете своя парола</h1>
+          <p className="mt-2 text-sm text-muted">
+            Влязохте като <strong>{me.username}</strong> с еднократна парола. Задайте своя, за да продължите.
+          </p>
+          <div className="mt-6">
+            <PasswordForm
+              currentLabel="Еднократна парола"
+              onChanged={() => setMe({ username: me.username, mustChangePassword: false })}
+            />
+          </div>
+          <button type="button" onClick={logout} className="btn-ghost mt-4 w-full">
+            Изход
+          </button>
+        </div>
+      </AdminContext.Provider>
+    );
   }
   return <AdminContext.Provider value={value}>{children}</AdminContext.Provider>;
 }
 
-function LoginForm({ onLogin }: { onLogin: (username: string) => void }) {
+function LoginForm({ onLogin }: { onLogin: (me: AdminMe) => void }) {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -119,11 +145,11 @@ function LoginForm({ onLogin }: { onLogin: (username: string) => void }) {
     setError(null);
     try {
       await call("/api/admin/csrf"); // sets the XSRF-TOKEN cookie
-      const me = await call<{ username: string }>("/api/admin/login", {
+      const me = await call<AdminMe>("/api/admin/login", {
         method: "POST",
         body: JSON.stringify({ username: form.get("username"), password: form.get("password") }),
       });
-      onLogin(me.username);
+      onLogin(me);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Грешка");
     } finally {

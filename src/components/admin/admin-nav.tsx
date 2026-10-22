@@ -8,7 +8,9 @@ const links: [string, string][] = [
   ["/admin", "Коли и импорт"],
   ["/admin/pricing", "Цени"],
   ["/admin/templates", "Шаблони"],
+  ["/admin/scheduled", "Насрочени"],
   ["/admin/inquiries", "Запитвания"],
+  ["/admin/users", "Потребители"],
   ["/admin/account", "Профил"],
 ];
 
@@ -17,7 +19,7 @@ export function AdminNav() {
   const pathname = usePathname();
   return (
     <div className="mb-8 flex flex-wrap items-center justify-between gap-3 border-b border-line pb-4">
-      <nav className="flex gap-1">
+      <nav className="flex flex-wrap gap-1">
         {links.map(([href, label]) => {
           const active = href === "/admin" ? pathname === "/admin" || pathname.startsWith("/admin/cars") : pathname.startsWith(href);
           return (
