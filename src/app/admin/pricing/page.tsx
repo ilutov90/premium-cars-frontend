@@ -28,8 +28,9 @@ export default function AdminPricingPage() {
       <p className="mt-1 max-w-2xl text-sm text-muted">
         Крайна цена = цена на колата в € + разходи + разходи за всяка стъпка (10 000 €) над прага + надценка.
         Над прага разходите са пропорционални: при кола за 25 000 € и Autohome това е 5860 + 2880 + 1440 (за
-        5000 € над 20 000) + 2000. Тази цена се показва в сайта и във Facebook/Instagram текста. При запис всички
-        коли се преизчисляват.
+        5000 € над 20 000) + 2000. Тази цена се показва в сайта и в постовете. Промяна на формулата важи за новите
+        импорти: цените на вече добавените коли остават същите (може да са публикувани). Отделна кола се
+        преизчислява от страницата ѝ („Преизчисли“).
       </p>
       {error && <p className="mt-4 text-sm font-semibold text-warn">{error}</p>}
       {!profiles && !error && <p className="mt-6 text-sm text-muted">Зареждане…</p>}
@@ -81,8 +82,8 @@ function RatesCard() {
         ))}
       </dl>
       <p className="mt-3 text-xs text-muted">
-        Курсовете се обновяват автоматично всеки работен ден (ЕЦБ публикува около 16:00 ч.); при нов курс цените на
-        всички коли се преизчисляват.
+        Курсовете се обновяват автоматично всеки работен ден (ЕЦБ публикува около 16:00 ч.). Новият курс важи за
+        новите импорти; цените на вече добавените коли не се променят.
       </p>
     </div>
   );
@@ -119,7 +120,7 @@ function ProfileForm({ profile, onSaved }: { profile: PricingProfile; onSaved: (
       });
       onSaved(saved);
       setValues(saved);
-      setMessage({ ok: true, text: "Записано ✓ Цените на колите са преизчислени." });
+      setMessage({ ok: true, text: "Записано ✓ Важи за новите импорти." });
     } catch (err) {
       setMessage({ ok: false, text: err instanceof Error ? err.message : "Грешка" });
     } finally {
