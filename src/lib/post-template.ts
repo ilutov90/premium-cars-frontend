@@ -131,7 +131,7 @@ export function templatesFrom(saved: PostTemplate[]): Record<TemplateKind, strin
 }
 
 const originOf = (car: AdminCar): Origin | null =>
-  car.source === "AUTOHOME" ? "CN" : car.source === "AUTOWINI" ? "KR" : null;
+  car.source === "AUTOHOME" || car.source === "GUAZI" ? "CN" : car.source === "AUTOWINI" ? "KR" : null;
 
 /**
  * The placeholder values of a car; "" = unknown (lines using it are left out).

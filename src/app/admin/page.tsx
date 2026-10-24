@@ -151,9 +151,11 @@ function ImportPanel({ onImported }: { onImported: () => void }) {
     <section className="rounded-2xl bg-ink p-6 text-paper sm:p-8">
       <h2 className="text-xl font-extrabold">Импорт по линк</h2>
       <p className="mt-1 text-sm text-paper/60">
-        Поставете линк към кола от global.autohome.com.cn или autowini.com. Колата се създава като чернова.
+        Поставете линк към кола от global.autohome.com.cn, en.guazi.com или autowini.com. Колата се създава като
+        чернова.
         Цената се чете от обявата: за autowini това е цената в евро, която autowini показва и таксува (от долари по
-        курса на самия autowini). Цена, въведена тук, е с предимство.
+        курса на самия autowini); за guazi е текущата цена в долари (с отстъпката, ако има). Цена, въведена тук, е с
+        предимство.
       </p>
       <form onSubmit={onSubmit} className="mt-5 flex flex-col gap-2 sm:flex-row">
         <input
