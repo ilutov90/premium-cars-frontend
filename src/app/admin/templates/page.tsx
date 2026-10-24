@@ -66,7 +66,7 @@ export default function AdminTemplatesPage() {
   const isDefault = !saved[network];
   const unknown = unknownPlaceholders(draft);
   const origin = typeof window !== "undefined" ? window.location.origin : undefined;
-  const preview = sample ? renderTemplate(draft, templateValues(sample, origin, settings)) : null;
+  const preview = sample ? renderTemplate(draft, templateValues(sample, origin, settings, network)) : null;
 
   function setDraft(value: string) {
     setDrafts((d) => ({ ...d, [network]: value }));
@@ -250,7 +250,7 @@ export default function AdminTemplatesPage() {
 /** Phone, Viber channel link and office: the same for every car ({{phone}}, {{viber_link}}, {{office}}). */
 function SharedDetails({ saved, onSaved }: { saved: PostSettings | null; onSaved: (s: PostSettings) => void }) {
   const { adminFetch } = useAdmin();
-  const current = effectiveSettings(saved);
+  const current = { ...effectiveSettings(saved), metaPixelId: saved?.metaPixelId ?? "" };
   const [form, setForm] = useState(current);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null);
@@ -259,10 +259,14 @@ function SharedDetails({ saved, onSaved }: { saved: PostSettings | null; onSaved
   const [loadedFrom, setLoadedFrom] = useState<PostSettings | null>(null);
   if (saved !== loadedFrom) {
     setLoadedFrom(saved);
-    setForm(effectiveSettings(saved));
+    setForm({ ...effectiveSettings(saved), metaPixelId: saved?.metaPixelId ?? "" });
   }
 
-  const dirty = form.phone !== current.phone || form.viberLink !== current.viberLink || form.office !== current.office;
+  const dirty =
+    form.phone !== current.phone ||
+    form.viberLink !== current.viberLink ||
+    form.office !== current.office ||
+    form.metaPixelId.trim() !== current.metaPixelId;
 
   async function save(e: React.FormEvent) {
     e.preventDefault();
@@ -274,6 +278,7 @@ function SharedDetails({ saved, onSaved }: { saved: PostSettings | null; onSaved
         phone: form.phone.trim() === site.phone ? null : form.phone,
         viberLink: form.viberLink.trim() === site.viberLink ? null : form.viberLink,
         office: form.office.trim() === site.office ? null : form.office,
+        metaPixelId: form.metaPixelId.trim() || null,
       };
       const next = await adminFetch<PostSettings>("/api/admin/post-settings", {
         method: "PUT",
@@ -290,7 +295,7 @@ function SharedDetails({ saved, onSaved }: { saved: PostSettings | null; onSaved
 
   return (
     <form onSubmit={save} className="mt-5 rounded-2xl border border-line bg-card p-4">
-      <h2 className="font-bold">Общи данни за всички коли</h2>
+      <h2 className="font-bold">Общи данни</h2>
       <p className="mt-1 text-xs text-muted">
         Използват се в шаблоните като <code>{"{{phone}}"}</code>, <code>{"{{viber_link}}"}</code> и{" "}
         <code>{"{{office}}"}</code>. Празно поле = стойността по подразбиране.
@@ -336,6 +341,27 @@ function SharedDetails({ saved, onSaved }: { saved: PostSettings | null; onSaved
             className="field"
           />
         </div>
+      </div>
+      <div className="mt-4 border-t border-line pt-3">
+        <label className="label" htmlFor="set-pixel">
+          Meta Pixel ID (за рекламите във Facebook и Instagram)
+        </label>
+        <input
+          id="set-pixel"
+          value={form.metaPixelId}
+          onChange={(e) => setForm({ ...form, metaPixelId: e.target.value })}
+          placeholder="напр. 123456789012345"
+          inputMode="numeric"
+          pattern="\s*\d{5,20}\s*"
+          title="Само цифри — номерът на пиксела от Meta Events Manager"
+          maxLength={25}
+          className="field max-w-xs"
+        />
+        <p className="mt-1 text-xs text-muted">
+          Номерът от Meta Events Manager → Data sources → вашият пиксел. Когато е попълнен, сайтът пита посетителите за
+          бисквитки и зарежда пиксела само при „Приемам“; формата за запитване отчита „Lead“. Празно = без пиксел и
+          без банер.
+        </p>
       </div>
       <div className="mt-3 flex items-center gap-3">
         <button type="submit" className="btn-primary px-4! py-2! text-sm!" disabled={busy || !dirty}>

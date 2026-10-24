@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Suspense } from "react";
 import { getContact } from "@/lib/api";
+import { CookieSettingsLink } from "@/components/cookie-consent";
 import { company, contactDetails, phoneHref, site, type Contact } from "@/lib/site";
 
 // The shell is prerendered (Cache Components): the contact details saved in the admin panel stream in, and the
@@ -34,6 +35,21 @@ export function SiteFooter() {
               </Link>
             </li>
             <li>
+              <Link href="/delivered" className="hover:text-paper">
+                Доставени коли
+              </Link>
+            </li>
+            <li>
+              <Link href="/koli-na-gaz-ot-koreya" className="hover:text-paper">
+                Коли на газ от Корея
+              </Link>
+            </li>
+            <li>
+              <Link href="/elektromobili-ot-kitay" className="hover:text-paper">
+                Електромобили и хибриди от Китай
+              </Link>
+            </li>
+            <li>
               <Link href="/about" className="hover:text-paper">
                 За нас
               </Link>
@@ -42,6 +58,9 @@ export function SiteFooter() {
               <Link href="/privacy" className="hover:text-paper">
                 Политика за поверителност
               </Link>
+            </li>
+            <li>
+              <CookieSettingsLink className="hover:text-paper" />
             </li>
           </ul>
         </div>

@@ -4,6 +4,7 @@ import type {
   CarStatus,
   Drivetrain,
   FuelType,
+  HeardFrom,
   InquiryStatus,
   Origin,
   PriceProfile,
@@ -69,6 +70,20 @@ export const inquiryStatusLabels: Record<InquiryStatus, string> = {
   NEW: "Ново",
   CONTACTED: "Свързахме се",
   CLOSED: "Приключено",
+};
+
+/** "Откъде научихте за нас?" in the inquiry form, in the order shown there. */
+export const heardFromLabels: Record<HeardFrom, string> = {
+  FACEBOOK: "Facebook",
+  INSTAGRAM: "Instagram",
+  GOOGLE: "Google",
+  MOBILE_BG: "mobile.bg",
+  VIBER: "Viber",
+  TIKTOK: "TikTok",
+  YOUTUBE: "YouTube",
+  FRIEND: "Препоръка от познат",
+  RETURNING: "Вече сме работили заедно",
+  OTHER: "Друго",
 };
 
 /** Body types as the source sites write them (English). Unknown values are shown as they are. */
@@ -162,6 +177,12 @@ export function formatYearMonth(value: string | null | undefined): string | null
 
 export function formatDate(iso: string): string {
   return new Date(iso).toLocaleString("bg-BG", { dateStyle: "medium", timeStyle: "short" });
+}
+
+/** A day without time ("2026-10-01" -> "01.10.2026"), read as written (no time zone shift). */
+export function formatDay(isoDay: string): string {
+  const [y, m, d] = isoDay.split("-");
+  return d && m && y ? `${d}.${m}.${y}` : isoDay;
 }
 
 export const scheduledStatusLabels: Record<ScheduledPostStatus, string> = {

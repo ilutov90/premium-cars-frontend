@@ -57,11 +57,31 @@ export const placeholders: { key: string; description: string; example: string }
   { key: "location", description: "Ред за местоположението и доставката", example: "🇰🇷Автомобилът се намира в Южна Корея. 🚢 Доставка до 3 месеца" },
   { key: "listing_id", description: "Номер на обявата при източника", example: "IC5548563" },
   { key: "hashtags", description: "Хаштагове (марка, модел и номер на обявата)", example: "#вноснаколи #cars #автомобили #kia #киа #sportage #kiasportage #IC5548563" },
-  { key: "link", description: "Линк към колата в сайта (само за публикувани коли)", example: "https://…/cars/kia-sportage-2024-7" },
+  {
+    key: "link",
+    description: "Линк към колата в сайта (само за публикувани коли; с UTM, за да се вижда в „Отчет“ откъде е дошъл клиентът)",
+    example: "https://…/cars/kia-sportage-2024-7?utm_source=facebook&utm_medium=social&utm_campaign=car-post",
+  },
   { key: "phone", description: "Телефон (общ за всички коли, от „Общи данни“)", example: site.phone },
   { key: "viber_link", description: "Линк към Viber канала (общ, от „Общи данни“)", example: site.viberLink },
   { key: "office", description: "Офис (общ, от „Общи данни“)", example: site.office },
 ];
+
+/** UTM parameters of {{link}} per template, so the admin report shows which posts bring inquiries. */
+export const postUtm: Record<TemplateKind, { source: string; medium: string; campaign: string }> = {
+  FACEBOOK: { source: "facebook", medium: "social", campaign: "car-post" },
+  VIBER: { source: "viber", medium: "social", campaign: "car-post" },
+  MOBILE_BG: { source: "mobile.bg", medium: "listing", campaign: "car-listing" },
+};
+
+/** The car's address on the site with the template's UTM parameters. */
+export function carLink(siteOrigin: string, slug: string, kind?: TemplateKind): string {
+  const base = `${siteOrigin}/cars/${slug}`;
+  if (!kind) return base;
+  const u = postUtm[kind];
+  const qs = new URLSearchParams({ utm_source: u.source, utm_medium: u.medium, utm_campaign: u.campaign });
+  return `${base}?${qs}`;
+}
 
 /** The shared details with the site.ts defaults filled in where nothing is saved. */
 export const effectiveSettings = (saved: PostSettings | null | undefined) => contactDetails(saved);
@@ -118,11 +138,13 @@ const originOf = (car: AdminCar): Origin | null =>
  *
  * @param siteOrigin the site's address for {{link}} (e.g. window.location.origin)
  * @param settings   the saved shared details (phone, Viber link, office); missing ones fall back to site.ts
+ * @param kind       the template the text is for: {{link}} gets its UTM parameters (none without it)
  */
 export function templateValues(
   car: AdminCar,
   siteOrigin?: string,
   settings?: PostSettings | null,
+  kind?: TemplateKind,
 ): Record<string, string> {
   const shared = effectiveSettings(settings);
   const s = car.specs;
@@ -160,7 +182,7 @@ export function templateValues(
     location: locationLine(origin) ?? "",
     listing_id: id ?? "",
     hashtags: tags,
-    link: publicCar && siteOrigin ? `${siteOrigin}/cars/${car.slug}` : "",
+    link: publicCar && siteOrigin ? carLink(siteOrigin, car.slug, kind) : "",
     phone: shared.phone,
     viber_link: shared.viberLink,
     office: shared.office,

@@ -1,6 +1,6 @@
 // Server-side calls to the public API. Used from Server Components inside <Suspense>,
 // so every request gets fresh data (an admin change is visible on the next page load).
-import type { CarDetail, CarSummary, FilterOptions, PageResponse, PostSettings } from "./types";
+import type { CarDetail, CarSummary, FilterOptions, PageResponse, PostSettings, PublicDeliveredCar } from "./types";
 /** URL the Next.js server uses; differs from the public one inside Docker/Kubernetes. */
 /** Server components call the backend directly (not through the /api rewrite). */
 const SERVER_API_URL = process.env.API_URL ?? "http://localhost:8080";
@@ -80,5 +80,14 @@ export async function getContact(): Promise<PostSettings | null> {
     return await get<PostSettings>("/api/public/contact");
   } catch {
     return null;
+  }
+}
+
+/** "Доставени коли" the admins published, newest first; empty when the backend cannot be reached. */
+export async function getDeliveredCars(limit = 12): Promise<PublicDeliveredCar[]> {
+  try {
+    return await get<PublicDeliveredCar[]>(`/api/public/delivered-cars?limit=${limit}`);
+  } catch {
+    return [];
   }
 }

@@ -285,7 +285,7 @@ function MobileBgDialog({
       adminFetch<PostSettings>("/api/admin/post-settings").catch(() => null),
     ]).then(([templates, settings]) => {
       const t = templatesFrom(templates).MOBILE_BG ?? defaultTemplates.MOBILE_BG;
-      const text = withoutEmoji(renderTemplate(t, templateValues(car, window.location.origin, settings)));
+      const text = withoutEmoji(renderTemplate(t, templateValues(car, window.location.origin, settings, "MOBILE_BG")));
       setValues(initialValues(form, text.slice(0, MOBILE_BG_TEXT_MAX), mobileBgPhone(contactDetails(settings).phone)));
     });
   }, [adminFetch, car, form]);

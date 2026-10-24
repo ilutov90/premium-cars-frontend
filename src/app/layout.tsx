@@ -1,8 +1,11 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import "@fontsource-variable/onest";
 import "./globals.css";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
+import { CookieConsentAndPixel } from "@/components/cookie-consent";
+import { getContact } from "@/lib/api";
 import { SITE_URL } from "@/lib/seo";
 import { site } from "@/lib/site";
 
@@ -36,7 +39,16 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <SiteHeader />
         <main className="flex-1">{children}</main>
         <SiteFooter />
+        <Suspense fallback={null}>
+          <SitePixel />
+        </Suspense>
       </body>
     </html>
   );
+}
+
+/** The Meta Pixel id saved in the admin panel ("Шаблони → Общи данни"); streams in after the shell. */
+async function SitePixel() {
+  const contact = await getContact();
+  return <CookieConsentAndPixel pixelId={contact?.metaPixelId ?? null} />;
 }

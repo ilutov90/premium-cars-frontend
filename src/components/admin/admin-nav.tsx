@@ -10,6 +10,8 @@ const links: [string, string][] = [
   ["/admin/templates", "Шаблони"],
   ["/admin/scheduled", "Насрочени"],
   ["/admin/inquiries", "Запитвания"],
+  ["/admin/reports", "Отчет"],
+  ["/admin/delivered", "Доставени"],
   ["/admin/users", "Потребители"],
   ["/admin/account", "Профил"],
 ];

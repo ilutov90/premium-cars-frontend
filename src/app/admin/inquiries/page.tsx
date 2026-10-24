@@ -3,8 +3,20 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useAdmin } from "@/components/admin/admin-context";
-import { formatDate, inquiryStatusLabels } from "@/lib/format";
+import { formatDate, heardFromLabels, inquiryStatusLabels } from "@/lib/format";
 import type { AdminInquiry, InquiryStatus, PageResponse } from "@/lib/types";
+
+/** "Откъде: Facebook · линк: facebook / social / car-post · сайт: l.facebook.com · страница: /cars/…" */
+function sourceLine(q: AdminInquiry): string | null {
+  const a = q.attribution;
+  const parts: string[] = [];
+  if (q.heardFrom) parts.push(`Откъде: ${heardFromLabels[q.heardFrom]}`);
+  const utm = [a?.utmSource, a?.utmMedium, a?.utmCampaign, a?.utmContent].filter(Boolean).join(" / ");
+  if (utm) parts.push(`линк: ${utm}`);
+  if (a?.referrer) parts.push(`сайт: ${a.referrer}`);
+  if (a?.landingPath) parts.push(`първа страница: ${a.landingPath}`);
+  return parts.length ? parts.join(" · ") : null;
+}
 
 const statuses = Object.keys(inquiryStatusLabels) as InquiryStatus[];
 
@@ -42,7 +54,12 @@ export default function AdminInquiriesPage() {
   return (
     <div>
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-xl font-extrabold">Запитвания</h1>
+        <div className="flex items-baseline gap-3">
+          <h1 className="text-xl font-extrabold">Запитвания</h1>
+          <Link href="/admin/reports" className="text-sm font-semibold text-accent hover:underline">
+            Отчет по канали →
+          </Link>
+        </div>
         <div className="flex gap-1.5">
           {(["", ...statuses] as const).map((s) => (
             <button
@@ -95,6 +112,7 @@ export default function AdminInquiriesPage() {
               </select>
             </div>
             {q.message && <p className="mt-3 text-sm whitespace-pre-line text-ink-soft">{q.message}</p>}
+            {sourceLine(q) && <p className="mt-2 text-xs break-all text-muted">{sourceLine(q)}</p>}
           </li>
         ))}
       </ul>

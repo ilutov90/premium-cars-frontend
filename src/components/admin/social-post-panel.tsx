@@ -76,7 +76,7 @@ export function SocialPostPanel({ car }: { car: AdminCar }) {
   }, [adminFetch, car.id]);
 
   const origin = typeof window !== "undefined" ? window.location.origin : undefined;
-  const textFor = (kind: TemplateKind) => renderTemplate(templates[kind], templateValues(car, origin, settings));
+  const textFor = (kind: TemplateKind) => renderTemplate(templates[kind], templateValues(car, origin, settings, kind));
   const noPhotos = car.images.length === 0;
   const configured = networks.filter((n) =>
     n === "FACEBOOK" ? status?.facebook : n === "INSTAGRAM" ? status?.instagram : status?.viber,
