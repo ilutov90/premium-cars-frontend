@@ -87,3 +87,19 @@ is stored by the frontend (no password, no token in sessionStorage/localStorage)
 `X-XSRF-TOKEN` header on changing requests and shows the login form again on 401. "Профил"
 (`/admin/account`) changes the password. Security headers (frame, sniffing, referrer, permissions) come from
 `next.config.ts`.
+
+## mobile.bg extension
+
+`extension/mobile-bg` is a Chrome/Edge extension (Manifest V3, no build step) used by the admin panel's
+"Качи в mobile.bg" module:
+
+- `admin-bridge.js` runs on `/admin/*` of the site: marks the page (`data-pci-mobile-bg`) and passes messages between
+  the page and the extension (start, mobile.bg's lists, published listings).
+- `background.js` keeps the job, opens mobile.bg and fetches the car's photos from the site for the photo step.
+- `mobilebg.js` (isolated) + `mobilebg-page.js` (the page's own world, for `changemm()`, `pubEngineType()` and the
+  photo uploader) follow the 3 steps of "Добави обява": region first (mobile.bg reloads the form), then the other
+  fields and extras; on step 2 the photos one by one; on step 3 they record the listing. They never press a button.
+
+`npm run build` and `npm run dev` zip it to `public/downloads/premium-cars-mobile-bg.zip` (`scripts/zip-extension.mjs`);
+the module links to it with installation steps ("Зареди разархивирано" in `chrome://extensions`). After changing the
+extension, raise `version` in its `manifest.json`; admins install the new zip the same way.

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { use, useEffect, useState } from "react";
 import { useAdmin } from "./admin-context";
+import { MobileBgPanel } from "./mobile-bg-panel";
 import { SocialPostPanel } from "./social-post-panel";
 import { StatusBadge } from "./status-badge";
 import { translatedSheet } from "@/lib/spec-sheet";
@@ -305,6 +306,7 @@ export function CarEditor({ params }: { params: Promise<{ id: string }> }) {
           />
           {/* new text after every save */}
           <SocialPostPanel key={car.updatedAt} car={car} />
+          <MobileBgPanel car={car} />
           <section>
             <h2 className="mb-3 font-bold">Снимки ({car.images.length})</h2>
             {car.images.length === 0 && <p className="text-sm text-muted">Няма снимки.</p>}

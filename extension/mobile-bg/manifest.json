@@ -1,0 +1,27 @@
+{
+  "manifest_version": 3,
+  "name": "Premium Cars → mobile.bg",
+  "version": "1.0.0",
+  "description": "Попълва „Добави обява“ в mobile.bg с данните от админ панела на Premium Cars Import. Бутоните в mobile.bg ги натиска админът.",
+  "permissions": ["storage", "tabs"],
+  "host_permissions": ["https://www.mobile.bg/*", "https://premiumcarsimport.bg/*", "http://localhost/*"],
+  "background": { "service_worker": "background.js" },
+  "content_scripts": [
+    {
+      "matches": ["https://premiumcarsimport.bg/admin/*", "http://localhost/admin/*"],
+      "js": ["admin-bridge.js"],
+      "run_at": "document_start"
+    },
+    {
+      "matches": ["https://www.mobile.bg/*"],
+      "js": ["mobilebg-page.js"],
+      "run_at": "document_idle",
+      "world": "MAIN"
+    },
+    {
+      "matches": ["https://www.mobile.bg/*"],
+      "js": ["mobilebg.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}

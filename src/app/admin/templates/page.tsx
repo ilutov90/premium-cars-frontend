@@ -35,11 +35,14 @@ export default function AdminTemplatesPage() {
     adminFetch<PostTemplate[]>("/api/admin/post-templates")
       .then((list) => {
         const byKind: Partial<Record<TemplateKind, PostTemplate>> = {};
-        for (const t of list) if (t.network === "FACEBOOK" || t.network === "VIBER") byKind[t.network] = t;
+        for (const t of list) {
+          if (t.network === "FACEBOOK" || t.network === "VIBER" || t.network === "MOBILE_BG") byKind[t.network] = t;
+        }
         setSaved(byKind);
         setDrafts({
           FACEBOOK: byKind.FACEBOOK?.body ?? defaultTemplates.FACEBOOK,
           VIBER: byKind.VIBER?.body ?? defaultTemplates.VIBER,
+          MOBILE_BG: byKind.MOBILE_BG?.body ?? defaultTemplates.MOBILE_BG,
         });
       })
       .catch((e: Error) => setMessage({ ok: false, text: e.message }));
@@ -124,7 +127,7 @@ export default function AdminTemplatesPage() {
     <div>
       <h1 className="text-xl font-extrabold">Шаблони за публикации</h1>
       <p className="mt-1 max-w-3xl text-sm text-muted">
-        Facebook и Instagram ползват един общ шаблон, Viber — свой. Текстът се сглобява от шаблона при публикуване. Местата като <code>{"{{price}}"}</code> се
+        Facebook и Instagram ползват един общ шаблон, Viber — свой, а mobile.bg — свой за „Допълнителна информация“ (до 11 000 знака). Текстът се сглобява от шаблона при публикуване. Местата като <code>{"{{price}}"}</code> се
         заместват с данните на колата. Ред, в който някое място е празно за колата (например батерия при дизел или
         липсващ пробег), не се показва. Преди публикуване текстът винаги се вижда и може да се промени.
       </p>
@@ -232,6 +235,7 @@ export default function AdminTemplatesPage() {
               <p className={`mt-1 text-xs ${network === "FACEBOOK" && preview.length > 2200 ? "font-semibold text-warn" : "text-muted"}`}>
                 {preview.length} знака
                 {network === "FACEBOOK" && " (Instagram приема до 2200 знака)"}
+                {network === "MOBILE_BG" && " (mobile.bg приема до 11 000 знака; емоджитата се махат)"}
               </p>
             </>
           ) : (

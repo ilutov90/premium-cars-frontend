@@ -1,4 +1,5 @@
-// Post text templates: one shared by Facebook and Instagram (stored as FACEBOOK) and one for Viber. The admin edits
+// Text templates: one shared by Facebook and Instagram (stored as FACEBOOK), one for Viber and one for mobile.bg's
+// "Допълнителна информация". The admin edits
 // them under "Шаблони" (stored by the backend, post_template); without a saved one the defaults below apply. Publishing fills in the placeholders from
 // the car and leaves out every line whose placeholder is empty for that car (e.g. the battery of a diesel).
 import { fullModel, hashtags, locationLine, powertrainLines, shortTitle } from "./description";
@@ -24,9 +25,13 @@ export const networkLabels: Record<SocialNetwork, string> = {
 };
 
 /** The templates: Facebook and Instagram share one (stored by the backend as FACEBOOK), Viber has its own. */
-export type TemplateKind = "FACEBOOK" | "VIBER";
-export const templateKinds: TemplateKind[] = ["FACEBOOK", "VIBER"];
-export const templateLabels: Record<TemplateKind, string> = { FACEBOOK: "Facebook и Instagram", VIBER: "Viber" };
+export type TemplateKind = "FACEBOOK" | "VIBER" | "MOBILE_BG";
+export const templateKinds: TemplateKind[] = ["FACEBOOK", "VIBER", "MOBILE_BG"];
+export const templateLabels: Record<TemplateKind, string> = {
+  FACEBOOK: "Facebook и Instagram",
+  VIBER: "Viber",
+  MOBILE_BG: "mobile.bg",
+};
 export const templateOf = (network: SocialNetwork): TemplateKind => (network === "VIBER" ? "VIBER" : "FACEBOOK");
 
 /** Every placeholder, with what it becomes (shown in the templates page). Values use the posting script's format. */
@@ -92,12 +97,16 @@ const fullPost = [
 export const defaultTemplates: Record<TemplateKind, string> = {
   FACEBOOK: fullPost,
   VIBER: [...carPart, "{{hashtags}}"].join("\n"),
+  // mobile.bg's "Допълнителна информация": the admins write their own text under "Шаблони"
+  MOBILE_BG: "попълни шаблона за мобиле",
 };
 
 /** The saved templates over the defaults (an old INSTAGRAM row, if any, is ignored). */
 export function templatesFrom(saved: PostTemplate[]): Record<TemplateKind, string> {
   const t = { ...defaultTemplates };
-  for (const row of saved) if (row.network === "FACEBOOK" || row.network === "VIBER") t[row.network] = row.body;
+  for (const row of saved) {
+    if (row.network === "FACEBOOK" || row.network === "VIBER" || row.network === "MOBILE_BG") t[row.network] = row.body;
+  }
   return t;
 }
 

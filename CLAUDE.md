@@ -48,6 +48,13 @@ Run `npm run lint` and `npm run build` before finishing a change.
   picked for all, now or scheduled for a date and time) sends one `POST /api/admin/cars/{id}/publications`; the panel
   follows each network's post (`/scheduled-posts`) until it is published or failed.
   The car page shows every known spec and hides empty ones.
+- mobile.bg: the car editor's `mobile-bg-panel.tsx` ("Качи в mobile.bg") shows mobile.bg's "Добави обява" form filled
+  in from the car (`GET /api/admin/cars/{id}/mobile-bg`, everything editable, up to 17 photos, the `MOBILE_BG`
+  template as description) and hands it to the browser extension in `extension/mobile-bg` (Manifest V3, plain JS,
+  messages through `window.postMessage`, see `src/lib/mobile-bg.ts`). The extension types it into mobile.bg in the
+  admin's own browser, uploads the photos on step 2 and stops: mobile.bg's "ПРОДЪЛЖИ" (which publishes) is always
+  pressed by the admin; it reports the published listing and mobile.bg's lists, which the panel saves. The server never
+  calls mobile.bg. `npm run build` (prebuild) zips the extension to `public/downloads/` for the module's download link.
 - Car descriptions come from `src/lib/description.ts` (a port of `build_post_text` / `generate_hashtags` in
   `autowini_poster_parallel.py`); the default Facebook/Instagram template renders the script's post exactly.
   Business details (brand, phone, Viber, office) and the "why us" bullets live in `src/lib/site.ts`; the phone,
