@@ -25,7 +25,7 @@ Before committing: `npm run lint` and `npm run build`.
 |---|---|
 | `src/app/page.tsx` | home: hero, latest cars, how import works, "find me a car" form |
 | `src/app/cars/page.tsx` | catalog; filters live in the URL |
-| `src/app/cars/[slug]/page.tsx` | car page: gallery, share buttons, EV stats, all known specs in groups (empty ones hidden), notes, final price, inquiry form |
+| `src/app/cars/[slug]/page.tsx` | car page: gallery, share buttons, EV stats, all known specs in groups (empty ones hidden), equipment, the source's full spec sheet in Bulgarian ("Пълна спецификация", `src/lib/spec-sheet.ts`), notes, final price, inquiry form |
 | `src/app/admin/**` | admin: import by link (autohome, autowini, other sites), car list with the source listing (link, id; search by either), edit car, photos, statuses, inquiries |
 | `src/app/admin/pricing/page.tsx` | price formula per site: costs, costs per 10 000 € above the threshold, profit |
 | `src/app/admin/account/page.tsx` | change the admin password |

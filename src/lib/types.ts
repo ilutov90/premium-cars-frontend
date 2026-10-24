@@ -192,6 +192,17 @@ export interface CarSpecs {
   extraSpecs: Record<string, string>;
   /** extras in the mobile.bg form's order */
   features: CarFeature[];
+  /**
+   * The source site's full specification sheet as imported (English; the car page translates it). Read-only: the
+   * admin editor does not send it, and saving a car keeps the stored one.
+   */
+  sheet?: SpecGroup[];
+}
+
+/** A group of the source's specification sheet (backend SpecGroup); value "" = fitted, nothing more to say. */
+export interface SpecGroup {
+  name: string;
+  items: { name: string; value: string }[];
 }
 
 /** Price formula of a source site (backend PriceProfile). */
