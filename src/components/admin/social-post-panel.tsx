@@ -1,16 +1,24 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useAdmin } from "./admin-context";
 import { CarImage } from "@/components/car-image";
 import { formatDate, scheduledStatusLabels } from "@/lib/format";
-import { defaultTemplates, networkLabels, renderTemplate, templateValues } from "@/lib/post-template";
+import {
+  defaultTemplates,
+  networkLabels,
+  renderTemplate,
+  templatesFrom,
+  templateValues,
+  type TemplateKind,
+} from "@/lib/post-template";
 import type {
   AdminCar,
   PostSettings,
   PostTemplate,
+  PublishRequest,
   ScheduledPost,
   SocialNetwork,
   SocialPost,
@@ -22,20 +30,36 @@ import type {
 const TEXT_MAX: Record<SocialNetwork, number> = { FACEBOOK: 5000, INSTAGRAM: 2200, VIBER: 7000 };
 const MAX_PHOTOS = 10;
 const networks: SocialNetwork[] = ["FACEBOOK", "INSTAGRAM", "VIBER"];
+const FINISHED: ScheduledPost["status"][] = ["PUBLISHED", "FAILED", "CANCELLED"];
 
 type Message = { ok: boolean; text: string };
 
-/** Publishing the car to Facebook / Instagram / Viber (through a confirmation step), sharing and earlier posts. */
+/** "Facebook, Instagram и Viber" */
+function namesOf(list: SocialNetwork[]): string {
+  const names = list.map((n) => networkLabels[n]);
+  return names.length > 1 ? `${names.slice(0, -1).join(", ")} и ${names[names.length - 1]}` : (names[0] ?? "");
+}
+
+/** "във Facebook" / "в Instagram" */
+const inNetwork = (n: SocialNetwork) => `${n === "INSTAGRAM" ? "в" : "във"} ${networkLabels[n]}`;
+
+/** "във Facebook, Instagram и Viber" */
+const inNetworks = (list: SocialNetwork[]) => (list.length ? `${list[0] === "INSTAGRAM" ? "в" : "във"} ${namesOf(list)}` : "");
+
+/**
+ * Publishing the car to Facebook, Instagram and Viber with one action (through a confirmation step), sharing and
+ * earlier posts.
+ */
 export function SocialPostPanel({ car }: { car: AdminCar }) {
   const { adminFetch } = useAdmin();
   const [status, setStatus] = useState<SocialStatus | null>(null);
-  const [templates, setTemplates] = useState<Record<SocialNetwork, string>>(defaultTemplates);
+  const [templates, setTemplates] = useState<Record<TemplateKind, string>>(defaultTemplates);
   const [settings, setSettings] = useState<PostSettings | null>(null);
   const [posts, setPosts] = useState<SocialPost[]>([]);
   const [scheduled, setScheduled] = useState<ScheduledPost[]>([]);
-  // posts being published in the background right now: followed until PUBLISHED or FAILED
-  const [following, setFollowing] = useState<number[]>([]);
-  const [dialog, setDialog] = useState<SocialNetwork | null>(null);
+  // the posts of the last publication made now: followed until each is PUBLISHED or FAILED
+  const [batch, setBatch] = useState<number[]>([]);
+  const [dialog, setDialog] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
   const [message, setMessage] = useState<Message | null>(null);
 
@@ -46,23 +70,25 @@ export function SocialPostPanel({ car }: { car: AdminCar }) {
       .then(setScheduled)
       .catch(() => setScheduled([]));
     adminFetch<PostTemplate[]>("/api/admin/post-templates")
-      .then((list) => {
-        const t = { ...defaultTemplates };
-        for (const saved of list) t[saved.network] = saved.body;
-        setTemplates(t);
-      })
+      .then((list) => setTemplates(templatesFrom(list)))
       .catch(() => undefined);
     adminFetch<PostSettings>("/api/admin/post-settings").then(setSettings).catch(() => setSettings(null));
   }, [adminFetch, car.id]);
 
   const origin = typeof window !== "undefined" ? window.location.origin : undefined;
-  const textFor = (network: SocialNetwork) => renderTemplate(templates[network], templateValues(car, origin, settings));
+  const textFor = (kind: TemplateKind) => renderTemplate(templates[kind], templateValues(car, origin, settings));
   const noPhotos = car.images.length === 0;
-  const configured = (n: SocialNetwork) =>
-    n === "FACEBOOK" ? status?.facebook : n === "INSTAGRAM" ? status?.instagram : status?.viber;
+  const configured = networks.filter((n) =>
+    n === "FACEBOOK" ? status?.facebook : n === "INSTAGRAM" ? status?.instagram : status?.viber,
+  );
+
+  // published posts seen so far, to reload the list of posts when one more is out
+  const seenPublished = useRef(new Set<number>());
+  const batchPosts = batch.map((id) => scheduled.find((p) => p.id === id)).filter((p): p is ScheduledPost => !!p);
+  const waiting = batchPosts.some((p) => !FINISHED.includes(p.status));
 
   useEffect(() => {
-    if (following.length === 0) return;
+    if (!waiting) return;
     const timer = setInterval(async () => {
       let list: ScheduledPost[];
       try {
@@ -71,24 +97,17 @@ export function SocialPostPanel({ car }: { car: AdminCar }) {
         return; // try again on the next tick
       }
       setScheduled(list);
-      const done = list.filter((p) => following.includes(p.id) && (p.status === "PUBLISHED" || p.status === "FAILED"));
-      if (done.length === 0) return;
-      setFollowing((ids) => ids.filter((id) => !done.some((d) => d.id === id)));
-      if (done.some((p) => p.status === "PUBLISHED")) {
+      const published = list.filter((p) => p.status === "PUBLISHED").map((p) => p.id);
+      if (published.some((id) => !seenPublished.current.has(id))) {
+        published.forEach((id) => seenPublished.current.add(id));
         adminFetch<SocialPost[]>(`/api/admin/cars/${car.id}/social-posts`).then(setPosts).catch(() => undefined);
       }
-      const last = done[done.length - 1];
-      setMessage(
-        last.status === "PUBLISHED"
-          ? { ok: true, text: `Публикувано в ${networkLabels[last.network]} ✓` }
-          : { ok: false, text: `${networkLabels[last.network]}: публикуването не успя — ${last.error ?? "грешка"}` },
-      );
     }, 3000);
     return () => clearInterval(timer);
-  }, [following, adminFetch, car.id]);
+  }, [waiting, adminFetch, car.id]);
 
   async function cancelScheduled(post: ScheduledPost) {
-    if (!confirm(`Да отменя ли насрочената публикация в ${networkLabels[post.network]} за ${formatDate(post.publishAt)}?`)) return;
+    if (!confirm(`Да отменя ли насрочената публикация ${inNetwork(post.network)} за ${formatDate(post.publishAt)}?`)) return;
     try {
       await adminFetch(`/api/admin/scheduled-posts/${post.id}`, { method: "DELETE" });
       setScheduled((list) => list.map((p) => (p.id === post.id ? { ...p, status: "CANCELLED" } : p)));
@@ -97,13 +116,15 @@ export function SocialPostPanel({ car }: { car: AdminCar }) {
     }
   }
 
-  // waiting ones, and the failed ones (they need the admin's attention)
-  const shownScheduled = scheduled.filter((p) => p.status === "SCHEDULED" || p.status === "PUBLISHING" || p.status === "FAILED");
+  // waiting ones and the failed ones (they need the admin's attention); the current publication is shown above
+  const shownScheduled = scheduled.filter(
+    (p) => !batch.includes(p.id) && (p.status === "SCHEDULED" || p.status === "PUBLISHING" || p.status === "FAILED"),
+  );
 
   async function copy() {
     try {
       await navigator.clipboard.writeText(textFor("FACEBOOK"));
-      setMessage({ ok: true, text: "Текстът (Facebook шаблон) е копиран ✓" });
+      setMessage({ ok: true, text: "Текстът (шаблон за Facebook и Instagram) е копиран ✓" });
     } catch {
       setMessage({ ok: false, text: "Неуспешно копиране" });
     }
@@ -157,23 +178,18 @@ export function SocialPostPanel({ car }: { car: AdminCar }) {
         </Link>
       </div>
 
-      <div className="grid gap-2">
-        {networks.map((n) => (
-          <button
-            key={n}
-            type="button"
-            className="btn-primary px-3! py-2! text-sm!"
-            disabled={!configured(n) || noPhotos || busy !== null}
-            onClick={() => {
-              setMessage(null);
-              setDialog(n);
-            }}
-          >
-            Публикувай в{n === "FACEBOOK" || n === "VIBER" ? "ъв" : ""} {networkLabels[n]}…
-          </button>
-        ))}
-      </div>
-      {status && (!status.facebook || !status.instagram || !status.viber) && (
+      <button
+        type="button"
+        className="btn-primary w-full px-3! py-2.5! text-sm!"
+        disabled={configured.length === 0 || noPhotos || busy !== null}
+        onClick={() => {
+          setMessage(null);
+          setDialog(true);
+        }}
+      >
+        Публикувай {inNetworks(configured)}…
+      </button>
+      {status && configured.length < networks.length && (
         <p className="mt-2 text-xs text-muted">
           {!status.facebook && "Facebook не е настроен (FB_PAGE_ID, FB_ACCESS_TOKEN). "}
           {!status.instagram && "Instagram не е настроен (IG_USER_ID, FB_ACCESS_TOKEN, IMGBB_API_KEY). "}
@@ -182,8 +198,8 @@ export function SocialPostPanel({ car }: { car: AdminCar }) {
         </p>
       )}
       <p className="mt-2 text-xs text-muted">
-        Преди публикуване се показват текстът от шаблона (може да се промени) и снимките за избор. Може да
-        публикувате веднага или да насрочите за ден и час.
+        Едно публикуване за всички мрежи: преди това се показват текстовете (общ за Facebook и Instagram и отделен за
+        Viber, може да се променят) и снимките за избор. Може веднага или насрочено за ден и час.
       </p>
 
       <div className="mt-3 flex flex-wrap gap-2">
@@ -202,6 +218,40 @@ export function SocialPostPanel({ car }: { car: AdminCar }) {
 
       {message && (
         <p className={`mt-3 text-sm font-semibold break-words ${message.ok ? "text-ok" : "text-warn"}`}>{message.text}</p>
+      )}
+
+      {batchPosts.length > 0 && (
+        <p className={`mt-3 text-sm font-semibold ${batchPosts.some((p) => p.status === "FAILED") ? "text-warn" : "text-ok"}`}>
+          {waiting
+            ? `Публикува се ${inNetworks(batchPosts.map((p) => p.network))}… Може да продължите работа, резултатът ще се покаже тук.`
+            : batchPosts.every((p) => p.status === "PUBLISHED")
+              ? "Публикувано навсякъде ✓"
+              : "Публикуването приключи, но не навсякъде:"}
+        </p>
+      )}
+      {batchPosts.length > 0 && (
+        <ul className="mt-1 space-y-1 text-sm" aria-live="polite">
+          {batchPosts.map((p) => (
+            <li key={p.id} className="break-words">
+              <span className="font-semibold">{networkLabels[p.network]}:</span>{" "}
+              {p.status === "PUBLISHED" ? (
+                <span className="font-semibold text-ok">публикувано ✓</span>
+              ) : p.status === "FAILED" ? (
+                <span className="font-semibold text-warn">не успя — {p.error ?? "грешка"}</span>
+              ) : p.status === "CANCELLED" ? (
+                <span className="text-muted">отменено</span>
+              ) : (
+                <span className="text-muted">публикува се…</span>
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
+      {!waiting && batchPosts.some((p) => p.status === "FAILED") && (
+        <p className="mt-1 text-xs text-muted">
+          Проверете дали постът все пак не е излязъл. Ако не е, натиснете „Публикувай…“ отново: отметнати ще са само
+          мрежите, в които колата още не е публикувана.
+        </p>
       )}
 
       {shownScheduled.length > 0 && (
@@ -245,23 +295,24 @@ export function SocialPostPanel({ car }: { car: AdminCar }) {
       {dialog && (
         <PublishDialog
           car={car}
-          network={dialog}
-          initialText={textFor(dialog)}
-          earlier={posts.find((p) => p.network === dialog) ?? null}
-          onClose={() => setDialog(null)}
-          onPublishing={(post) => {
-            setScheduled((list) => [post, ...list]);
-            setFollowing((ids) => [...ids, post.id]);
-            setDialog(null);
+          configured={configured}
+          initialTexts={{ FACEBOOK: textFor("FACEBOOK"), VIBER: textFor("VIBER") }}
+          earlier={posts}
+          onClose={() => setDialog(false)}
+          onPublishing={(list) => {
+            setScheduled((before) => [...list, ...before]);
+            setBatch(list.map((p) => p.id));
+            setDialog(false);
+            setMessage(null);
+          }}
+          onScheduled={(list) => {
+            setScheduled((before) => [...list, ...before]);
+            setBatch([]);
+            setDialog(false);
             setMessage({
               ok: true,
-              text: `Публикува се в ${networkLabels[post.network]}… Може да продължите работа, ще се покаже тук, когато е готово.`,
+              text: `Насрочено за ${formatDate(list[0].publishAt)}: ${namesOf(list.map((p) => p.network))} ✓`,
             });
-          }}
-          onScheduled={(post) => {
-            setScheduled((list) => [post, ...list]);
-            setDialog(null);
-            setMessage({ ok: true, text: `Насрочено за ${networkLabels[post.network]}: ${formatDate(post.publishAt)} ✓` });
           }}
         />
       )}
@@ -269,26 +320,36 @@ export function SocialPostPanel({ car }: { car: AdminCar }) {
   );
 }
 
-/** The confirmation step: the text from the template (editable) and the photos to send (1 to 10, gallery order). */
+/** The networks ticked when the dialog opens: the configured ones the car is not posted to yet (or all of them). */
+function initialNetworks(configured: SocialNetwork[], earlier: SocialPost[]): SocialNetwork[] {
+  const fresh = configured.filter((n) => !earlier.some((p) => p.network === n));
+  return fresh.length > 0 ? fresh : configured;
+}
+
+/**
+ * The confirmation step for all networks at once: which networks, the Facebook/Instagram text and the Viber text
+ * (from the templates, editable), the photos to send (1 to 10, gallery order, the same everywhere), now or later.
+ */
 function PublishDialog({
   car,
-  network,
-  initialText,
+  configured,
+  initialTexts,
   earlier,
   onClose,
   onPublishing,
   onScheduled,
 }: {
   car: AdminCar;
-  network: SocialNetwork;
-  initialText: string;
-  earlier: SocialPost | null;
+  configured: SocialNetwork[];
+  initialTexts: Record<TemplateKind, string>;
+  earlier: SocialPost[];
   onClose: () => void;
-  onPublishing: (post: ScheduledPost) => void;
-  onScheduled: (post: ScheduledPost) => void;
+  onPublishing: (posts: ScheduledPost[]) => void;
+  onScheduled: (posts: ScheduledPost[]) => void;
 }) {
   const { adminFetch } = useAdmin();
-  const [text, setText] = useState(initialText);
+  const [chosen, setChosen] = useState<Set<SocialNetwork>>(() => new Set(initialNetworks(configured, earlier)));
+  const [texts, setTexts] = useState(initialTexts);
   const [selected, setSelected] = useState<Set<number>>(
     () => new Set(car.images.slice(0, MAX_PHOTOS).map((i) => i.id)),
   );
@@ -305,10 +366,25 @@ function PublishDialog({
     return () => window.removeEventListener("keydown", onKey);
   }, [busy, onClose]);
 
+  const picked = networks.filter((n) => chosen.has(n));
+  const meta = chosen.has("FACEBOOK") || chosen.has("INSTAGRAM");
+  const viber = chosen.has("VIBER");
+  const metaMax = chosen.has("INSTAGRAM") ? TEXT_MAX.INSTAGRAM : TEXT_MAX.FACEBOOK;
+  const metaInvalid = meta && (!texts.FACEBOOK.trim() || texts.FACEBOOK.length > metaMax);
+  const viberInvalid = viber && (!texts.VIBER.trim() || texts.VIBER.length > TEXT_MAX.VIBER);
+  const postedBefore = earlier.filter((p, i) => chosen.has(p.network) && earlier.findIndex((q) => q.network === p.network) === i);
+
   const ordered = car.images.filter((i) => selected.has(i.id));
-  const max = TEXT_MAX[network];
-  const tooLong = text.length > max;
   const full = selected.size >= MAX_PHOTOS;
+
+  function toggleNetwork(n: SocialNetwork) {
+    setChosen((s) => {
+      const next = new Set(s);
+      if (next.has(n)) next.delete(n);
+      else next.add(n);
+      return next;
+    });
+  }
 
   function toggle(id: number) {
     setSelected((s) => {
@@ -327,21 +403,18 @@ function PublishDialog({
     setBusy(true);
     setError(null);
     try {
-      const body = { network, text, imageIds: ordered.map((i) => i.id) };
-      if (when === "later" && scheduleDate) {
-        const post = await adminFetch<ScheduledPost>(`/api/admin/cars/${car.id}/scheduled-posts`, {
-          method: "POST",
-          body: JSON.stringify({ ...body, publishAt: scheduleDate.toISOString() }),
-        });
-        onScheduled(post);
-      } else {
-        // answered at once: the server publishes in the background
-        const post = await adminFetch<ScheduledPost>(`/api/admin/cars/${car.id}/social-posts`, {
-          method: "POST",
-          body: JSON.stringify(body),
-        });
-        onPublishing(post);
-      }
+      const body: PublishRequest = {
+        posts: picked.map((network) => ({ network, text: network === "VIBER" ? texts.VIBER : texts.FACEBOOK })),
+        imageIds: ordered.map((i) => i.id),
+      };
+      if (when === "later" && scheduleDate) body.publishAt = scheduleDate.toISOString();
+      // answered at once: the server publishes in the background (or at the chosen time)
+      const posts = await adminFetch<ScheduledPost[]>(`/api/admin/cars/${car.id}/publications`, {
+        method: "POST",
+        body: JSON.stringify(body),
+      });
+      if (body.publishAt) onScheduled(posts);
+      else onPublishing(posts);
     } catch (e) {
       const message = e instanceof Error ? e.message : "Грешка";
       setError(message.startsWith("Pick a time") ? "Изберете час поне минута напред (или публикувайте веднага)." : message);
@@ -349,13 +422,15 @@ function PublishDialog({
     }
   }
 
+  const photoWord = selected.size === 1 ? "снимка" : "снимки";
+
   // rendered into <body>, so no sticky or blurred parent of the editor can paint over it
   return createPortal(
     <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-ink/50 p-4 sm:p-8" role="dialog" aria-modal="true">
-      <div className="w-full max-w-4xl rounded-2xl bg-card p-5 shadow-xl">
+      <div className="w-full max-w-5xl rounded-2xl bg-card p-5 shadow-xl">
         <div className="flex items-start justify-between gap-3">
           <div>
-            <h2 className="text-lg font-extrabold">Публикуване в {networkLabels[network]}</h2>
+            <h2 className="text-lg font-extrabold">Публикуване в социалните мрежи</h2>
             <p className="text-sm text-muted">{car.specs.title}</p>
           </div>
           <button type="button" onClick={onClose} disabled={busy} className="btn-ghost px-3! py-1.5! text-xs!">
@@ -363,34 +438,65 @@ function PublishDialog({
           </button>
         </div>
 
-        {earlier && (
+        <fieldset className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 rounded-xl border border-line p-3 text-sm">
+          <legend className="px-1 font-bold">Къде</legend>
+          {networks.map((n) => {
+            const ok = configured.includes(n);
+            return (
+              <label key={n} className={`flex items-center gap-2 ${ok ? "" : "text-muted"}`}>
+                <input
+                  type="checkbox"
+                  checked={chosen.has(n)}
+                  disabled={!ok}
+                  onChange={() => toggleNetwork(n)}
+                  className="h-4 w-4 accent-accent"
+                />
+                {networkLabels[n]}
+                {!ok && " (не е настроен)"}
+              </label>
+            );
+          })}
+        </fieldset>
+
+        {postedBefore.length > 0 && (
           <p className="mt-3 rounded-xl bg-warn/10 p-3 text-sm text-warn">
-            Колата вече е публикувана в {networkLabels[network]} на {formatDate(earlier.createdAt)}.
+            Колата вече е публикувана{" "}
+            {postedBefore.map((p, i) => (
+              <span key={p.id}>
+                {i > 0 && (i === postedBefore.length - 1 ? " и " : ", ")}
+                {inNetwork(p.network)} на {formatDate(p.createdAt)}
+              </span>
+            ))}
+            . Махнете отметката, ако не искате втори пост там.
           </p>
         )}
 
-        <div className="mt-4 grid gap-5 lg:grid-cols-[1fr_1.1fr]">
-          <div>
-            <div className="mb-1 flex items-center justify-between gap-2">
-              <label className="text-sm font-bold" htmlFor="publish-text">
-                Текст
-              </label>
-              {text !== initialText && (
-                <button type="button" onClick={() => setText(initialText)} className="btn-ghost px-2! py-0.5! text-xs!">
-                  От шаблона
-                </button>
-              )}
-            </div>
-            <textarea
-              id="publish-text"
-              value={text}
-              onChange={(e) => setText(e.target.value)}
-              rows={18}
-              className="field font-mono text-xs! leading-relaxed"
-            />
-            <p className={`mt-1 text-xs ${tooLong ? "font-semibold text-warn" : "text-muted"}`}>
-              {text.length} / {max} знака{tooLong ? " — твърде дълъг" : ""}
-            </p>
+        <div className="mt-4 grid gap-5 lg:grid-cols-[1fr_1fr]">
+          <div className="space-y-4">
+            {meta && (
+              <PostText
+                id="text-meta"
+                label={`Текст за ${namesOf(picked.filter((n) => n !== "VIBER"))}`}
+                value={texts.FACEBOOK}
+                initial={initialTexts.FACEBOOK}
+                max={metaMax}
+                maxNote={chosen.has("INSTAGRAM") ? "лимитът на Instagram" : undefined}
+                rows={viber ? 12 : 20}
+                onChange={(v) => setTexts((t) => ({ ...t, FACEBOOK: v }))}
+              />
+            )}
+            {viber && (
+              <PostText
+                id="text-viber"
+                label="Текст за Viber"
+                value={texts.VIBER}
+                initial={initialTexts.VIBER}
+                max={TEXT_MAX.VIBER}
+                rows={meta ? 9 : 20}
+                onChange={(v) => setTexts((t) => ({ ...t, VIBER: v }))}
+              />
+            )}
+            {!meta && !viber && <p className="text-sm text-muted">Изберете поне една мрежа.</p>}
           </div>
 
           <div>
@@ -412,7 +518,7 @@ function PublishDialog({
                 </button>
               </span>
             </div>
-            <ul className="grid max-h-[26rem] grid-cols-3 gap-2 overflow-y-auto pr-1 sm:grid-cols-4">
+            <ul className="grid max-h-[30rem] grid-cols-3 gap-2 overflow-y-auto pr-1 sm:grid-cols-4">
               {car.images.map((img) => {
                 const n = ordered.findIndex((i) => i.id === img.id);
                 const on = n >= 0;
@@ -440,8 +546,8 @@ function PublishDialog({
               })}
             </ul>
             <p className="mt-1 text-xs text-muted">
-              Клик избира или маха снимка. Изпращат се в реда от галерията
-              {network === "VIBER" ? "; във Viber всяка снимка е отделно съобщение, а след тях текстът" : ""}.
+              Клик избира или маха снимка. Едни и същи снимки отиват във всички мрежи, в реда от галерията
+              {viber ? "; във Viber всяка снимка е отделно съобщение, а след тях текстът" : ""}.
             </p>
           </div>
         </div>
@@ -473,33 +579,82 @@ function PublishDialog({
             <p className={`mt-2 text-xs ${scheduleInvalid ? "font-semibold text-warn" : "text-muted"}`}>
               {scheduleInvalid
                 ? "Изберете дата и час поне минута напред."
-                : `Ще се публикува на ${formatDate(scheduleDate!.toISOString())} (по часа на този компютър) с текста и снимките, избрани сега. Отменя се от „Насрочени“.`}
+                : `Ще се публикува ${picked.length > 1 ? "едновременно " : ""}на ${formatDate(scheduleDate!.toISOString())} (по часа на този компютър) с текстовете и снимките, избрани сега. Отменя се от „Насрочени“.`}
             </p>
           )}
         </fieldset>
 
         {error && <p className="mt-3 text-sm font-semibold break-words text-warn">{error}</p>}
 
-        <div className="mt-5 flex flex-wrap justify-end gap-2 border-t border-line pt-4">
+        <div className="mt-5 flex flex-wrap items-center justify-end gap-2 border-t border-line pt-4">
+          {picked.length > 0 && <span className="mr-auto text-sm text-muted">{namesOf(picked)}</span>}
           <button type="button" onClick={onClose} disabled={busy} className="btn-ghost">
             Откажи
           </button>
           <button
             type="button"
             onClick={publish}
-            disabled={busy || selected.size < 1 || tooLong || !text.trim() || scheduleInvalid}
+            disabled={busy || picked.length === 0 || selected.size < 1 || metaInvalid || viberInvalid || scheduleInvalid}
             className="btn-primary"
           >
             {busy
               ? when === "later"
                 ? "Насрочване…"
                 : "Изпращане…"
-              : `${when === "later" ? "Насрочи" : "Публикувай"} (${selected.size} ${selected.size === 1 ? "снимка" : "снимки"})`}
+              : `${when === "later" ? "Насрочи" : "Публикувай"} (${selected.size} ${photoWord})`}
           </button>
         </div>
       </div>
     </div>,
     document.body,
+  );
+}
+
+/** One editable post text with its length and limit. */
+function PostText({
+  id,
+  label,
+  value,
+  initial,
+  max,
+  maxNote,
+  rows,
+  onChange,
+}: {
+  id: string;
+  label: string;
+  value: string;
+  initial: string;
+  max: number;
+  maxNote?: string;
+  rows: number;
+  onChange: (value: string) => void;
+}) {
+  const tooLong = value.length > max;
+  return (
+    <div>
+      <div className="mb-1 flex items-center justify-between gap-2">
+        <label className="text-sm font-bold" htmlFor={id}>
+          {label}
+        </label>
+        {value !== initial && (
+          <button type="button" onClick={() => onChange(initial)} className="btn-ghost px-2! py-0.5! text-xs!">
+            От шаблона
+          </button>
+        )}
+      </div>
+      <textarea
+        id={id}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        rows={rows}
+        className="field font-mono text-xs! leading-relaxed"
+      />
+      <p className={`mt-1 text-xs ${tooLong || !value.trim() ? "font-semibold text-warn" : "text-muted"}`}>
+        {value.length} / {max} знака{maxNote ? ` (${maxNote})` : ""}
+        {tooLong ? " — твърде дълъг" : !value.trim() ? " — празен" : ""}
+      </p>
+    </div>
   );
 }
 

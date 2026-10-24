@@ -6,23 +6,23 @@ import { formatDate } from "@/lib/format";
 import {
   defaultTemplates,
   effectiveSettings,
-  networkLabels,
   placeholders,
   renderTemplate,
+  templateKinds,
+  templateLabels,
   templateValues,
   unknownPlaceholders,
+  type TemplateKind,
 } from "@/lib/post-template";
 import { site } from "@/lib/site";
-import type { AdminCar, AdminCarSummary, PageResponse, PostSettings, PostTemplate, SocialNetwork } from "@/lib/types";
+import type { AdminCar, AdminCarSummary, PageResponse, PostSettings, PostTemplate } from "@/lib/types";
 
-const networks: SocialNetwork[] = ["FACEBOOK", "INSTAGRAM", "VIBER"];
-
-/** Post text templates per network, with placeholders filled in from a car when publishing. */
+/** The post text templates (Facebook and Instagram share one, Viber has its own), filled in from a car when publishing. */
 export default function AdminTemplatesPage() {
   const { adminFetch } = useAdmin();
-  const [saved, setSaved] = useState<Partial<Record<SocialNetwork, PostTemplate>>>({});
-  const [drafts, setDrafts] = useState<Record<SocialNetwork, string>>(defaultTemplates);
-  const [network, setNetwork] = useState<SocialNetwork>("FACEBOOK");
+  const [saved, setSaved] = useState<Partial<Record<TemplateKind, PostTemplate>>>({});
+  const [drafts, setDrafts] = useState<Record<TemplateKind, string>>(defaultTemplates);
+  const [network, setNetwork] = useState<TemplateKind>("FACEBOOK");
   const [cars, setCars] = useState<AdminCarSummary[]>([]);
   const [sampleId, setSampleId] = useState<number | null>(null);
   const [sample, setSample] = useState<AdminCar | null>(null);
@@ -34,13 +34,12 @@ export default function AdminTemplatesPage() {
   useEffect(() => {
     adminFetch<PostTemplate[]>("/api/admin/post-templates")
       .then((list) => {
-        const byNetwork: Partial<Record<SocialNetwork, PostTemplate>> = {};
-        for (const t of list) byNetwork[t.network] = t;
-        setSaved(byNetwork);
+        const byKind: Partial<Record<TemplateKind, PostTemplate>> = {};
+        for (const t of list) if (t.network === "FACEBOOK" || t.network === "VIBER") byKind[t.network] = t;
+        setSaved(byKind);
         setDrafts({
-          FACEBOOK: byNetwork.FACEBOOK?.body ?? defaultTemplates.FACEBOOK,
-          INSTAGRAM: byNetwork.INSTAGRAM?.body ?? defaultTemplates.INSTAGRAM,
-          VIBER: byNetwork.VIBER?.body ?? defaultTemplates.VIBER,
+          FACEBOOK: byKind.FACEBOOK?.body ?? defaultTemplates.FACEBOOK,
+          VIBER: byKind.VIBER?.body ?? defaultTemplates.VIBER,
         });
       })
       .catch((e: Error) => setMessage({ ok: false, text: e.message }));
@@ -93,7 +92,7 @@ export default function AdminTemplatesPage() {
         body: JSON.stringify({ body: draft }),
       });
       setSaved((s) => ({ ...s, [network]: t }));
-      setMessage({ ok: true, text: `Шаблонът за ${networkLabels[network]} е записан ✓` });
+      setMessage({ ok: true, text: `Шаблонът за ${templateLabels[network]} е записан ✓` });
     } catch (e) {
       setMessage({ ok: false, text: e instanceof Error ? e.message : "Грешка" });
     } finally {
@@ -102,7 +101,7 @@ export default function AdminTemplatesPage() {
   }
 
   async function reset() {
-    if (!window.confirm(`Да върна шаблона за ${networkLabels[network]} по подразбиране?`)) return;
+    if (!window.confirm(`Да върна шаблона за ${templateLabels[network]} по подразбиране?`)) return;
     setBusy(true);
     setMessage(null);
     try {
@@ -125,7 +124,7 @@ export default function AdminTemplatesPage() {
     <div>
       <h1 className="text-xl font-extrabold">Шаблони за публикации</h1>
       <p className="mt-1 max-w-3xl text-sm text-muted">
-        Текстът за всяка мрежа се сглобява от шаблона при публикуване. Местата като <code>{"{{price}}"}</code> се
+        Facebook и Instagram ползват един общ шаблон, Viber — свой. Текстът се сглобява от шаблона при публикуване. Местата като <code>{"{{price}}"}</code> се
         заместват с данните на колата. Ред, в който някое място е празно за колата (например батерия при дизел или
         липсващ пробег), не се показва. Преди публикуване текстът винаги се вижда и може да се промени.
       </p>
@@ -133,7 +132,7 @@ export default function AdminTemplatesPage() {
       <SharedDetails saved={settings} onSaved={setSettings} />
 
       <div className="mt-6 flex flex-wrap gap-1.5">
-        {networks.map((n) => (
+        {templateKinds.map((n) => (
           <button
             key={n}
             type="button"
@@ -142,7 +141,7 @@ export default function AdminTemplatesPage() {
               network === n ? "bg-ink text-paper" : "bg-card ring-1 ring-line hover:ring-ink"
             }`}
           >
-            {networkLabels[n]}
+            {templateLabels[n]}
             {drafts[n] !== (saved[n]?.body ?? defaultTemplates[n]) && " •"}
           </button>
         ))}
@@ -151,7 +150,7 @@ export default function AdminTemplatesPage() {
       <div className="mt-4 grid gap-6 lg:grid-cols-2">
         <section className="rounded-2xl border border-line bg-card p-4">
           <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-            <h2 className="font-bold">{networkLabels[network]}</h2>
+            <h2 className="font-bold">{templateLabels[network]}</h2>
             <span className="text-xs text-muted">
               {isDefault ? "по подразбиране" : `променен ${formatDate(saved[network]!.updatedAt)}`}
               {dirty && " · незаписани промени"}
@@ -163,7 +162,7 @@ export default function AdminTemplatesPage() {
             onChange={(e) => setDraft(e.target.value)}
             rows={22}
             className="field font-mono text-xs! leading-relaxed"
-            aria-label={`Шаблон за ${networkLabels[network]}`}
+            aria-label={`Шаблон за ${templateLabels[network]}`}
           />
           {unknown.length > 0 && (
             <p className="mt-2 text-xs font-semibold text-warn">
@@ -230,7 +229,10 @@ export default function AdminTemplatesPage() {
           {preview != null ? (
             <>
               <pre className="rounded-xl bg-paper p-3 font-mono text-xs leading-relaxed whitespace-pre-wrap">{preview}</pre>
-              <p className="mt-1 text-xs text-muted">{preview.length} знака</p>
+              <p className={`mt-1 text-xs ${network === "FACEBOOK" && preview.length > 2200 ? "font-semibold text-warn" : "text-muted"}`}>
+                {preview.length} знака
+                {network === "FACEBOOK" && " (Instagram приема до 2200 знака)"}
+              </p>
             </>
           ) : (
             <p className="text-sm text-muted">Няма коли за преглед.</p>

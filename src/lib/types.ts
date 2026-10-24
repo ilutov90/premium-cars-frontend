@@ -274,7 +274,7 @@ export interface SocialStatus {
   viber: boolean;
 }
 
-/** A post text template saved in the admin panel (backend PostTemplate). */
+/** A post text template saved in the admin panel (backend PostTemplate): FACEBOOK is shared with Instagram. */
 export interface PostTemplate {
   network: SocialNetwork;
   body: string;
@@ -290,4 +290,12 @@ export interface PostSettings {
 
 export interface ViberConnectResponse {
   callbackUrl: string;
+}
+
+/** One publication to several networks with the same photos (backend AdminSocialController.PublishRequest). */
+export interface PublishRequest {
+  posts: { network: SocialNetwork; text: string }[];
+  imageIds: number[];
+  /** ISO instant; absent = now */
+  publishAt?: string;
 }

@@ -35,11 +35,14 @@ Run `npm run lint` and `npm run build` before finishing a change.
 - API types in `src/lib/types.ts` mirror the backend DTOs (`CarDtos`, `InquiryDtos`). Change both together.
 - Labels for enums (fuel, transmission, statuses) live in `src/lib/format.ts`.
 - The car type is nested like the API: `car.specs.*` (title, make, EV fields …) and, for admin, `car.pricing.*`.
-- Customers never see the Facebook/Instagram/Viber text. It comes from templates (`src/lib/post-template.ts`:
-  placeholders, defaults, rendering; saved ones in the backend `post_template`, edited under `/admin/templates`).
-  Rendering drops a line whose placeholder is empty for the car. Publishing always goes through the confirmation
-  dialog in `social-post-panel.tsx` (text editable, 1-10 photos picked, now or scheduled for a date and time) and the
-  backend (`/api/admin/cars/{id}/social-posts`, `/scheduled-posts`). The car page shows every known spec and hides empty ones.
+- Customers never see the Facebook/Instagram/Viber text. It comes from two templates (`src/lib/post-template.ts`:
+  placeholders, defaults, rendering; one shared by Facebook and Instagram, stored as `FACEBOOK`, and one for Viber;
+  saved ones in the backend `post_template`, edited under `/admin/templates`). Rendering drops a line whose
+  placeholder is empty for the car. Publishing is one action for all networks: the confirmation dialog in
+  `social-post-panel.tsx` (networks ticked, the Facebook/Instagram text and the Viber text editable, 1-10 photos
+  picked for all, now or scheduled for a date and time) sends one `POST /api/admin/cars/{id}/publications`; the panel
+  follows each network's post (`/scheduled-posts`) until it is published or failed.
+  The car page shows every known spec and hides empty ones.
 - Car descriptions come from `src/lib/description.ts` (a port of `build_post_text` / `generate_hashtags` in
   `autowini_poster_parallel.py`); the default Facebook/Instagram template renders the script's post exactly.
   Business details (brand, phone, Viber, office) and the "why us" bullets live in `src/lib/site.ts`; the phone,
