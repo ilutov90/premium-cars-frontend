@@ -10,6 +10,108 @@ export type FuelType =
   | "LPG"
   | "OTHER";
 export type Drivetrain = "FWD" | "RWD" | "AWD";
+
+/**
+ * Car extras: one per mobile.bg checkbox (backend CarFeature, same names and order).
+ * Labels and groups are in format.ts.
+ */
+export type CarFeature =
+  | "GPS_TRACKING"
+  | "ADAPTIVE_HEADLIGHTS"
+  | "ABS"
+  | "AIRBAGS_REAR"
+  | "AIRBAGS_FRONT"
+  | "AIRBAGS_SIDE"
+  | "EBD"
+  | "ESP"
+  | "TIRE_PRESSURE_MONITORING"
+  | "PARKING_SENSORS"
+  | "ISOFIX"
+  | "DYNAMIC_STABILITY"
+  | "TRACTION_CONTROL"
+  | "DISTANCE_CONTROL"
+  | "HILL_DESCENT_CONTROL"
+  | "CAMERA"
+  | "CARPLAY_ANDROID_AUTO"
+  | "START_STOP"
+  | "BLUETOOTH"
+  | "DVD_TV"
+  | "HEAD_UP_DISPLAY"
+  | "MANUAL_SHIFT_MODE"
+  | "USB_AUX"
+  | "POWER_TAILGATE"
+  | "AIR_SUSPENSION"
+  | "KEYLESS_START"
+  | "DIFFERENTIAL_LOCK"
+  | "TRIP_COMPUTER"
+  | "LOW_RANGE"
+  | "VENTILATED_SEATS"
+  | "LIGHT_SENSOR"
+  | "POWER_MIRRORS"
+  | "POWER_WINDOWS"
+  | "POWER_SEATS"
+  | "ELECTRIC_POWER_STEERING"
+  | "AIR_CONDITIONING"
+  | "CLIMATE_CONTROL"
+  | "MULTIFUNCTION_STEERING_WHEEL"
+  | "NAVIGATION"
+  | "HEATED_STEERING_WHEEL"
+  | "HEATER"
+  | "HEATED_WINDSHIELD"
+  | "HEATED_SEATS"
+  | "STEERING_WHEEL_ADJUSTMENT"
+  | "RAIN_SENSOR"
+  | "POWER_STEERING"
+  | "HEADLIGHT_WASHERS"
+  | "CRUISE_CONTROL"
+  | "HEAT_PUMP"
+  | "COOLED_GLOVEBOX"
+  | "FOUR_BY_FOUR"
+  | "SEVEN_SEATS"
+  | "BUY_BACK"
+  | "BARTER"
+  | "LPG"
+  | "LONG_WHEELBASE"
+  | "RESERVED_OR_SOLD"
+  | "CRASHED"
+  | "SHORT_WHEELBASE"
+  | "LEASING"
+  | "CNG"
+  | "FOR_PARTS"
+  | "FULLY_SERVICED"
+  | "NEW_IMPORT"
+  | "REGISTERED"
+  | "SERVICE_BOOK"
+  | "TUNING"
+  | "DOORS_2_3"
+  | "DOORS_4_5"
+  | "LED_HEADLIGHTS"
+  | "XENON_HEADLIGHTS"
+  | "ALLOY_WHEELS"
+  | "METALLIC_PAINT"
+  | "PANORAMIC_ROOF"
+  | "ROOF_RAILS"
+  | "SPOILERS"
+  | "TOW_BAR"
+  | "HALOGEN_HEADLIGHTS"
+  | "SUNROOF"
+  | "OFFROAD_PACKAGE"
+  | "ALARM"
+  | "ARMORED"
+  | "CASCO"
+  | "WINCH"
+  | "CENTRAL_LOCKING"
+  | "VELOUR_INTERIOR"
+  | "RIGHT_HAND_DRIVE"
+  | "LEATHER_INTERIOR"
+  | "LIGHT_INTERIOR"
+  | "TAXI"
+  | "DISABLED_ACCESS"
+  | "HEARSE"
+  | "AMBULANCE"
+  | "DRIVING_SCHOOL"
+  | "REFRIGERATED"
+  | "N1_HOMOLOGATION";
 export type Transmission = "AUTOMATIC" | "MANUAL";
 export type Origin = "KR" | "CN";
 export type CarStatus = "DRAFT" | "PUBLISHED" | "RESERVED" | "SOLD" | "ARCHIVED";
@@ -78,6 +180,8 @@ export interface CarSpecs {
   /** CLTC, NEDC, WLTP, EPA ... */
   rangeStandard: string | null;
   motorPowerKw: number | null;
+  /** Euro emission class 1-6 (China VI counts as 6) */
+  euroStandard: number | null;
   bodyType: string | null;
   seats: number | null;
   doors: number | null;
@@ -86,6 +190,8 @@ export interface CarSpecs {
   dimensions: string | null;
   description: string | null;
   extraSpecs: Record<string, string>;
+  /** extras in the mobile.bg form's order */
+  features: CarFeature[];
 }
 
 /** Price formula of a source site (backend PriceProfile). */

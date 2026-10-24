@@ -34,6 +34,8 @@ Run `npm run lint` and `npm run build` before finishing a change.
   or tokens in the browser; the frontend has no secrets.
 - API types in `src/lib/types.ts` mirror the backend DTOs (`CarDtos`, `InquiryDtos`). Change both together.
 - Labels for enums (fuel, transmission, statuses) live in `src/lib/format.ts`.
+  Car extras (`CarFeature`) mirror the backend enum, one per mobile.bg checkbox: `featureGroups` (mobile.bg's groups and
+  order) and `featureLabels` (mobile.bg's own words) in `format.ts`; add a constant on both sides at once.
 - The car type is nested like the API: `car.specs.*` (title, make, EV fields …) and, for admin, `car.pricing.*`.
 - Customers never see the Facebook/Instagram/Viber text. It comes from two templates (`src/lib/post-template.ts`:
   placeholders, defaults, rendering; one shared by Facebook and Instagram, stored as `FACEBOOK`, and one for Viber;
