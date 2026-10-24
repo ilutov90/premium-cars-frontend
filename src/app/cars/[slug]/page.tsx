@@ -115,6 +115,7 @@ function factGroups(s: CarSpecs, origin: Origin | null): { title: string; facts:
       facts: [
         ["Батерия", s.batteryKwh != null ? formatKwh(s.batteryKwh) : null],
         ["Пробег на ток", formatRange(s.electricRangeKm, s.rangeStandard)],
+        ["Здраве на батерията (SOH)", s.batteryHealthPct != null ? `${s.batteryHealthPct}%` : null],
         [
           "Електромотор(и)",
           electric && s.motorPowerKw != null && s.fuelType !== "ELECTRIC"
@@ -154,6 +155,7 @@ async function CarDetailView({ params }: { params: PageProps<"/cars/[slug]">["pa
           s.fuelType === "ELECTRIC" ? "Мощност" : "Електромотор",
           formatPower(s.fuelType === "ELECTRIC" ? s.powerHp : null, s.motorPowerKw),
         ],
+        ["Здраве на батерията", s.batteryHealthPct != null ? `${s.batteryHealthPct}%` : null],
       ].filter(([, v]) => v) as [string, string][])
     : [];
 
@@ -176,7 +178,13 @@ async function CarDetailView({ params }: { params: PageProps<"/cars/[slug]">["pa
         {evStats.length > 0 && (
           <div
             className={`mt-6 grid gap-px overflow-hidden rounded-2xl bg-paper/10 ${
-              evStats.length === 3 ? "sm:grid-cols-3" : evStats.length === 2 ? "sm:grid-cols-2" : ""
+              evStats.length === 4
+                ? "sm:grid-cols-2 lg:grid-cols-4"
+                : evStats.length === 3
+                  ? "sm:grid-cols-3"
+                  : evStats.length === 2
+                    ? "sm:grid-cols-2"
+                    : ""
             }`}
           >
             {evStats.map(([label, value]) => (

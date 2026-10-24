@@ -40,6 +40,9 @@ Run `npm run lint` and `npm run build` before finishing a change.
   page shows it as "Пълна спецификация" through `src/lib/spec-sheet.ts` (Bulgarian names and values, unknown text
   stays as the source wrote it: add a line there when a car shows English). It is read-only: the editor never sends it.
 - The car type is nested like the API: `car.specs.*` (title, make, EV fields …) and, for admin, `car.pricing.*`.
+- Import sources (`CarSource`): AUTOHOME and GUAZI (China, priced with the AUTOHOME formula), AUTOWINI (Korea).
+  `specs.batteryHealthPct` (battery SOH, from guazi) shows with the EV figures on the car page; guazi's inspection
+  findings are not shown to customers.
 - Customers never see the Facebook/Instagram/Viber text. It comes from two templates (`src/lib/post-template.ts`:
   placeholders, defaults, rendering; one shared by Facebook and Instagram, stored as `FACEBOOK`, and one for Viber;
   saved ones in the backend `post_template`, edited under `/admin/templates`). Rendering drops a line whose

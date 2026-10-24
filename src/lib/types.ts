@@ -115,7 +115,7 @@ export type CarFeature =
 export type Transmission = "AUTOMATIC" | "MANUAL";
 export type Origin = "KR" | "CN";
 export type CarStatus = "DRAFT" | "PUBLISHED" | "RESERVED" | "SOLD" | "ARCHIVED";
-export type CarSource = "AUTOHOME" | "AUTOWINI" | "OTHER" | "MANUAL";
+export type CarSource = "AUTOHOME" | "AUTOWINI" | "GUAZI" | "OTHER" | "MANUAL";
 
 export interface PageResponse<T> {
   items: T[];
@@ -180,6 +180,8 @@ export interface CarSpecs {
   /** CLTC, NEDC, WLTP, EPA ... */
   rangeStandard: string | null;
   motorPowerKw: number | null;
+  /** Traction battery state of health (SOH), percent; from guazi's battery report */
+  batteryHealthPct: number | null;
   /** Euro emission class 1-6 (China VI counts as 6) */
   euroStandard: number | null;
   bodyType: string | null;
