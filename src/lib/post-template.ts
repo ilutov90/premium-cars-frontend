@@ -1,5 +1,5 @@
-// Post text templates for Facebook, Instagram and Viber. The admin edits them under "Шаблони" (stored by the
-// backend, post_template); without a saved one the defaults below apply. Publishing fills in the placeholders from
+// Post text templates: one shared by Facebook and Instagram (stored as FACEBOOK) and one for Viber. The admin edits
+// them under "Шаблони" (stored by the backend, post_template); without a saved one the defaults below apply. Publishing fills in the placeholders from
 // the car and leaves out every line whose placeholder is empty for that car (e.g. the battery of a diesel).
 import { fullModel, hashtags, locationLine, powertrainLines, shortTitle } from "./description";
 import {
@@ -13,7 +13,7 @@ import {
   transmissionLabels,
 } from "./format";
 import { contactDetails, site, whyUs } from "./site";
-import type { AdminCar, Origin, PostSettings, SocialNetwork } from "./types";
+import type { AdminCar, Origin, PostSettings, PostTemplate, SocialNetwork } from "./types";
 
 const enNumber = new Intl.NumberFormat("en-US");
 
@@ -22,6 +22,12 @@ export const networkLabels: Record<SocialNetwork, string> = {
   INSTAGRAM: "Instagram",
   VIBER: "Viber",
 };
+
+/** The templates: Facebook and Instagram share one (stored by the backend as FACEBOOK), Viber has its own. */
+export type TemplateKind = "FACEBOOK" | "VIBER";
+export const templateKinds: TemplateKind[] = ["FACEBOOK", "VIBER"];
+export const templateLabels: Record<TemplateKind, string> = { FACEBOOK: "Facebook и Instagram", VIBER: "Viber" };
+export const templateOf = (network: SocialNetwork): TemplateKind => (network === "VIBER" ? "VIBER" : "FACEBOOK");
 
 /** Every placeholder, with what it becomes (shown in the templates page). Values use the posting script's format. */
 export const placeholders: { key: string; description: string; example: string }[] = [
@@ -83,11 +89,17 @@ const fullPost = [
 ].join("\n");
 
 /** The templates used until the admin saves their own (same text as the posting script). */
-export const defaultTemplates: Record<SocialNetwork, string> = {
+export const defaultTemplates: Record<TemplateKind, string> = {
   FACEBOOK: fullPost,
-  INSTAGRAM: fullPost,
   VIBER: [...carPart, "{{hashtags}}"].join("\n"),
 };
+
+/** The saved templates over the defaults (an old INSTAGRAM row, if any, is ignored). */
+export function templatesFrom(saved: PostTemplate[]): Record<TemplateKind, string> {
+  const t = { ...defaultTemplates };
+  for (const row of saved) if (row.network === "FACEBOOK" || row.network === "VIBER") t[row.network] = row.body;
+  return t;
+}
 
 const originOf = (car: AdminCar): Origin | null =>
   car.source === "AUTOHOME" ? "CN" : car.source === "AUTOWINI" ? "KR" : null;
