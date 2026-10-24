@@ -208,6 +208,25 @@ export function CarEditor({ params }: { params: Promise<{ id: string }> }) {
             <Choice label="Задвижване" name="drivetrain" value={s.drivetrain} options={drivetrainLabels} />
           </Fieldset>
 
+          <Fieldset title="Цена" id="price">
+            <Field label="Цена при източника" name="sourcePrice" value={p.sourcePrice} type="number" step="0.01" />
+            <Field label="Валута (USD, CNY, KRW, EUR)" name="sourceCurrency" value={p.sourceCurrency} />
+            <Choice label="Ценова формула" name="profile" value={p.profile} options={priceProfileLabels} />
+            <p className="self-end pb-2.5 text-xs text-muted">
+              Разходите и надценката за всички коли се променят в{" "}
+              <Link href="/admin/pricing" className="font-semibold text-accent hover:underline">
+                Цени
+              </Link>
+              .
+            </p>
+            <Field label="Надценка за тази кола, € (празно = от формулата)" name="profitEur" value={p.profitEur} type="number" step="1" />
+            <Field label="Крайна цена ръчно, € (празно = изчислената)" name="fixedTotalEur" value={p.fixedTotalEur} type="number" step="1" />
+            <p className="text-xs text-muted sm:col-span-2">
+              „Крайна цена ръчно“ замества цялото изчисление; изчислената цена остава видима вдясно. Изчисти полето, за да
+              се върнеш към формулата.
+            </p>
+          </Fieldset>
+
           <Fieldset title="Двигател и купе">
             <Field label="Обем, см³" name="engineCc" value={s.engineCc} type="number" />
             <Field label="Двигател (текст, напр. 1.5T)" name="engine" value={s.engine} />
@@ -242,25 +261,6 @@ export function CarEditor({ params }: { params: Promise<{ id: string }> }) {
               </label>
               <textarea id="description" name="description" rows={4} defaultValue={s.description ?? ""} className="field" />
             </div>
-          </Fieldset>
-
-          <Fieldset title="Цена">
-            <Field label="Цена при източника" name="sourcePrice" value={p.sourcePrice} type="number" step="0.01" />
-            <Field label="Валута (USD, CNY, KRW, EUR)" name="sourceCurrency" value={p.sourceCurrency} />
-            <Choice label="Ценова формула" name="profile" value={p.profile} options={priceProfileLabels} />
-            <p className="self-end pb-2.5 text-xs text-muted">
-              Разходите и надценката за всички коли се променят в{" "}
-              <Link href="/admin/pricing" className="font-semibold text-accent hover:underline">
-                Цени
-              </Link>
-              .
-            </p>
-            <Field label="Надценка за тази кола, € (празно = от формулата)" name="profitEur" value={p.profitEur} type="number" step="1" />
-            <Field label="Крайна цена ръчно, € (празно = изчислената)" name="fixedTotalEur" value={p.fixedTotalEur} type="number" step="1" />
-            <p className="text-xs text-muted sm:col-span-2">
-              „Крайна цена ръчно“ замества цялото изчисление; изчислената цена остава видима вдясно. Изчисти полето, за да
-              се върнеш към формулата.
-            </p>
           </Fieldset>
 
           <SpecsEditor specs={s.extraSpecs} />
@@ -356,12 +356,22 @@ export function CarEditor({ params }: { params: Promise<{ id: string }> }) {
 
 const rateFormat = new Intl.NumberFormat("bg-BG", { maximumSignificantDigits: 5 });
 
+/** Scrolls to the price fields and puts the cursor in "Крайна цена ръчно". */
+function editPrice() {
+  document.getElementById("price")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  const input = document.querySelector<HTMLInputElement>('input[name="fixedTotalEur"]');
+  window.setTimeout(() => input?.focus({ preventScroll: true }), 400);
+}
+
 function PriceSummary({ car, busy, onRecalculate }: { car: AdminCar; busy: boolean; onRecalculate: () => void }) {
   const p = car.price;
   if (!p) {
     return (
       <div className="rounded-2xl border border-warn/40 bg-warn/10 p-4 text-sm">
-        Няма цена — въведете цената при източника и запишете.
+        Няма цена — въведете цената при източника или крайната цена ръчно и запишете.
+        <button type="button" onClick={editPrice} className="mt-2 block font-semibold text-accent hover:underline">
+          Към полетата за цена ↓
+        </button>
       </div>
     );
   }
@@ -407,16 +417,25 @@ function PriceSummary({ car, busy, onRecalculate }: { car: AdminCar; busy: boole
         веднъж и не се променя от нов курс или нова формула; променя се само ако смените цената на тази кола или
         натиснете „Преизчисли“.
       </p>
-      {p.carPriceEur != null && !p.fixedTotal && (
+      <div className="mt-3 flex flex-wrap gap-2">
         <button
           type="button"
-          onClick={onRecalculate}
-          disabled={busy}
-          className="mt-3 rounded-full border border-paper/20 px-3 py-1.5 text-xs font-semibold hover:bg-paper/10"
+          onClick={editPrice}
+          className="rounded-full bg-paper px-3 py-1.5 text-xs font-semibold text-ink hover:bg-paper/90"
         >
-          Преизчисли с днешния курс и формула
+          Промени цената ръчно
         </button>
-      )}
+        {p.carPriceEur != null && !p.fixedTotal && (
+          <button
+            type="button"
+            onClick={onRecalculate}
+            disabled={busy}
+            className="rounded-full border border-paper/20 px-3 py-1.5 text-xs font-semibold hover:bg-paper/10"
+          >
+            Преизчисли с днешния курс и формула
+          </button>
+        )}
+      </div>
     </div>
   );
 }
@@ -486,9 +505,9 @@ function SpecsEditor({ specs }: { specs: Record<string, string> }) {
   );
 }
 
-function Fieldset({ title, children }: { title: string; children: React.ReactNode }) {
+function Fieldset({ title, id, children }: { title: string; id?: string; children: React.ReactNode }) {
   return (
-    <fieldset className="rounded-2xl border border-line bg-card p-5">
+    <fieldset id={id} className="scroll-mt-24 rounded-2xl border border-line bg-card p-5">
       <legend className="px-1 text-sm font-bold">{title}</legend>
       <div className="grid gap-4 sm:grid-cols-2">{children}</div>
     </fieldset>
