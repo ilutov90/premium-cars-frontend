@@ -341,7 +341,7 @@ function PublishDialog({
 }: {
   car: AdminCar;
   configured: SocialNetwork[];
-  initialTexts: Record<TemplateKind, string>;
+  initialTexts: Record<"FACEBOOK" | "VIBER", string>;
   earlier: SocialPost[];
   onClose: () => void;
   onPublishing: (posts: ScheduledPost[]) => void;

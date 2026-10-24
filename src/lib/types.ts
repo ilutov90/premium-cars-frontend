@@ -393,7 +393,7 @@ export interface SocialStatus {
 
 /** A post text template saved in the admin panel (backend PostTemplate): FACEBOOK is shared with Instagram. */
 export interface PostTemplate {
-  network: SocialNetwork;
+  network: SocialNetwork | "MOBILE_BG";
   body: string;
   updatedAt: string;
 }
@@ -415,4 +415,72 @@ export interface PublishRequest {
   imageIds: number[];
   /** ISO instant; absent = now */
   publishAt?: string;
+}
+
+/** mobile.bg's "Добави обява" form filled in from a car, in mobile.bg's values (backend MobileBgDraft). */
+export interface MobileBgDraft {
+  brand: string | null;
+  model: string | null;
+  modification: string | null;
+  engineType: string | null;
+  /** "0" used, "1" new, "3" damaged, "2" for parts */
+  condition: string | null;
+  powerHp: number | null;
+  euroStandard: number | null;
+  gearbox: string | null;
+  category: string | null;
+  engineCc: number | null;
+  price: number | null;
+  /** "1" private/exempt, "2" with VAT, "3" without VAT */
+  vat: string | null;
+  currency: string | null;
+  mileageKm: number | null;
+  /** "януари" … "декември" */
+  month: string | null;
+  year: number | null;
+  color: string | null;
+  region: string | null;
+  city: string | null;
+  rangeKm: number | null;
+  batteryKwh: number | null;
+  extras: CarFeature[];
+}
+
+export type MobileBgWarningCode =
+  | "CATALOG_MISSING"
+  | "BRAND_NOT_FOUND"
+  | "MODEL_NOT_FOUND"
+  | "RANGE_EXTENDER"
+  | "CATEGORY_UNKNOWN"
+  | "COLOR_UNKNOWN"
+  | "RANGE_NOT_WLTP"
+  | "PRODUCTION_MONTH_UNKNOWN"
+  | "NO_PRICE";
+
+/** Where a car was posted on mobile.bg (backend MobileBgListing). */
+export interface MobileBgListing {
+  carId: number;
+  listingId: string | null;
+  url: string | null;
+  publishedAt: string;
+  publishedBy: string | null;
+}
+
+/** GET /api/admin/cars/{id}/mobile-bg */
+export interface MobileBgForm {
+  draft: MobileBgDraft;
+  warnings: { code: MobileBgWarningCode; value: string | null }[];
+  /** every extra's checkbox value in mobile.bg */
+  extraValues: Record<CarFeature, string>;
+  listing: MobileBgListing | null;
+  catalogCapturedAt: string | null;
+}
+
+/** mobile.bg's lists, as the browser extension read them from the form (backend MobileBgCatalog). */
+export interface MobileBgCatalog {
+  brands: { name: string; models: string[] }[];
+  /** by mobile.bg field name, e.g. f17 = colours */
+  selects: Record<string, { value: string; text: string }[]>;
+  extras: { field: string; value: string }[];
+  capturedAt: string | null;
 }
