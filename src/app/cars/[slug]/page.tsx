@@ -5,6 +5,7 @@ import { Suspense } from "react";
 import { getCar } from "@/lib/api";
 import { carJsonLd, jsonLdScript } from "@/lib/seo";
 import { site } from "@/lib/site";
+import { translatedSheet } from "@/lib/spec-sheet";
 import {
   bodyTypeLabel,
   colorLabel,
@@ -141,6 +142,7 @@ async function CarDetailView({ params }: { params: PageProps<"/cars/[slug]">["pa
   const s = car.specs;
   const extra = Object.entries(s.extraSpecs ?? {});
   const has = new Set(s.features ?? []);
+  const sheet = translatedSheet(s.sheet);
   const equipment = featureGroups
     .map((g) => ({ title: g.title, features: g.features.filter((f) => has.has(f)) }))
     .filter((g) => g.features.length > 0);
@@ -227,6 +229,45 @@ async function CarDetailView({ params }: { params: PageProps<"/cars/[slug]">["pa
                   </div>
                 ))}
               </div>
+            </section>
+          )}
+
+          {sheet.length > 0 && (
+            <section>
+              <details className="group rounded-2xl border border-line bg-card">
+                <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-4 sm:px-5">
+                  <span>
+                    <span className="block text-lg font-extrabold">Пълна спецификация</span>
+                    <span className="text-sm text-muted">
+                      {sheet.reduce((n, g) => n + g.items.length, 0)} характеристики от производителя и продавача
+                    </span>
+                  </span>
+                  <span aria-hidden className="text-xl font-bold text-muted transition group-open:rotate-45">
+                    +
+                  </span>
+                </summary>
+                <div className="space-y-6 border-t border-line px-4 py-5 sm:px-5">
+                  {sheet.map((group, gi) => (
+                    <div key={`${group.name}-${gi}`}>
+                      <h3 className="text-xs font-bold tracking-wide text-muted uppercase">{group.name}</h3>
+                      <dl className="mt-2 divide-y divide-line text-sm">
+                        {group.items.map((item, ii) => (
+                          <div key={`${item.name}-${ii}`} className="flex items-baseline justify-between gap-6 py-2">
+                            <dt className={item.value ? "text-muted" : ""}>{item.name}</dt>
+                            <dd className="text-right font-semibold">
+                              {item.value || (
+                                <span className="text-ok" aria-label="да">
+                                  ✓
+                                </span>
+                              )}
+                            </dd>
+                          </div>
+                        ))}
+                      </dl>
+                    </div>
+                  ))}
+                </div>
+              </details>
             </section>
           )}
 

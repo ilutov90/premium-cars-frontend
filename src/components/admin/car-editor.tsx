@@ -6,6 +6,7 @@ import { use, useEffect, useState } from "react";
 import { useAdmin } from "./admin-context";
 import { SocialPostPanel } from "./social-post-panel";
 import { StatusBadge } from "./status-badge";
+import { translatedSheet } from "@/lib/spec-sheet";
 import {
   drivetrainLabels,
   euroStandards,
@@ -263,6 +264,8 @@ export function CarEditor({ params }: { params: Promise<{ id: string }> }) {
           </Fieldset>
 
           <SpecsEditor specs={s.extraSpecs} />
+
+          <SourceSheet sheet={s.sheet} />
 
           <div className="sticky bottom-4 flex items-center gap-3 rounded-2xl border border-line bg-card/95 p-3 backdrop-blur">
             <button type="submit" className="btn-primary" disabled={busy}>
@@ -569,5 +572,38 @@ function SourceLink({ url }: { url: string }) {
         {copied ? "Копиран ✓" : "Копирай"}
       </button>
     </div>
+  );
+}
+
+/** The source's full specification sheet as imported: read-only, shown on the car page as "Пълна спецификация". */
+function SourceSheet({ sheet }: { sheet: CarSpecs["sheet"] }) {
+  const groups = translatedSheet(sheet);
+  if (groups.length === 0) return null;
+  const count = groups.reduce((n, g) => n + g.items.length, 0);
+  return (
+    <details className="rounded-2xl border border-line bg-card p-4">
+      <summary className="cursor-pointer text-sm font-bold">
+        Пълна спецификация от източника ({count}) <span className="font-normal text-muted">· само за четене</span>
+      </summary>
+      <p className="mt-2 text-xs text-muted">
+        Така се вижда в сайта под „Пълна спецификация“. Идва от импорта и не се редактира; екстрите за mobile.bg са в
+        „Оборудване и екстри“ по-горе.
+      </p>
+      <div className="mt-3 grid gap-4 sm:grid-cols-2">
+        {groups.map((g, gi) => (
+          <div key={`${g.name}-${gi}`} className="text-xs">
+            <h4 className="font-bold text-muted uppercase">{g.name}</h4>
+            <ul className="mt-1 space-y-0.5">
+              {g.items.map((i, ii) => (
+                <li key={`${i.name}-${ii}`}>
+                  {i.name}
+                  {i.value ? <span className="text-muted">: {i.value}</span> : " ✓"}
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))}
+      </div>
+    </details>
   );
 }
