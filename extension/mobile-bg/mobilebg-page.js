@@ -75,6 +75,31 @@
     return true;
   }
 
+  /** Text for comparing extras: lower case, single spaces, Latin look-alikes as Cyrillic, "\\" and "/" alike. */
+  const LOOKALIKE = { a: "а", e: "е", o: "о", p: "р", c: "с", x: "х", y: "у", k: "к", m: "м", t: "т", h: "н", b: "в" };
+  const canon = (s) =>
+    String(s ?? "")
+      .normalize("NFKC")
+      .toLowerCase()
+      .replace(/[\s\u00a0]+/g, " ")
+      .replace(/\s*[\\/]\s*/g, "/")
+      .replace(/[aeopcxykmthb]/g, (ch) => LOOKALIKE[ch])
+      .trim();
+
+  /** The text next to a checkbox: its <label>, or the text right after it. */
+  function labelOf(c) {
+    const byFor = c.id ? document.querySelector(`label[for="${CSS.escape(c.id)}"]`) : null;
+    const wrap = byFor || c.closest("label");
+    if (wrap) return wrap.textContent;
+    let n = c.nextSibling;
+    let text = "";
+    while (n && !(n.nodeType === 1 && n.matches?.("input, br"))) {
+      text += n.textContent ?? "";
+      n = n.nextSibling;
+    }
+    return text;
+  }
+
   /** Fills step 1 from the admin panel's values; returns what was set and what was not found. */
   function fill(v, extras) {
     const f = form();
@@ -124,18 +149,21 @@
     txt("Допълнителна информация", "f21", v.description, 11000);
     txt("Телефон", "f22", v.phone);
 
-    const wanted = new Set(extras ?? []);
+    // Matched by the checkbox's value or its label, ignoring case, spaces (incl. non-breaking ones) and Latin
+    // letters that look like Cyrillic ones: mobile.bg's value is not always the exact text of its label.
+    const wanted = new Map((extras ?? []).map((x) => [canon(x), x]));
     let ticked = 0;
     for (const c of f.querySelectorAll("input[type=checkbox]")) {
       if (!/^f\d+$/.test(c.name) || Number(c.name.slice(1)) < 35 || Number(c.name.slice(1)) > 130) continue;
-      c.checked = wanted.has(c.value);
-      if (c.checked) {
+      const key = [canon(c.value), canon(labelOf(c))].find((k) => k && wanted.has(k));
+      c.checked = !!key;
+      if (key) {
         ticked++;
-        wanted.delete(c.value);
+        wanted.delete(key);
       }
     }
+    for (const x of wanted.values()) missing.push(`Екстра: ${x}`);
     done.push(`Екстри: ${ticked}`);
-    for (const x of wanted) missing.push(`Екстра: ${x}`);
     return { done, missing };
   }
 
