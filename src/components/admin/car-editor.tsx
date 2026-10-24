@@ -8,6 +8,9 @@ import { SocialPostPanel } from "./social-post-panel";
 import { StatusBadge } from "./status-badge";
 import {
   drivetrainLabels,
+  euroStandards,
+  featureGroups,
+  featureLabels,
   formatEur,
   formatNumber,
   fuelLabels,
@@ -18,6 +21,7 @@ import {
 } from "@/lib/format";
 import type {
   AdminCar,
+  CarFeature,
   CarSpecs,
   CarStatus,
   Drivetrain,
@@ -26,6 +30,8 @@ import type {
   PricingInputs,
   Transmission,
 } from "@/lib/types";
+
+const euroOptions: Record<string, string> = Object.fromEntries(euroStandards.map((n) => [String(n), `Евро ${n}`]));
 
 const statusActions: [CarStatus, string][] = [
   ["PUBLISHED", "Публикувай"],
@@ -70,6 +76,7 @@ function readForm(form: HTMLFormElement): { specs: CarSpecs; pricing: PricingInp
       electricRangeKm: number("electricRangeKm"),
       rangeStandard: text("rangeStandard"),
       motorPowerKw: number("motorPowerKw"),
+      euroStandard: number("euroStandard"),
       bodyType: text("bodyType"),
       seats: number("seats"),
       doors: number("doors"),
@@ -78,6 +85,7 @@ function readForm(form: HTMLFormElement): { specs: CarSpecs; pricing: PricingInp
       dimensions: text("dimensions"),
       description: text("description"),
       extraSpecs,
+      features: f.getAll("feature").map(String) as CarFeature[],
     },
     pricing: {
       sourcePrice: number("sourcePrice"),
@@ -203,6 +211,12 @@ export function CarEditor({ params }: { params: Promise<{ id: string }> }) {
             <Field label="Обем, см³" name="engineCc" value={s.engineCc} type="number" />
             <Field label="Двигател (текст, напр. 1.5T)" name="engine" value={s.engine} />
             <Field label="Мощност общо, к.с." name="powerHp" value={s.powerHp} type="number" />
+            <Choice
+              label="Евростандарт"
+              name="euroStandard"
+              value={s.euroStandard != null ? String(s.euroStandard) : null}
+              options={euroOptions}
+            />
             <Field label="Купе (Sedan, SUV …)" name="bodyType" value={s.bodyType} />
             <Field label="Места" name="seats" value={s.seats} type="number" />
             <Field label="Врати" name="doors" value={s.doors} type="number" />
@@ -217,6 +231,8 @@ export function CarEditor({ params }: { params: Promise<{ id: string }> }) {
             <Field label="Стандарт (CLTC, NEDC, WLTP, EPA)" name="rangeStandard" value={s.rangeStandard} />
             <Field label="Електромотор(и), kW" name="motorPowerKw" value={s.motorPowerKw} type="number" />
           </Fieldset>
+
+          <FeaturesEditor features={s.features ?? []} />
 
           <Fieldset title="Бележки към описанието">
             <div className="sm:col-span-2">
@@ -399,6 +415,41 @@ function PriceSummary({ car, busy, onRecalculate }: { car: AdminCar; busy: boole
         </button>
       )}
     </div>
+  );
+}
+
+/** The mobile.bg extras as checkboxes, in the form's groups and order. */
+function FeaturesEditor({ features }: { features: CarFeature[] }) {
+  const has = new Set(features);
+  return (
+    <fieldset className="rounded-2xl border border-line bg-card p-5">
+      <legend className="px-1 text-sm font-bold">Оборудване и екстри ({features.length})</legend>
+      <p className="mb-4 text-xs text-muted">
+        Същите отметки като в mobile.bg. Показват се на страницата на колата. При внос от autohome оборудването е по
+        каталога на версията (без опциите срещу доплащане): провери го по снимките.
+      </p>
+      <div className="space-y-5">
+        {featureGroups.map((group) => (
+          <div key={group.title}>
+            <p className="mb-2 text-xs font-bold tracking-wide text-muted uppercase">{group.title}</p>
+            <div className="grid gap-x-4 gap-y-1.5 sm:grid-cols-2 xl:grid-cols-3">
+              {group.features.map((f) => (
+                <label key={f} className="flex items-start gap-2 text-sm">
+                  <input
+                    type="checkbox"
+                    name="feature"
+                    value={f}
+                    defaultChecked={has.has(f)}
+                    className="mt-0.5 h-4 w-4 shrink-0 accent-accent"
+                  />
+                  {featureLabels[f]}
+                </label>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    </fieldset>
   );
 }
 

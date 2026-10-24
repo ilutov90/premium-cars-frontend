@@ -9,6 +9,8 @@ import {
   bodyTypeLabel,
   colorLabel,
   drivetrainLabels,
+  featureGroups,
+  featureLabels,
   formatKm,
   formatKwh,
   formatNumber,
@@ -104,6 +106,7 @@ function factGroups(s: CarSpecs, origin: Origin | null): { title: string; facts:
         ["Мощност", formatPower(s.powerHp, s.fuelType === "ELECTRIC" ? s.motorPowerKw : null)],
         ["Скоростна кутия", s.transmission ? transmissionLabels[s.transmission] : null],
         ["Задвижване", s.drivetrain ? drivetrainLabels[s.drivetrain] : null],
+        ["Евростандарт", s.euroStandard ? `Евро ${s.euroStandard}` : null],
       ],
     },
     {
@@ -137,6 +140,10 @@ async function CarDetailView({ params }: { params: PageProps<"/cars/[slug]">["pa
   if (!car) notFound();
   const s = car.specs;
   const extra = Object.entries(s.extraSpecs ?? {});
+  const has = new Set(s.features ?? []);
+  const equipment = featureGroups
+    .map((g) => ({ title: g.title, features: g.features.filter((f) => has.has(f)) }))
+    .filter((g) => g.features.length > 0);
   const evStats = hasTractionBattery(s.fuelType)
     ? ([
         ["Батерия", s.batteryKwh != null ? formatKwh(s.batteryKwh) : null],
@@ -199,6 +206,29 @@ async function CarDetailView({ params }: { params: PageProps<"/cars/[slug]">["pa
               </div>
             </section>
           ))}
+
+          {equipment.length > 0 && (
+            <section>
+              <h2 className="text-lg font-extrabold">Оборудване</h2>
+              <div className="mt-3 space-y-5 rounded-2xl border border-line bg-card p-4 sm:p-5">
+                {equipment.map((group) => (
+                  <div key={group.title}>
+                    <h3 className="text-xs font-bold tracking-wide text-muted uppercase">{group.title}</h3>
+                    <ul className="mt-2 grid gap-x-6 gap-y-1.5 text-sm sm:grid-cols-2">
+                      {group.features.map((f) => (
+                        <li key={f} className="flex gap-2">
+                          <span aria-hidden className="font-bold text-ok">
+                            ✓
+                          </span>
+                          {featureLabels[f]}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
 
           {extra.length > 0 && (
             <section>
