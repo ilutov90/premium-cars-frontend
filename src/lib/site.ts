@@ -17,7 +17,7 @@ export const company = {
 };
 
 /** Date of the current privacy policy text (change it with the text). */
-export const privacyPolicyDate = "19.10.2026";
+export const privacyPolicyDate = "25.10.2026";
 
 export interface Contact {
   phone: string;

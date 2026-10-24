@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Suspense } from "react";
-import { searchCars } from "@/lib/api";
+import { getDeliveredCars, searchCars } from "@/lib/api";
+import { DeliveredCarCards } from "@/components/delivered-cars";
 import { CarCard } from "@/components/car-card";
 import { CardGridSkeleton, Notice } from "@/components/notice";
 import { InquiryForm } from "@/components/inquiry-form";
@@ -71,6 +72,11 @@ export default function HomePage() {
         </Suspense>
       </section>
 
+      {/* Delivered cars: only once there are published ones */}
+      <Suspense fallback={null}>
+        <LatestDelivered />
+      </Suspense>
+
       {/* How it works */}
       <section id="how" className="mx-auto max-w-6xl scroll-mt-20 px-4 pt-24 sm:px-6">
         <h2 className="text-2xl font-extrabold tracking-tight sm:text-3xl">Как работи вносът</h2>
@@ -119,5 +125,21 @@ async function LatestCars() {
         <CarCard key={car.id} car={car} />
       ))}
     </div>
+  );
+}
+
+async function LatestDelivered() {
+  const items = await getDeliveredCars(3);
+  if (items.length === 0) return null;
+  return (
+    <section className="mx-auto max-w-6xl px-4 pt-24 sm:px-6">
+      <div className="mb-6 flex items-end justify-between gap-4">
+        <h2 className="text-2xl font-extrabold tracking-tight sm:text-3xl">Доставени на клиенти</h2>
+        <Link href="/delivered" className="text-sm font-semibold text-accent hover:text-accent-dark">
+          Всички доставени →
+        </Link>
+      </div>
+      <DeliveredCarCards items={items} />
+    </section>
   );
 }

@@ -13,6 +13,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const pages: MetadataRoute.Sitemap = [
     { url: `${SITE_URL}/`, changeFrequency: "daily", priority: 1 },
     { url: `${SITE_URL}/cars`, changeFrequency: "daily", priority: 0.9 },
+    { url: `${SITE_URL}/koli-na-gaz-ot-koreya`, changeFrequency: "weekly", priority: 0.8 },
+    { url: `${SITE_URL}/elektromobili-ot-kitay`, changeFrequency: "weekly", priority: 0.8 },
+    { url: `${SITE_URL}/delivered`, changeFrequency: "weekly", priority: 0.6 },
     { url: `${SITE_URL}/about`, changeFrequency: "yearly", priority: 0.3 },
     { url: `${SITE_URL}/privacy`, changeFrequency: "yearly", priority: 0.1 },
   ];

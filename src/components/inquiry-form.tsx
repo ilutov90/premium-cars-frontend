@@ -3,6 +3,11 @@
 import Link from "next/link";
 import { useId, useState } from "react";
 import { PUBLIC_API_URL } from "@/lib/config";
+import { heardFromLabels } from "@/lib/format";
+import { trackEvent, visitAttribution } from "@/lib/marketing";
+import type { HeardFrom } from "@/lib/types";
+
+const heardFromOptions = Object.keys(heardFromLabels) as HeardFrom[];
 
 type State = { kind: "idle" } | { kind: "sending" } | { kind: "sent" } | { kind: "error"; message: string };
 
@@ -28,6 +33,8 @@ export function InquiryForm({ carId, carTitle }: { carId?: number; carTitle?: st
           message: form.get("message"),
           website: form.get("website"), // honeypot
           privacyAccepted: form.get("privacy") === "on",
+          heardFrom: form.get("heardFrom") || null,
+          attribution: visitAttribution(),
         }),
       });
       if (res.status === 429) {
@@ -37,6 +44,7 @@ export function InquiryForm({ carId, carTitle }: { carId?: number; carTitle?: st
         const problem = await res.json().catch(() => null);
         throw new Error(problem?.detail ?? `Грешка ${res.status}`);
       }
+      trackEvent("Lead", { content_name: carTitle ?? "Намери ми кола" });
       setState({ kind: "sent" });
     } catch (err) {
       setState({ kind: "error", message: err instanceof Error ? err.message : "Неуспешно изпращане" });
@@ -87,6 +95,19 @@ export function InquiryForm({ carId, carTitle }: { carId?: number; carTitle?: st
           defaultValue={carTitle ? `Здравейте, интересувам се от ${carTitle}.` : ""}
           placeholder={carTitle ? undefined : "Марка, модел, година, бюджет…"}
         />
+      </div>
+      <div>
+        <label className="label" htmlFor={`${id}-heard`}>
+          Откъде научихте за нас?
+        </label>
+        <select id={`${id}-heard`} name="heardFrom" className="field" defaultValue="">
+          <option value="">Изберете (по желание)</option>
+          {heardFromOptions.map((h) => (
+            <option key={h} value={h}>
+              {heardFromLabels[h]}
+            </option>
+          ))}
+        </select>
       </div>
       <label className="flex items-start gap-2.5 text-sm text-muted">
         <input name="privacy" type="checkbox" required className="mt-0.5 h-4 w-4 shrink-0 accent-accent" />

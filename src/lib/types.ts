@@ -321,6 +321,91 @@ export interface AdminInquiry {
   message: string | null;
   status: InquiryStatus;
   createdAt: string;
+  heardFrom: HeardFrom | null;
+  attribution: Attribution;
+}
+
+/** "Откъде научихте за нас?" (backend HeardFrom); labels in format.ts. */
+export type HeardFrom =
+  | "FACEBOOK"
+  | "INSTAGRAM"
+  | "GOOGLE"
+  | "MOBILE_BG"
+  | "VIBER"
+  | "TIKTOK"
+  | "YOUTUBE"
+  | "FRIEND"
+  | "RETURNING"
+  | "OTHER";
+
+/** How a visitor reached the site (backend Attribution): the first page of the visit, kept until they write. */
+export interface Attribution {
+  utmSource: string | null;
+  utmMedium: string | null;
+  utmCampaign: string | null;
+  utmContent: string | null;
+  landingPath: string | null;
+  referrer: string | null;
+}
+
+/** Inquiries per key (backend InquiryDtos.Count); key null = not answered / none. */
+export interface ReportCount {
+  key: string | null;
+  count: number;
+}
+
+/** The admin report (backend InquiryReport); dates yyyy-MM-dd, Sofia days. */
+export interface InquiryReport {
+  from: string;
+  to: string;
+  total: number;
+  byStatus: ReportCount[];
+  byHeardFrom: ReportCount[];
+  byUtmSource: ReportCount[];
+  byUtmCampaign: ReportCount[];
+  byCar: { carId: number | null; carTitle: string | null; carSlug: string | null; count: number }[];
+  byWeek: { weekStart: string; count: number }[];
+}
+
+/** "Доставени коли" on the site (backend PublicDeliveredCar). carSlug only while the car is in the catalog. */
+export interface PublicDeliveredCar {
+  id: number;
+  carTitle: string;
+  customerName: string;
+  city: string | null;
+  quote: string | null;
+  deliveredOn: string | null;
+  photoUrl: string | null;
+  carSlug: string | null;
+}
+
+/** Backend AdminDeliveredCar. */
+export interface AdminDeliveredCar {
+  id: number;
+  carId: number | null;
+  carSlug: string | null;
+  carTitle: string;
+  customerName: string;
+  city: string | null;
+  quote: string | null;
+  deliveredOn: string | null;
+  photoUrl: string | null;
+  consent: boolean;
+  published: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** Backend DeliveredCarRequest. */
+export interface DeliveredCarRequest {
+  carId: number | null;
+  carTitle: string;
+  customerName: string;
+  city: string;
+  quote: string;
+  deliveredOn: string | null;
+  consent: boolean;
+  published: boolean;
 }
 
 export type SocialNetwork = "FACEBOOK" | "INSTAGRAM" | "VIBER";
@@ -403,6 +488,8 @@ export interface PostSettings {
   phone: string | null;
   viberLink: string | null;
   office: string | null;
+  /** The Meta Pixel the site loads after the visitor accepts marketing cookies; null = none. */
+  metaPixelId: string | null;
 }
 
 export interface ViberConnectResponse {

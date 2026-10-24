@@ -60,6 +60,14 @@ Run `npm run lint` and `npm run build` before finishing a change.
   Business details (brand, phone, Viber, office) and the "why us" bullets live in `src/lib/site.ts`; the phone,
   Viber link and office saved in the admin panel ("Шаблони → Общи данни") override them in the posts and in the
   footer (`getContact()`, `contactDetails()`).
+- Marketing: the inquiry form sends "Откъде научихте за нас?" (`heardFrom`, labels in `format.ts`) and where the visit
+  came from (`src/lib/marketing.ts`: UTM parameters, first page, referring site, kept in sessionStorage for the tab).
+  `{{link}}` in the post templates gets UTM parameters per template (`postUtm` in `post-template.ts`). The Meta Pixel
+  id is saved under "Шаблони → Общи данни" (backend `post_setting`); `cookie-consent.tsx` (in the layout) shows the
+  cookie banner only when a pixel id is set and loads the pixel only after "Приемам" (PageView per page, Lead on a sent
+  inquiry). Keep the privacy policy (`/privacy#cookies`) in line with it. `/admin/reports` shows inquiries per channel,
+  campaign, car and week; `/admin/delivered` edits "Доставени коли" (shown on `/delivered` and the home page).
+  Landing pages for ads: `/koli-na-gaz-ot-koreya`, `/elektromobili-ot-kitay` (`niche-page.tsx`).
 - Docs (README, CLAUDE.md) and code comments are English.
 - Design tokens are in `src/app/globals.css` (`@theme`: paper, card, ink, muted, line, accent). Use them
   (`bg-card`, `text-muted`, `bg-accent`, ...) instead of raw colours. Shared utilities: `field`, `label`,
@@ -75,7 +83,8 @@ Run `npm run lint` and `npm run build` before finishing a change.
 | `src/app/page.tsx` | home: hero, latest cars, how import works, "find me a car" form |
 | `src/app/cars/page.tsx` | catalog with filters in the URL (GET form) |
 | `src/app/cars/[slug]/page.tsx` | car page: gallery, share buttons, grouped specs, notes, final price (only `priceEur`), inquiry form |
+| `src/app/delivered`, `koli-na-gaz-ot-koreya`, `elektromobili-ot-kitay` | "Доставени коли" and the landing pages for ads |
 | `src/app/about`, `src/app/privacy` | "За нас" and the privacy policy (company details in `site.ts` → `company`); the inquiry form requires the privacy checkbox (`privacyAccepted`) |
 | `src/app/sitemap.ts`, `robots.ts`, `og/` | SEO: sitemap with the public cars (built per request), robots, the default preview image; `src/lib/seo.ts` has `SITE_URL` and the car JSON-LD |
-| `src/app/admin/**` | admin: import by link, edit car, photos, statuses, price formulas (`pricing/`), post templates (`templates/`), scheduled posts (`scheduled/`), inquiries, admin users (`users/`, one-time passwords; `admin-context.tsx` forces the password change) |
+| `src/app/admin/**` | admin: import by link, edit car, photos, statuses, price formulas (`pricing/`), post templates (`templates/`), scheduled posts (`scheduled/`), inquiries, the inquiry report (`reports/`), delivered cars (`delivered/`), admin users (`users/`, one-time passwords; `admin-context.tsx` forces the password change) |
 | `src/components/**` | shared components; `admin/` for admin-only ones |
