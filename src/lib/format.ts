@@ -48,6 +48,7 @@ export const originLabels: Record<Origin, string> = {
 export const sourceLabels: Record<CarSource, string> = {
   AUTOHOME: "autohome",
   AUTOWINI: "autowini",
+  GUAZI: "guazi",
   OTHER: "друг сайт",
   MANUAL: "ръчно",
 };
@@ -194,7 +195,7 @@ export const scheduledStatusLabels: Record<ScheduledPostStatus, string> = {
 };
 
 export const priceProfileLabels: Record<PriceProfile, string> = {
-  AUTOHOME: "Autohome (Китай)",
+  AUTOHOME: "Китай (autohome и guazi)",
   AUTOWINI: "Autowini (Южна Корея)",
 };
 

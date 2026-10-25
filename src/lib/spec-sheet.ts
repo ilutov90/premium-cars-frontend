@@ -1,5 +1,5 @@
 // The source site's full specification sheet (backend SpecGroup: autohome's "Specifications" table, autowini's
-// "Options"), stored in English as imported. The car page shows it in Bulgarian: names and values are looked up
+// "Options", guazi's "Specifications"), stored in English as imported. The car page shows it in Bulgarian: names and values are looked up
 // here (any case); a value list "Heating, Ventilation" is translated part by part; what is not known yet is shown
 // as the source wrote it. Add a line here when a car shows English text.
 import type { SpecGroup } from "./types";
@@ -42,6 +42,22 @@ const groups: Record<string, string> = {
   "seat option": "Седалки",
   "other option": "Други",
   "other options": "Други",
+  // guazi
+  "motor": "Електромотор",
+  "body structure": "Купе и размери",
+  "safety configuration": "Безопасност",
+  "driving assistance": "Асистенти",
+  "exterior": "Екстериор",
+  "interior": "Интериор",
+  "seat": "Седалки",
+  "seats": "Седалки",
+  "multimedia": "Мултимедия",
+  "lighting": "Светлини",
+  "glass/mirrors": "Стъкла и огледала",
+  "glass/mirror": "Стъкла и огледала",
+  "chassis/steering": "Шаси и кормилно управление",
+  "wheel/brake": "Гуми и спирачки",
+  "air conditioning/refrigerator": "Климатик и хладилна жабка",
 };
 
 const names: Record<string, string> = {
@@ -381,6 +397,47 @@ const names: Record<string, string> = {
   "third row seat": "Трети ред седалки",
   "electric seat": "Електрически седалки",
   "power sliding door": "Електрически плъзгащи се врати",
+  // guazi
+  "front motor maximum torque (n·m)": "Преден електромотор, въртящ момент (Nm)",
+  "rear motor maximum torque (n·m)": "Заден електромотор, въртящ момент (Nm)",
+  "power consumption (kwh/100km)": "Разход на ток (kWh/100 км)",
+  "wltp electric range (km)": "Пробег на ток по WLTP (км)",
+  "fast charging": "Бързо зареждане",
+  "doors": "Врати",
+  "seats": "Места",
+  "front side airbags": "Странични въздушни възглавници отпред",
+  "rear side airbags": "Странични въздушни възглавници отзад",
+  "front curtain airbags": "Завеси отпред",
+  "rear curtain airbags": "Завеси отзад",
+  "seatbelt reminder": "Напомняне за колан",
+  "brake assist": "Асистент при спиране",
+  "traction control": "Контрол на сцеплението",
+  "electronic stability control (esc)": "Електронна стабилизираща система (ESC)",
+  "abs anti-lock": "ABS",
+  "level of driving assistance": "Ниво на асистентите",
+  "external audio interface": "Аудио вход",
+  "rear lcd screen": "Екран отзад",
+  "on-board computer display": "Бордови компютър",
+  "electric rearview mirror adjustment": "Ел. регулиране на огледалата",
+  "anti-pinch window function": "Стъкла със защита от притискане",
+  "valve train": "Газоразпределение",
+  "maximum torque (n·m)": "Максимален въртящ момент (Nm)",
+  "engine start/stop": "Старт-стоп система",
+  "engine electronic anti-theft": "Имобилайзер",
+  "rear radar": "Парктроник отзад",
+  "front radar": "Парктроник отпред",
+  "panoramic camera": "Камера 360°",
+  "reversing camera": "Камера за задно виждане",
+  "push button start": "Бутон за палене",
+  "heated side mirrors": "Подгряване на огледалата",
+  "electric folding side mirrors": "Ел. прибиране на огледалата",
+  "lane change assist": "Асистент за смяна на лентата",
+  "ambient lighting": "Амбиентно осветление",
+  "driver's seat memory": "Памет на седалката на водача",
+  "power seat adjustment": "Ел. регулиране на седалките",
+  "rear independent air conditioning": "Отделен климатик отзад",
+  "rear parking sensors": "Парктроник отзад",
+  "anti-pinch windows": "Стъкла със защита от притискане",
 };
 
 const values: Record<string, string> = {
@@ -568,6 +625,13 @@ const values: Record<string, string> = {
   yes: "Да",
   no: "Не",
   standard: "Стандартно",
+  // guazi
+  "supported": "Да",
+  "not supported": "Не",
+  "ncm battery": "NMC (никел-манган-кобалт)",
+  "lfp battery": "LFP (литиево-железен фосфат)",
+  "dohc": "DOHC (два разпределителни вала)",
+  "sohc": "SOHC",
 };
 
 const lookup = (dict: Record<string, string>, text: string) => dict[text.trim().toLowerCase()];

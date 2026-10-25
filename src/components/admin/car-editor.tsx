@@ -78,6 +78,7 @@ function readForm(form: HTMLFormElement): { specs: CarSpecs; pricing: PricingInp
       electricRangeKm: number("electricRangeKm"),
       rangeStandard: text("rangeStandard"),
       motorPowerKw: number("motorPowerKw"),
+      batteryHealthPct: number("batteryHealthPct"),
       euroStandard: number("euroStandard"),
       bodyType: text("bodyType"),
       seats: number("seats"),
@@ -251,6 +252,7 @@ export function CarEditor({ params }: { params: Promise<{ id: string }> }) {
             <Field label="Пробег на ток, км" name="electricRangeKm" value={s.electricRangeKm} type="number" />
             <Field label="Стандарт (CLTC, NEDC, WLTP, EPA)" name="rangeStandard" value={s.rangeStandard} />
             <Field label="Електромотор(и), kW" name="motorPowerKw" value={s.motorPowerKw} type="number" />
+            <Field label="Здраве на батерията (SOH), %" name="batteryHealthPct" value={s.batteryHealthPct} type="number" />
           </Fieldset>
 
           <FeaturesEditor features={s.features ?? []} />
@@ -450,7 +452,8 @@ function FeaturesEditor({ features }: { features: CarFeature[] }) {
       <legend className="px-1 text-sm font-bold">Оборудване и екстри ({features.length})</legend>
       <p className="mb-4 text-xs text-muted">
         Същите отметки като в mobile.bg. Показват се на страницата на колата. При внос от autohome оборудването е по
-        каталога на версията (без опциите срещу доплащане): провери го по снимките.
+        каталога на версията (без опциите срещу доплащане), а guazi показва по-малко екстри (напр. няма ABS, климатик,
+        навигация): провери ги по снимките.
       </p>
       <div className="space-y-5">
         {featureGroups.map((group) => (
