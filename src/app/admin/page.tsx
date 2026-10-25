@@ -122,6 +122,8 @@ function ImportPanel({ onImported }: { onImported: () => void }) {
   const [url, setUrl] = useState("");
   const [price, setPrice] = useState("");
   const [currency, setCurrency] = useState("EUR");
+  // the listing page as saved in this browser (guazi answers the server with a bot check)
+  const [saved, setSaved] = useState<{ name: string; html: string } | null>(null);
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<ImportResult | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -134,11 +136,17 @@ function ImportPanel({ onImported }: { onImported: () => void }) {
     try {
       const r = await adminFetch<ImportResult>("/api/admin/imports", {
         method: "POST",
-        body: JSON.stringify({ url, price: price.trim() ? Number(price) : null, currency }),
+        body: JSON.stringify({
+          url,
+          price: price.trim() ? Number(price) : null,
+          currency,
+          html: saved?.html ?? null,
+        }),
       });
       setResult(r);
       setUrl("");
       setPrice("");
+      setSaved(null);
       onImported();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Импортът не успя");
@@ -190,6 +198,34 @@ function ImportPanel({ onImported }: { onImported: () => void }) {
           {busy ? "Импортиране… (до 2 мин.)" : "Импортирай"}
         </button>
       </form>
+      <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-paper/60">
+        <label className="cursor-pointer font-semibold text-paper underline underline-offset-2">
+          {saved ? "Друг запазен файл" : "Импорт от запазена страница"}
+          <input
+            type="file"
+            accept=".html,.htm,text/html"
+            className="hidden"
+            onChange={async (e) => {
+              const file = e.target.files?.[0];
+              e.target.value = "";
+              if (file) setSaved({ name: file.name, html: await file.text() });
+            }}
+          />
+        </label>
+        {saved ? (
+          <span>
+            {saved.name}{" "}
+            <button type="button" className="ml-1 underline" onClick={() => setSaved(null)}>
+              махни
+            </button>
+          </span>
+        ) : (
+          <span>
+            За guazi, когато импортът по линк не става: отворете обявата, Ctrl+S → „Уеб страница, само HTML“,
+            изберете файла тук и поставете линка горе.
+          </span>
+        )}
+      </div>
       {error && <p className="mt-3 text-sm font-medium text-[#ffb59a]">{error}</p>}
       {result && (
         <div className="mt-4 rounded-xl bg-paper/10 p-4 text-sm">
