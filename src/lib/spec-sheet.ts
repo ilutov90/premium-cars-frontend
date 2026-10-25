@@ -58,6 +58,14 @@ const groups: Record<string, string> = {
   "chassis/steering": "Шаси и кормилно управление",
   "wheel/brake": "Гуми и спирачки",
   "air conditioning/refrigerator": "Климатик и хладилна жабка",
+  // guazi (real listing names)
+  "driving assistance configuration": "Асистенти",
+  "exterior configuration": "Екстериор",
+  "interior configuration": "Интериор",
+  "seat configuration": "Седалки",
+  "multimedia configuration": "Мултимедия",
+  "lighting configuration": "Светлини",
+  "engine configuration": "Двигател",
 };
 
 const names: Record<string, string> = {
@@ -438,6 +446,45 @@ const names: Record<string, string> = {
   "rear independent air conditioning": "Отделен климатик отзад",
   "rear parking sensors": "Парктроник отзад",
   "anti-pinch windows": "Стъкла със защита от притискане",
+  // guazi (real listing names)
+  "adaptive high/low beam": "Автоматични дълги светлини",
+  "brake assist (eba/bas/ba, etc.)": "Асистент при спиране",
+  "brake force distribution (ebd/cbc, etc.)": "Разпределение на спирачното усилие (EBD)",
+  "car networking": "Онлайн свързаност",
+  "center console color display": "Цветен централен дисплей",
+  "daytime running lights": "Дневни светлини",
+  "driver seat electric adjustment": "Ел. регулиране на седалката на водача",
+  "driver seat height adjustment": "Регулиране на височината на седалката на водача",
+  "driver seat lumbar support adjustment": "Лумбална опора на седалката на водача",
+  "electric rearview mirror folding": "Ел. прибиране на огледалата",
+  "electric seat memory": "Памет на седалките",
+  "electric steering wheel adjustment": "Ел. регулиране на волана",
+  "electric trunk": "Ел. багажник",
+  "energy consumption per 100km (kwh/100km)": "Разход на ток (kWh/100 км)",
+  "heated rearview mirror": "Подгряване на огледалата",
+  "keyless entry system": "Безключов достъп",
+  "number of seats": "Места",
+  "ota upgrade": "Безжично обновяване на софтуера (OTA)",
+  "passenger seat electric adjustment": "Ел. регулиране на седалката на пътника",
+  "rear motor max power (kw)": "Заден електромотор, мощност (kW)",
+  "rear motor max torque (n·m)": "Заден електромотор, въртящ момент (Nm)",
+  "front motor max power (kw)": "Преден електромотор, мощност (kW)",
+  "front motor max torque (n·m)": "Преден електромотор, въртящ момент (Nm)",
+  "rearview mirror memory": "Памет на огледалата",
+  "second row backrest angle adjustment": "Регулиране на облегалките на втория ред",
+  "sensing trunk": "Безконтактно отваряне на багажника",
+  "steering wheel memory": "Памет на волана",
+  "tire pressure monitoring system": "Контрол на налягането в гумите",
+  "traction control (asr/tcs/trc, etc.)": "Контрол на сцеплението",
+  "vehicle stability control (esc/esp/dsc, etc.)": "Електронна стабилизираща система (ESP)",
+  "visor vanity mirror": "Огледало в сенника",
+  "traffic sign recognition": "Разпознаване на пътни знаци",
+  "remote key": "Дистанционен ключ",
+  "leather steering wheel": "Кожен волан",
+  "full lcd instrument panel": "Изцяло дигитално табло",
+  "smartphone connectivity": "Свързване на телефон",
+  "front seat heating": "Подгряване на предните седалки",
+  "rear seat heating": "Подгряване на задните седалки",
 };
 
 const values: Record<string, string> = {
@@ -632,6 +679,10 @@ const values: Record<string, string> = {
   "lfp battery": "LFP (литиево-железен фосфат)",
   "dohc": "DOHC (два разпределителни вала)",
   "sohc": "SOHC",
+  // guazi (real listing names)
+  "l2": "Ниво 2 (L2)",
+  "l2+": "Ниво 2+ (L2+)",
+  "l3": "Ниво 3 (L3)",
 };
 
 const lookup = (dict: Record<string, string>, text: string) => dict[text.trim().toLowerCase()];
