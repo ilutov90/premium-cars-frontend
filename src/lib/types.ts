@@ -222,14 +222,18 @@ export interface PricingInputs {
   fixedTotalEur: number | null;
 }
 
-/** final price = car + baseCosts + stepCost × (car − threshold) / step + profit, all EUR; proportional above the threshold. */
+/**
+ * One site's price formula (backend PricingProfile), EUR, on the FOB price:
+ * final = FOB + seaFreight + landTransport + commission + dutyVatPct % × (FOB + seaFreight) + profit.
+ */
 export interface PricingProfile {
   id: PriceProfile;
-  baseCosts: number;
-  threshold: number;
-  step: number;
-  stepCost: number;
+  seaFreight: number;
+  landTransport: number;
+  commission: number;
   profit: number;
+  /** duty and VAT, percent of FOB + sea freight (20 = 20 %) */
+  dutyVatPct: number;
   updatedAt: string;
 }
 
@@ -264,10 +268,17 @@ export interface PriceBreakdown {
   profile: PriceProfile | null;
   sourcePrice: number | null;
   sourceCurrency: string | null;
+  /** the FOB price in EUR */
   carPriceEur: number | null;
-  baseCostsEur: number | null;
-  steps: number | null;
-  stepCostsEur: number | null;
+  seaFreightEur?: number | null;
+  landTransportEur?: number | null;
+  commissionEur?: number | null;
+  dutyVatPct?: number | null;
+  dutyVatEur?: number | null;
+  /** old formula (prices calculated before October 2026, until recalculated) */
+  baseCostsEur?: number | null;
+  steps?: number | null;
+  stepCostsEur?: number | null;
   profitEur: number | null;
   profitOverridden: boolean;
   /** what the formula gives; null when it cannot be calculated */

@@ -384,13 +384,28 @@ function PriceSummary({ car, busy, onRecalculate }: { car: AdminCar; busy: boole
       ? []
       : [
           [
-            `Кола (${formatNumber(p.sourcePrice ?? 0)} ${p.sourceCurrency ?? ""}${
+            `Кола, FOB (${formatNumber(p.sourcePrice ?? 0)} ${p.sourceCurrency ?? ""}${
               p.eurPerUnit != null && p.sourceCurrency !== "EUR" ? ` × ${rateFormat.format(p.eurPerUnit)}` : ""
             })`,
             p.carPriceEur,
           ],
-          ["Разходи", p.baseCostsEur],
-          [`Разходи над прага (× ${formatNumber(p.steps ?? 0)})`, p.stepCostsEur],
+          ...(p.baseCostsEur != null
+            ? ([
+                // a price calculated with the old formula (before October 2026), until it is recalculated
+                ["Разходи (стара формула)", p.baseCostsEur],
+                [`Разходи над прага (× ${formatNumber(p.steps ?? 0)})`, p.stepCostsEur ?? null],
+              ] as [string, number | null][])
+            : ([
+                ["Морски транспорт", p.seaFreightEur ?? null],
+                ["Сухопътен транспорт", p.landTransportEur ?? null],
+                ["Комисионна", p.commissionEur ?? null],
+                [
+                  `Мито и ДДС (${formatNumber(p.dutyVatPct ?? 0)} % от ${formatNumber(
+                    Math.round((p.carPriceEur ?? 0) + (p.seaFreightEur ?? 0)),
+                  )} €)`,
+                  p.dutyVatEur ?? null,
+                ],
+              ] as [string, number | null][])),
           [p.profitOverridden ? "Надценка (за тази кола)" : "Надценка", p.profitEur],
         ];
   return (

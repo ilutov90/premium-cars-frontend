@@ -6,9 +6,10 @@ import { formatDate, formatEur, priceProfileLabels } from "@/lib/format";
 import type { ExchangeRates, PricingProfile } from "@/lib/types";
 
 /** Same formula as the backend PriceCalculator; used only for the live example. */
-function finalPrice(carEur: number, p: Omit<PricingProfile, "id" | "updatedAt">): number {
-  const steps = p.step > 0 ? Math.max(0, carEur - p.threshold) / p.step : 0;
-  return Math.round(carEur + p.baseCosts + p.stepCost * steps + p.profit);
+function priceParts(fob: number, p: Omit<PricingProfile, "id" | "updatedAt">) {
+  const dutyVat = Math.round((fob + p.seaFreight) * p.dutyVatPct) / 100;
+  const total = Math.round(fob + p.seaFreight + p.landTransport + p.commission + dutyVat + p.profit);
+  return { dutyVat, total };
 }
 
 export default function AdminPricingPage() {
@@ -26,11 +27,12 @@ export default function AdminPricingPage() {
     <div>
       <h1 className="text-xl font-extrabold">Цени</h1>
       <p className="mt-1 max-w-2xl text-sm text-muted">
-        Крайна цена = цена на колата в € + разходи + разходи за всяка стъпка (10 000 €) над прага + надценка.
-        Над прага разходите са пропорционални: при кола за 25 000 € и Autohome това е 5860 + 2880 + 1440 (за
-        5000 € над 20 000) + 2000. Тази цена се показва в сайта и в постовете. Промяна на формулата важи за новите
-        импорти: цените на вече добавените коли остават същите (може да са публикувани). Отделна кола се
-        преизчислява от страницата ѝ („Преизчисли“).
+        Всичко се смята от FOB цената от обявата (в евро): крайна цена = FOB + морски транспорт + сухопътен
+        транспорт + комисионна + мито и ДДС + надценка, където мито и ДДС = процент от (FOB + морски транспорт).
+        Пример за Китай, FOB 21 450 €: 21 450 + 2000 + 1600 + 500 + 4690 (20 % от 23 450) + 2000 = 32 240 €.
+        Тази цена се показва в сайта и в постовете. Промяна на формулата важи за новите импорти: цените на вече
+        добавените коли остават същите (може да са публикувани). Отделна кола се преизчислява от страницата ѝ
+        („Преизчисли“).
       </p>
       {error && <p className="mt-4 text-sm font-semibold text-warn">{error}</p>}
       {!profiles && !error && <p className="mt-6 text-sm text-muted">Зареждане…</p>}
@@ -91,23 +93,28 @@ function RatesCard() {
 
 const rateFormat = new Intl.NumberFormat("bg-BG", { maximumSignificantDigits: 5 });
 
-const fields: { name: "baseCosts" | "threshold" | "step" | "stepCost" | "profit"; label: string; hint: string }[] = [
-  { name: "baseCosts", label: "Разходи, €", hint: "всички разходи по вноса за кола до прага" },
-  { name: "stepCost", label: "Разходи на стъпка, €", hint: "за всеки 10 000 € над прага, пропорционално" },
-  { name: "step", label: "Стъпка, €", hint: "обикновено 10 000" },
-  { name: "threshold", label: "Праг, €", hint: "от тази цена на колата нататък" },
+type FieldName = "seaFreight" | "landTransport" | "commission" | "profit" | "dutyVatPct";
+
+const fields: { name: FieldName; label: string; hint: string; max?: number }[] = [
+  { name: "seaFreight", label: "Морски транспорт, €", hint: "до европейското пристанище" },
+  { name: "landTransport", label: "Сухопътен транспорт, €", hint: "от пристанището до България" },
+  { name: "commission", label: "Комисионна, €", hint: "на посредника" },
   { name: "profit", label: "Надценка (печалба), €", hint: "твоята печалба на кола" },
+  { name: "dutyVatPct", label: "Мито и ДДС, %", hint: "процент от FOB + морски транспорт", max: 100 },
 ];
 
 function ProfileForm({ profile, onSaved }: { profile: PricingProfile; onSaved: (p: PricingProfile) => void }) {
   const { adminFetch } = useAdmin();
   const [values, setValues] = useState(profile);
-  const [example, setExample] = useState(25000);
+  const [example, setExample] = useState(20000);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null);
 
   const changed = fields.some((f) => values[f.name] !== profile[f.name]);
-  const valid = fields.every((f) => Number.isFinite(values[f.name]) && values[f.name] >= 0) && values.step > 0;
+  const valid = fields.every(
+    (f) => Number.isFinite(values[f.name]) && values[f.name] >= 0 && (f.max == null || values[f.name] <= f.max),
+  );
+  const parts = valid ? priceParts(example, values) : null;
 
   async function save(e: React.FormEvent) {
     e.preventDefault();
@@ -145,6 +152,7 @@ function ProfileForm({ profile, onSaved }: { profile: PricingProfile; onSaved: (
               id={`${profile.id}-${f.name}`}
               type="number"
               min={0}
+              max={f.max}
               step="any"
               required
               value={Number.isFinite(values[f.name]) ? values[f.name] : ""}
@@ -158,7 +166,7 @@ function ProfileForm({ profile, onSaved }: { profile: PricingProfile; onSaved: (
 
       <div className="mt-5 rounded-xl bg-paper p-4 text-sm">
         <div className="flex flex-wrap items-center gap-2">
-          <span className="text-muted">Пример: кола за</span>
+          <span className="text-muted">Пример: FOB</span>
           <input
             type="number"
             min={0}
@@ -169,8 +177,14 @@ function ProfileForm({ profile, onSaved }: { profile: PricingProfile; onSaved: (
             aria-label="Цена на колата за примера"
           />
           <span className="text-muted">€ →</span>
-          <strong className="text-base">{valid ? formatEur(finalPrice(example, values)) : "—"}</strong>
+          <strong className="text-base">{parts ? formatEur(parts.total) : "—"}</strong>
         </div>
+        {parts && (
+          <p className="mt-2 text-xs text-muted">
+            {formatEur(example)} + {formatEur(values.seaFreight)} + {formatEur(values.landTransport)} +{" "}
+            {formatEur(values.commission)} + мито и ДДС {formatEur(parts.dutyVat)} + надценка {formatEur(values.profit)}
+          </p>
+        )}
       </div>
 
       <div className="mt-5 flex items-center gap-3">
