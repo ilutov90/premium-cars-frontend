@@ -331,7 +331,8 @@ function MobileBgDialog({
       title: car.specs.title,
       values: { ...values, description: values.description.slice(0, MOBILE_BG_TEXT_MAX) },
       extras: [...extras].map((f) => form.extraValues[f]).filter(Boolean),
-      photos: ordered.map((i) => absolute(i.url)),
+      // from our own origin (the extension only takes those), also for photos linked from the source site
+      photos: ordered.map((i) => absolute(i.fileUrl)),
     });
   }
 

@@ -729,7 +729,7 @@ function defaultScheduleTime(): string {
 async function photoFiles(car: AdminCar): Promise<File[]> {
   const files: File[] = [];
   for (const [i, img] of car.images.slice(0, MAX_PHOTOS).entries()) {
-    const res = await fetch(img.url);
+    const res = await fetch(img.fileUrl); // our origin: linked photos too
     if (!res.ok) throw new Error(`Снимка ${i + 1} не се зареди (${res.status})`);
     const blob = await res.blob();
     const ext = blob.type === "image/png" ? "png" : blob.type === "image/webp" ? "webp" : "jpg";

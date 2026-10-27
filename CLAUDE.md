@@ -43,6 +43,10 @@ Run `npm run lint` and `npm run build` before finishing a change.
 - Import sources (`CarSource`): AUTOHOME and GUAZI (China, priced with the AUTOHOME formula), AUTOWINI (Korea).
   `specs.batteryHealthPct` (battery SOH, from guazi) shows with the EV figures on the car page; guazi's inspection
   findings are not shown to customers.
+- Photos of guazi and autohome are linked: their URLs point at the source site's CDN (`AdminImage.linked`), autowini's
+  are served from our `/media`. Car photos load with `referrerPolicy="no-referrer"` and a photo that does not load is
+  hidden (`car-image.tsx`, `car-gallery.tsx`). Anything that needs a photo's bytes (downloads, the mobile.bg extension)
+  uses `AdminImage.fileUrl` (`/media/photo/{id}`, our origin), never `url`.
 - Customers never see the Facebook/Instagram/Viber text. It comes from two templates (`src/lib/post-template.ts`:
   placeholders, defaults, rendering; one shared by Facebook and Instagram, stored as `FACEBOOK`, and one for Viber;
   saved ones in the backend `post_template`, edited under `/admin/templates`). Rendering drops a line whose

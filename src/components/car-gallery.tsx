@@ -4,7 +4,11 @@
 import { useCallback, useEffect, useState } from "react";
 import { CarImage } from "./car-image";
 
-export function CarGallery({ images, title }: { images: string[]; title: string }) {
+export function CarGallery({ images: all, title }: { images: string[]; title: string }) {
+  // photos that did not load (a linked photo removed at the source) are left out
+  const [broken, setBroken] = useState<string[]>([]);
+  const images = all.filter((src) => !broken.includes(src));
+  const hide = (src: string) => setBroken((b) => (b.includes(src) ? b : [...b, src]));
   const [active, setActive] = useState(0);
   const [open, setOpen] = useState(false);
   const count = images.length;
@@ -34,7 +38,13 @@ export function CarGallery({ images, title }: { images: string[]; title: string 
         className="relative block aspect-[4/3] w-full overflow-hidden rounded-2xl bg-line/50"
         aria-label="Отвори снимките на цял екран"
       >
-        <img src={images[active]} alt={`${title} — снимка ${active + 1}`} className="h-full w-full object-cover" />
+        <img
+          src={images[Math.min(active, count - 1)]}
+          alt={`${title} — снимка ${active + 1}`}
+          referrerPolicy="no-referrer"
+          onError={() => hide(images[Math.min(active, count - 1)])}
+          className="h-full w-full object-cover"
+        />
         <span className="absolute right-3 bottom-3 rounded-full bg-ink/75 px-3 py-1 text-xs font-semibold text-paper">
           {active + 1} / {count}
         </span>
@@ -52,7 +62,7 @@ export function CarGallery({ images, title }: { images: string[]; title: string 
               }`}
               aria-label={`Снимка ${i + 1}`}
             >
-              <img src={src} alt="" loading="lazy" className="h-full w-full object-cover" />
+              <img src={src} alt="" loading="lazy" referrerPolicy="no-referrer" onError={() => hide(src)} className="h-full w-full object-cover" />
             </button>
           ))}
         </div>
@@ -66,7 +76,8 @@ export function CarGallery({ images, title }: { images: string[]; title: string 
           onClick={() => setOpen(false)}
         >
           <img
-            src={images[active]}
+            src={images[Math.min(active, count - 1)]}
+            referrerPolicy="no-referrer"
             alt={`${title} — снимка ${active + 1}`}
             className="max-h-full max-w-full rounded-lg object-contain"
             onClick={(e) => e.stopPropagation()}

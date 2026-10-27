@@ -316,7 +316,15 @@ export function CarEditor({ params }: { params: Promise<{ id: string }> }) {
               {car.images.map((img, i) => (
                 <div key={img.id} className="group relative overflow-hidden rounded-lg border border-line">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={img.url} alt="" className="aspect-[4/3] w-full object-cover" />
+                  <img src={img.url} alt="" referrerPolicy="no-referrer" className="aspect-[4/3] w-full object-cover" />
+                  {img.linked && (
+                    <span
+                      className="absolute top-1.5 right-1.5 rounded bg-paper/90 px-1.5 py-0.5 text-[10px] font-bold text-ink"
+                      title="Снимката се показва директно от сайта източник и не се пази при нас"
+                    >
+                      ЛИНК
+                    </span>
+                  )}
                   {i === 0 && (
                     <span className="absolute top-1.5 left-1.5 rounded bg-ink px-1.5 py-0.5 text-[10px] font-bold text-paper">
                       КОРИЦА
