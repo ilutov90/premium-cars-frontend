@@ -4,6 +4,7 @@ import { useState } from "react";
 import {
   categoryLabel,
   checkLabel,
+  gradeDetails,
   gradeMeaning,
   itemLabel,
   sortedCategories,
@@ -15,12 +16,14 @@ import type { Inspection } from "@/lib/types";
 /** The source's inspection report on the car page: grade, checks, areas, and every remark with its video. */
 export function InspectionReport({ inspection }: { inspection: Inspection }) {
   const remarks = inspection.findings.length;
+  const videos = inspection.findings.some((f) => f.videoUrl);
   const abnormal = inspection.categories.reduce((n, c) => n + c.abnormal, 0);
+  const details = inspection.grade ? gradeDetails[inspection.grade.toUpperCase()] : undefined;
   return (
     <section>
       <h2 className="text-lg font-extrabold">Техническа проверка</h2>
       <p className="mt-1 text-sm text-muted">
-        Колата е проверена от инспектор на продавача. Ето какво е установено, с видео на всяка забележка.
+        Колата е проверена от инспектор на продавача. Ето какво е установено{videos ? ", с видео на забележките" : ""}.
       </p>
 
       <div className="mt-4 rounded-2xl border border-line bg-card p-4 sm:p-5">
@@ -52,6 +55,20 @@ export function InspectionReport({ inspection }: { inspection: Inspection }) {
           )}
         </div>
 
+        {details && (
+          <div className="mt-5 rounded-xl bg-paper p-3 text-sm sm:p-4">
+            <p className="font-semibold">Какво означава оценка {inspection.grade}</p>
+            <dl className="mt-2 space-y-1.5">
+              {details.map(([area, text]) => (
+                <div key={area} className="sm:flex sm:gap-3">
+                  <dt className="shrink-0 font-semibold sm:w-28">{area}</dt>
+                  <dd className="text-ink-soft">{text}</dd>
+                </div>
+              ))}
+            </dl>
+          </div>
+        )}
+
         {inspection.categories.length > 0 && (
           <dl className="mt-5 grid gap-x-6 text-sm sm:grid-cols-2">
             {sortedCategories(inspection).map((c) => (
@@ -81,8 +98,13 @@ export function InspectionReport({ inspection }: { inspection: Inspection }) {
               ))}
             </ul>
           </div>
+        ) : abnormal === 0 ? (
+          <p className="mt-5 text-sm font-semibold text-ok">Инспекторът не е открил забележки.</p>
         ) : (
-          abnormal === 0 && <p className="mt-5 text-sm font-semibold text-ok">Инспекторът не е открил забележки.</p>
+          <p className="mt-5 rounded-xl bg-warn/10 p-3 text-sm">
+            Продавачът е публикувал само броя на забележките по зони, без описание.{" "}
+            <strong>Подробното описание на забележките е налично при запитване.</strong>
+          </p>
         )}
       </div>
     </section>
