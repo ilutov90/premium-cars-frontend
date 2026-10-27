@@ -299,9 +299,14 @@ export interface PriceBreakdown {
 
 export interface AdminImage {
   id: number;
+  /** where the browser shows it from: our /media, or the source site's CDN when linked */
   url: string;
   sourceUrl: string | null;
   position: number;
+  /** shown straight from the source site (guazi, autohome), not stored by us */
+  linked: boolean;
+  /** the photo from our own origin, stored or linked alike: downloads and the mobile.bg extension */
+  fileUrl: string;
 }
 
 export interface AdminCar {
