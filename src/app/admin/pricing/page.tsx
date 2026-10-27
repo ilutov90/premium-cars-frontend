@@ -8,8 +8,9 @@ import type { ExchangeRates, PricingProfile } from "@/lib/types";
 /** Same formula as the backend PriceCalculator; used only for the live example. */
 function priceParts(fob: number, p: Omit<PricingProfile, "id" | "updatedAt">) {
   const dutyVat = Math.round((fob + p.seaFreight) * p.dutyVatPct) / 100;
-  const total = Math.round(fob + p.seaFreight + p.landTransport + p.commission + dutyVat + p.profit);
-  return { dutyVat, total };
+  const profit = Math.max(Math.round(fob * p.profitPct) / 100, p.profitMin);
+  const total = Math.round(fob + p.seaFreight + p.landTransport + p.commission + dutyVat + profit);
+  return { dutyVat, profit, total };
 }
 
 export default function AdminPricingPage() {
@@ -28,8 +29,10 @@ export default function AdminPricingPage() {
       <h1 className="text-xl font-extrabold">Цени</h1>
       <p className="mt-1 max-w-2xl text-sm text-muted">
         Всичко се смята от FOB цената от обявата (в евро): крайна цена = FOB + морски транспорт + сухопътен
-        транспорт + комисионна + мито и ДДС + надценка, където мито и ДДС = процент от (FOB + морски транспорт).
-        Пример за Китай, FOB 21 450 €: 21 450 + 2000 + 1600 + 500 + 4690 (20 % от 23 450) + 2000 = 32 240 €.
+        транспорт + комисионна + мито и ДДС + надценка, където мито и ДДС = процент от (FOB + морски транспорт), а
+        надценката = процент от FOB, но не по-малко от минимума. Пример за Китай, FOB 21 450 €: 21 450 + 2000 + 1600
+        + 500 + 4690 (20 % от 23 450) + 2145 (10 % от 21 450) = 32 385 €. При FOB 8000 € надценката е минимумът
+        1000 €, не 800 €.
         Тази цена се показва в сайта и в постовете. Промяна на формулата важи за новите импорти: цените на вече
         добавените коли остават същите (може да са публикувани). Отделна кола се преизчислява от страницата ѝ
         („Преизчисли“).
@@ -93,13 +96,14 @@ function RatesCard() {
 
 const rateFormat = new Intl.NumberFormat("bg-BG", { maximumSignificantDigits: 5 });
 
-type FieldName = "seaFreight" | "landTransport" | "commission" | "profit" | "dutyVatPct";
+type FieldName = "seaFreight" | "landTransport" | "commission" | "profitPct" | "profitMin" | "dutyVatPct";
 
 const fields: { name: FieldName; label: string; hint: string; max?: number }[] = [
   { name: "seaFreight", label: "Морски транспорт, €", hint: "до европейското пристанище" },
   { name: "landTransport", label: "Сухопътен транспорт, €", hint: "от пристанището до България" },
   { name: "commission", label: "Комисионна, €", hint: "на посредника" },
-  { name: "profit", label: "Надценка (печалба), €", hint: "твоята печалба на кола" },
+  { name: "profitPct", label: "Надценка, %", hint: "процент от FOB цената", max: 100 },
+  { name: "profitMin", label: "Минимална надценка, €", hint: "ако процентът дава по-малко" },
   { name: "dutyVatPct", label: "Мито и ДДС, %", hint: "процент от FOB + морски транспорт", max: 100 },
 ];
 
@@ -182,7 +186,7 @@ function ProfileForm({ profile, onSaved }: { profile: PricingProfile; onSaved: (
         {parts && (
           <p className="mt-2 text-xs text-muted">
             {formatEur(example)} + {formatEur(values.seaFreight)} + {formatEur(values.landTransport)} +{" "}
-            {formatEur(values.commission)} + мито и ДДС {formatEur(parts.dutyVat)} + надценка {formatEur(values.profit)}
+            {formatEur(values.commission)} + мито и ДДС {formatEur(parts.dutyVat)} + надценка {formatEur(parts.profit)}
           </p>
         )}
       </div>

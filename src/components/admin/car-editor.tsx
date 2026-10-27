@@ -406,7 +406,14 @@ function PriceSummary({ car, busy, onRecalculate }: { car: AdminCar; busy: boole
                   p.dutyVatEur ?? null,
                 ],
               ] as [string, number | null][])),
-          [p.profitOverridden ? "Надценка (за тази кола)" : "Надценка", p.profitEur],
+          [
+            p.profitOverridden
+              ? "Надценка (за тази кола)"
+              : p.profitPct != null
+                ? `Надценка (${formatNumber(p.profitPct)} % от FOB, мин. ${formatNumber(p.profitMinEur ?? 0)} €)`
+                : "Надценка",
+            p.profitEur,
+          ],
         ];
   return (
     <div className="rounded-2xl bg-ink p-5 text-paper">

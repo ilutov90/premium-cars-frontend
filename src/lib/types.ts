@@ -224,14 +224,18 @@ export interface PricingInputs {
 
 /**
  * One site's price formula (backend PricingProfile), EUR, on the FOB price:
- * final = FOB + seaFreight + landTransport + commission + dutyVatPct % × (FOB + seaFreight) + profit.
+ * final = FOB + seaFreight + landTransport + commission + dutyVatPct % × (FOB + seaFreight)
+ *         + max(profitMin, profitPct % × FOB).
  */
 export interface PricingProfile {
   id: PriceProfile;
   seaFreight: number;
   landTransport: number;
   commission: number;
-  profit: number;
+  /** profit, percent of FOB (10 = 10 %) */
+  profitPct: number;
+  /** the least profit, EUR */
+  profitMin: number;
   /** duty and VAT, percent of FOB + sea freight (20 = 20 %) */
   dutyVatPct: number;
   updatedAt: string;
@@ -281,6 +285,9 @@ export interface PriceBreakdown {
   stepCostsEur?: number | null;
   profitEur: number | null;
   profitOverridden: boolean;
+  /** the formula's profit percent and minimum (null when overridden or calculated before the change) */
+  profitPct?: number | null;
+  profitMinEur?: number | null;
   /** what the formula gives; null when it cannot be calculated */
   calculatedTotalEur: number | null;
   totalEur: number;
