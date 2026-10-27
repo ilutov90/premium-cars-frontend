@@ -40,6 +40,8 @@ Run `npm run lint` and `npm run build` before finishing a change.
   page shows it as "Пълна спецификация" through `src/lib/spec-sheet.ts` (Bulgarian names and values, unknown text
   stays as the source wrote it: add a line there when a car shows English). It is read-only: the editor never sends it.
 - The car type is nested like the API: `car.specs.*` (title, make, EV fields …) and, for admin, `car.pricing.*`.
+- Car status `REMOVED` ("Махната от източника"): the automatic import hid the car because its listing disappeared
+  from the source; deleted after 30 days, published again if the listing returns.
 - Import sources (`CarSource`): AUTOHOME and GUAZI (China, priced with the AUTOHOME formula), AUTOWINI (Korea).
   `specs.batteryHealthPct` (battery SOH, from guazi) shows with the EV figures on the car page; guazi's inspection
   findings are not shown to customers.
@@ -93,5 +95,5 @@ Run `npm run lint` and `npm run build` before finishing a change.
 | `src/app/delivered`, `koli-na-gaz-ot-koreya`, `elektromobili-ot-kitay` | "Доставени коли" and the landing pages for ads |
 | `src/app/about`, `src/app/privacy` | "За нас" and the privacy policy (company details in `site.ts` → `company`); the inquiry form requires the privacy checkbox (`privacyAccepted`) |
 | `src/app/sitemap.ts`, `robots.ts`, `og/` | SEO: sitemap with the public cars (built per request), robots, the default preview image; `src/lib/seo.ts` has `SITE_URL` and the car JSON-LD |
-| `src/app/admin/**` | admin: import by link, edit car, photos, statuses, price formulas (`pricing/`), post templates (`templates/`), scheduled posts (`scheduled/`), inquiries, the inquiry report (`reports/`), delivered cars (`delivered/`), admin users (`users/`, one-time passwords; `admin-context.tsx` forces the password change) |
+| `src/app/admin/**` | admin: import by link, automatic import (`auto-import/`: main switch, per-site switch, filters, makes with year from and models, preview counts, dry run, run now, the runs' report and failures; backend `AutoImportDtos`), edit car, photos, statuses, price formulas (`pricing/`), post templates (`templates/`), scheduled posts (`scheduled/`), inquiries, the inquiry report (`reports/`), delivered cars (`delivered/`), admin users (`users/`, one-time passwords; `admin-context.tsx` forces the password change) |
 | `src/components/**` | shared components; `admin/` for admin-only ones |

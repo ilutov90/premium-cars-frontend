@@ -114,7 +114,8 @@ export type CarFeature =
   | "N1_HOMOLOGATION";
 export type Transmission = "AUTOMATIC" | "MANUAL";
 export type Origin = "KR" | "CN";
-export type CarStatus = "DRAFT" | "PUBLISHED" | "RESERVED" | "SOLD" | "ARCHIVED";
+/** REMOVED: the listing disappeared from the source (automatic import); hidden, deleted after 30 days. */
+export type CarStatus = "DRAFT" | "PUBLISHED" | "RESERVED" | "SOLD" | "ARCHIVED" | "REMOVED";
 export type CarSource = "AUTOHOME" | "AUTOWINI" | "GUAZI" | "OTHER" | "MANUAL";
 
 export interface PageResponse<T> {
@@ -595,4 +596,97 @@ export interface MobileBgCatalog {
   selects: Record<string, { value: string; text: string }[]>;
   extras: { field: string; value: string }[];
   capturedAt: string | null;
+}
+
+// ---------------------------------------------------------------- automatic import (backend AutoImportDtos)
+
+export type AutoImportSource = "AUTOWINI" | "GUAZI";
+
+/** autowini: inspected + actual mileage; guazi: condition grades. Each site ignores the other's. */
+export interface AutoImportFilters {
+  inspected: boolean;
+  actualMileage: boolean;
+  grades: string[];
+}
+
+export interface AutoImportModel {
+  code: string;
+  name: string;
+}
+
+/** A make to import; models empty = all models. */
+export interface AutoImportBrand {
+  code: string;
+  name: string;
+  enabled: boolean;
+  yearFrom: number;
+  models: AutoImportModel[];
+}
+
+export interface AutoImportSourceView {
+  source: AutoImportSource;
+  enabled: boolean;
+  filters: AutoImportFilters;
+  brands: AutoImportBrand[];
+  /** listings per state: QUEUED, IMPORTED, FAILED */
+  queue: Record<string, number>;
+}
+
+export interface AutoImportBrandPass {
+  code: string;
+  name: string;
+  expected: number;
+  found: number;
+  complete: boolean;
+  error: string | null;
+}
+
+export type AutoImportRunStatus = "RUNNING" | "DONE" | "INCOMPLETE" | "STOPPED" | "FAILED";
+
+export interface AutoImportRun {
+  id: number;
+  source: AutoImportSource;
+  dryRun: boolean;
+  status: AutoImportRunStatus;
+  startedAt: string;
+  finishedAt: string | null;
+  found: number;
+  newCount: number;
+  goneCount: number;
+  returnedCount: number;
+  brands: AutoImportBrandPass[];
+  message: string | null;
+}
+
+export interface AutoImportFailure {
+  source: AutoImportSource;
+  listingId: string;
+  url: string;
+  title: string | null;
+  price: number | null;
+  state: string;
+  attempts: number;
+  error: string | null;
+}
+
+export interface AutoImportOverview {
+  /** the main switch */
+  enabled: boolean;
+  /** the run going on now, e.g. "GUAZI (dry run)" */
+  running: string | null;
+  sources: AutoImportSourceView[];
+  runs: AutoImportRun[];
+  failures: AutoImportFailure[];
+}
+
+export interface AutoImportCatalogEntry {
+  code: string;
+  name: string;
+}
+
+export interface AutoImportPreview {
+  source: AutoImportSource;
+  brands: { code: string; name: string; count: number | null; error: string | null }[];
+  total: number;
+  error: string | null;
 }
