@@ -118,6 +118,12 @@ export type Origin = "KR" | "CN";
 export type CarStatus = "DRAFT" | "PUBLISHED" | "RESERVED" | "SOLD" | "ARCHIVED" | "REMOVED";
 export type CarSource = "AUTOHOME" | "AUTOWINI" | "GUAZI" | "OTHER" | "MANUAL";
 
+/** The admin list's counts (backend AdminCarCounts): cars matching the search and source, in all and per status. */
+export interface AdminCarCounts {
+  total: number;
+  byStatus: Partial<Record<CarStatus, number>>;
+}
+
 export interface PageResponse<T> {
   items: T[];
   page: number;
