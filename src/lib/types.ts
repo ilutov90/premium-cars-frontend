@@ -200,6 +200,27 @@ export interface CarSpecs {
    * admin editor does not send it, and saving a car keeps the stored one.
    */
   sheet?: SpecGroup[];
+  /** The source's inspection report as imported (guazi; English, the car page translates it). Read-only. */
+  inspection?: Inspection | null;
+}
+
+/** The source's inspection report (backend Inspection). */
+export interface Inspection {
+  /** guazi's condition grade: S, A, B, C, D */
+  grade: string | null;
+  /** "No Accident Damage" ...; passed = the car is free of it */
+  checks: { title: string; passed: boolean }[];
+  /** every checked area: points without and with remarks */
+  categories: { name: string; normal: number; abnormal: number }[];
+  /** the points with a defect, with the inspector's note and video */
+  findings: {
+    category: string | null;
+    item: string | null;
+    result: string | null;
+    note: string | null;
+    imageUrl: string | null;
+    videoUrl: string | null;
+  }[];
 }
 
 /** A group of the source's specification sheet (backend SpecGroup); value "" = fitted, nothing more to say. */

@@ -25,6 +25,7 @@ import {
   transmissionLabels,
 } from "@/lib/format";
 import { CarGallery } from "@/components/car-gallery";
+import { InspectionReport } from "@/components/inspection-report";
 import { ShareButtons } from "@/components/share-buttons";
 import { InquiryForm } from "@/components/inquiry-form";
 import { PriceCard } from "@/components/price-card";
@@ -239,6 +240,8 @@ async function CarDetailView({ params }: { params: PageProps<"/cars/[slug]">["pa
               </div>
             </section>
           )}
+
+          {s.inspection && <InspectionReport inspection={s.inspection} />}
 
           {sheet.length > 0 && (
             <section>
