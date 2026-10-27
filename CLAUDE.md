@@ -43,8 +43,11 @@ Run `npm run lint` and `npm run build` before finishing a change.
 - Car status `REMOVED` ("Махната от източника"): the automatic import hid the car because its listing disappeared
   from the source; deleted after 30 days, published again if the listing returns.
 - Import sources (`CarSource`): AUTOHOME and GUAZI (China, priced with the AUTOHOME formula), AUTOWINI (Korea).
-  `specs.batteryHealthPct` (battery SOH, from guazi) shows with the EV figures on the car page; guazi's inspection
-  findings are not shown to customers.
+  `specs.batteryHealthPct` (battery SOH, from guazi) shows with the EV figures on the car page. `specs.inspection`
+  (guazi's inspection report: grade, accident/water/fire checks, areas, remarks with the inspector's note and video)
+  shows as "Техническа проверка" (`inspection-report.tsx`); `src/lib/inspection.ts` puts it in Bulgarian: fixed names
+  by lookup, the notes by patterns and a parts dictionary with adjective agreement; an unknown sentence stays in
+  English (add the part or pattern there).
 - Photos of guazi and autohome are linked: their URLs point at the source site's CDN (`AdminImage.linked`), autowini's
   are served from our `/media`. Car photos load with `referrerPolicy="no-referrer"` and a photo that does not load is
   hidden (`car-image.tsx`, `car-gallery.tsx`). Anything that needs a photo's bytes (downloads, the mobile.bg extension)
