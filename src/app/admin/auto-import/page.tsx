@@ -130,6 +130,13 @@ export default function AdminAutoImportPage() {
             </button>
           </div>
 
+          <MileageLimit
+            key={overview.maxMileageKm ?? "none"}
+            value={overview.maxMileageKm}
+            onOverview={setOverview}
+            onError={setError}
+          />
+
           <div className="mt-8 space-y-8">
             {overview.sources.map((s) => (
               <SourceCard
@@ -173,6 +180,71 @@ export default function AdminAutoImportPage() {
         </>
       )}
     </div>
+  );
+}
+
+/** The mileage limit of both sites: listings over it are not imported. */
+function MileageLimit({
+  value,
+  onOverview,
+  onError,
+}: {
+  value: number | null;
+  onOverview: (o: AutoImportOverview) => void;
+  onError: (message: string) => void;
+}) {
+  const { adminFetch } = useAdmin();
+  const [text, setText] = useState(value == null ? "" : String(value));
+  const [busy, setBusy] = useState(false);
+  const km = text.trim() === "" ? null : Number(text);
+  const valid = km === null || (Number.isInteger(km) && km >= 1000 && km <= 2_000_000);
+  const dirty = km !== value;
+
+  async function save(e: React.FormEvent) {
+    e.preventDefault();
+    if (!valid || !dirty) return;
+    setBusy(true);
+    try {
+      onOverview(
+        await adminFetch<AutoImportOverview>("/api/admin/auto-import/max-mileage", {
+          method: "PUT",
+          body: JSON.stringify({ maxMileageKm: km }),
+        }),
+      );
+    } catch (err) {
+      onError((err as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <form onSubmit={save} className="mt-6 rounded-2xl bg-card p-5 ring-1 ring-line">
+      <label className="font-bold" htmlFor="max-km">
+        Максимален пробег
+      </label>
+      <p className="mt-1 max-w-3xl text-sm text-muted">
+        Обяви с повече километри не се импортират (за двата сайта). guazi показва пробега още в търсенето, а при
+        autowini той се проверява при импорта, преди да се запише нещо. Пропуснатите се броят в отчета и се
+        импортират, ако вдигнеш ограничението. Празно поле = без ограничение. Вече качените коли не се пипат.
+      </p>
+      <div className="mt-3 flex flex-wrap items-center gap-2">
+        <input
+          id="max-km"
+          value={text}
+          onChange={(e) => setText(e.target.value.replace(/[^\d]/g, ""))}
+          inputMode="numeric"
+          placeholder="без ограничение"
+          className="field w-44 py-2!"
+        />
+        <span className="text-sm text-muted">км</span>
+        <button type="submit" disabled={busy || !dirty || !valid} className="btn-primary px-4! py-2!">
+          {busy ? "Запис…" : "Запази"}
+        </button>
+        {!valid && <span className="text-sm text-warn">Между 1 000 и 2 000 000 км</span>}
+        {valid && dirty && <span className="text-sm text-warn">Незапазено</span>}
+      </div>
+    </form>
   );
 }
 
@@ -274,6 +346,7 @@ function SourceCard({
       </div>
       <p className="mt-1 text-sm text-muted">
         Опашка: {queue.QUEUED ?? 0} за импорт · {queue.IMPORTED ?? 0} импортирани · {queue.FAILED ?? 0} неуспешни
+        {(queue.SKIPPED ?? 0) > 0 && <> · {queue.SKIPPED} пропуснати заради пробега</>}
       </p>
 
       <div className="mt-4 flex flex-wrap gap-4 text-sm">
@@ -426,7 +499,10 @@ function SourceCard({
               </tr>
             </tbody>
           </table>
-          <p className="mt-2 text-xs text-muted">Броят е по текущите (и незапазени) настройки, към този момент.</p>
+          <p className="mt-2 text-xs text-muted">
+            Броят е по текущите (и незапазени) настройки, към този момент. Ограничението за пробег не е включено:
+            сайтът не филтрира по километри, затова колите над него се пропускат при импорта (виж отчета).
+          </p>
         </div>
       )}
     </section>

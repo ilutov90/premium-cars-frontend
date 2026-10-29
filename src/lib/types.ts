@@ -282,6 +282,8 @@ export interface CarDetail {
 
 export interface FilterOptions {
   makes: string[];
+  /** make -> the models of the public cars of that make */
+  models: Record<string, string[]>;
   fuelTypes: FuelType[];
   transmissions: Transmission[];
   origins: Origin[];
@@ -701,6 +703,8 @@ export interface AutoImportOverview {
   enabled: boolean;
   /** the run going on now, e.g. "GUAZI (dry run)" */
   running: string | null;
+  /** listings with more km are not imported (both sites); null = no limit */
+  maxMileageKm: number | null;
   sources: AutoImportSourceView[];
   runs: AutoImportRun[];
   failures: AutoImportFailure[];

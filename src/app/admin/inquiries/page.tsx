@@ -84,7 +84,7 @@ export default function AdminInquiriesPage() {
           <li key={q.id} className="rounded-2xl border border-line bg-card p-4">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
-                <p className="font-bold">{q.name}</p>
+                <p className="font-bold">{q.name || q.phone || "Без име"}</p>
                 <p className="text-sm text-muted">
                   {[q.phone, q.email].filter(Boolean).join(" · ")} · {formatDate(q.createdAt)}
                 </p>
