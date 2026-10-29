@@ -1,10 +1,11 @@
 import Link from "next/link";
 import { Suspense } from "react";
-import { getDeliveredCars, searchCars } from "@/lib/api";
+import { getDeliveredCars, getFilterOptions, searchCars } from "@/lib/api";
 import { DeliveredCarCards } from "@/components/delivered-cars";
 import { CarCard } from "@/components/car-card";
 import { CardGridSkeleton, Notice } from "@/components/notice";
 import { InquiryForm } from "@/components/inquiry-form";
+import { QuickSearch, QuickSearchSkeleton } from "@/components/quick-search";
 
 const steps = [
   ["Избор", "Избирате кола от каталога или ни казвате какво търсите."],
@@ -27,23 +28,31 @@ export default function HomePage() {
       {/* Hero */}
       <section className="relative overflow-hidden bg-ink text-paper">
         <div className="pointer-events-none absolute -top-40 -right-40 h-[520px] w-[520px] rounded-full bg-accent/25 blur-3xl" />
-        <div className="relative mx-auto max-w-6xl px-4 py-20 sm:px-6 sm:py-28">
-          <p className="text-xs font-bold tracking-[0.25em] text-accent uppercase">Южна Корея · Китай → България</p>
-          <h1 className="mt-5 max-w-3xl text-4xl leading-[1.05] font-extrabold tracking-tight sm:text-6xl">
-            Коли от Азия с ясна крайна цена.
-          </h1>
-          <p className="mt-6 max-w-xl text-lg leading-relaxed text-paper/70">
-            Избирате, ние проверяваме, купуваме, транспортираме и обработваме документите. Виждате колко ще платите в
-            България още преди да ни се обадите.
-          </p>
-          <div className="mt-9 flex flex-wrap gap-3">
-            <Link href="/cars" className="btn-accent px-6! py-3! text-base!">
-              Разгледай наличните коли
-            </Link>
-            <Link href="/#contact" className="btn border border-paper/25 px-6! py-3! text-base! text-paper hover:border-paper">
-              Намери ми кола
-            </Link>
+        <div className="relative mx-auto grid max-w-6xl items-center gap-10 px-4 py-14 sm:px-6 sm:py-24 lg:grid-cols-[1fr_400px]">
+          <div>
+            <p className="text-xs font-bold tracking-[0.25em] text-accent uppercase">Южна Корея · Китай → България</p>
+            <h1 className="mt-5 max-w-3xl text-4xl leading-[1.05] font-extrabold tracking-tight sm:text-6xl">
+              Коли от Азия с ясна крайна цена.
+            </h1>
+            <p className="mt-6 max-w-xl text-lg leading-relaxed text-paper/70">
+              Избирате, ние проверяваме, купуваме, транспортираме и обработваме документите. Виждате колко ще платите в
+              България още преди да ни се обадите.
+            </p>
+            <div className="mt-9 flex flex-wrap gap-3">
+              <Link href="/cars" className="btn-accent px-6! py-3! text-base!">
+                Разгледай наличните коли
+              </Link>
+              <Link
+                href="/#contact"
+                className="btn border border-paper/25 px-6! py-3! text-base! text-paper hover:border-paper"
+              >
+                Намери ми кола
+              </Link>
+            </div>
           </div>
+          <Suspense fallback={<QuickSearchSkeleton />}>
+            <HomeSearch />
+          </Suspense>
         </div>
       </section>
 
@@ -106,6 +115,11 @@ export default function HomePage() {
       </section>
     </>
   );
+}
+
+async function HomeSearch() {
+  const options = await getFilterOptions().catch(() => null);
+  return options ? <QuickSearch options={options} /> : null;
 }
 
 async function LatestCars() {

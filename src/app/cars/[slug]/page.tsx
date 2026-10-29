@@ -54,6 +54,9 @@ export async function generateMetadata({ params }: PageProps<"/cars/[slug]">): P
     title,
     description,
     alternates: { canonical: url },
+    // no Referer on this page's requests: guazi's inspection videos (and the linked photos) load as when opened
+    // directly, the source's CDN does not serve them to other sites
+    referrer: "no-referrer",
     // the first photos become the preview when the link is shared (absolute through metadataBase)
     openGraph: {
       type: "website",
@@ -171,6 +174,9 @@ async function CarDetailView({ params }: { params: PageProps<"/cars/[slug]">["pa
             <span className="rounded-full bg-warn px-3 py-1 text-xs font-bold text-white uppercase">Резервирана</span>
           )}
           <h1 className="mt-2 text-3xl font-extrabold tracking-tight sm:text-4xl">{s.title}</h1>
+          <div className="mt-5">
+            <PriceCard priceEur={car.priceEur} />
+          </div>
           <div className="mt-4">
             <ShareButtons title={s.title} />
           </div>
@@ -308,7 +314,6 @@ async function CarDetailView({ params }: { params: PageProps<"/cars/[slug]">["pa
       </div>
 
       <aside className="space-y-5 lg:sticky lg:top-24 lg:self-start">
-        <PriceCard priceEur={car.priceEur} />
         <div className="rounded-2xl border border-line bg-card p-5">
           <p className="mb-4 text-lg font-bold">Интересувате се?</p>
           <InquiryForm carId={car.id} carTitle={s.title} />

@@ -149,6 +149,8 @@ export interface CarSummary {
   status: CarStatus;
   totalPriceEur: number | null;
   coverImageUrl: string | null;
+  /** the first photos in order, cover first (the card swipes through them) */
+  imageUrls: string[];
 }
 
 /** A row of the admin car list (backend AdminCarSummary): where the car was imported from, too. */

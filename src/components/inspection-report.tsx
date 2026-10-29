@@ -112,7 +112,7 @@ export function InspectionReport({ inspection }: { inspection: Inspection }) {
 }
 
 function Finding({ finding }: { finding: Inspection["findings"][number] }) {
-  const [video, setVideo] = useState(false);
+  const [video, setVideo] = useState<"closed" | "open" | "failed">("closed");
   const sentences = translateNote(finding.note);
   return (
     <li className="rounded-xl bg-paper p-3 text-sm">
@@ -138,26 +138,37 @@ function Finding({ finding }: { finding: Inspection["findings"][number] }) {
           ))}
         </ul>
       )}
-      {finding.videoUrl &&
-        (video ? (
-          <video
-            src={finding.videoUrl}
-            poster={finding.imageUrl ?? undefined}
-            controls
-            autoPlay
-            playsInline
-            preload="metadata"
-            className="mt-3 w-full max-w-xl rounded-lg bg-ink"
-          />
-        ) : (
-          <button
-            type="button"
-            onClick={() => setVideo(true)}
-            className="mt-2 text-sm font-semibold text-accent hover:underline"
-          >
-            ▶ Виж видеото от проверката
-          </button>
-        ))}
+      {finding.videoUrl && video === "closed" && (
+        <button
+          type="button"
+          onClick={() => setVideo("open")}
+          className="mt-2 text-sm font-semibold text-accent hover:underline"
+        >
+          ▶ Виж видеото от проверката
+        </button>
+      )}
+      {finding.videoUrl && video === "open" && (
+        <video
+          src={finding.videoUrl}
+          poster={finding.imageUrl ?? undefined}
+          controls
+          autoPlay
+          muted
+          playsInline
+          preload="metadata"
+          onError={() => setVideo("failed")}
+          className="mt-3 aspect-video w-full max-w-xl rounded-lg bg-ink"
+        />
+      )}
+      {finding.videoUrl && video !== "closed" && (
+        <p className="mt-1.5 text-xs text-muted">
+          {video === "failed" ? "Видеото не се зареди тук. " : "Не тръгва? "}
+          {/* opened directly, without our address as referrer */}
+          <a href={finding.videoUrl} target="_blank" rel="noreferrer" className="font-semibold text-accent underline">
+            Отвори видеото в нов прозорец
+          </a>
+        </p>
+      )}
     </li>
   );
 }
