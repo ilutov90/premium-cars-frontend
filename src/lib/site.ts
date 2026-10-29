@@ -17,7 +17,7 @@ export const company = {
 };
 
 /** Date of the current privacy policy text (change it with the text). */
-export const privacyPolicyDate = "25.10.2026";
+export const privacyPolicyDate = "29.10.2026";
 
 export interface Contact {
   phone: string;
@@ -43,6 +43,16 @@ export function contactDetails(
 export function phoneHref(phone: string): string {
   const digits = phone.replace(/[^\d+]/g, "");
   return `tel:${digits.startsWith("0") ? `+359${digits.slice(1)}` : digits}`;
+}
+
+/**
+ * A link that opens a Viber chat with us (the phone's Viber), with a first message when given:
+ * "0878131990" -> "viber://chat?number=%2B359878131990".
+ */
+export function viberChatHref(phone: string, draft?: string): string {
+  const number = phoneHref(phone).slice("tel:".length);
+  const link = `viber://chat?number=${encodeURIComponent(number)}`;
+  return draft ? `${link}&draft=${encodeURIComponent(draft)}` : link;
 }
 
 /** "Why us" points used on car pages and in social posts (same wording as the posting script). */

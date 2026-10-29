@@ -74,7 +74,8 @@ export function NichePage({
           <div>
             <h2 className="text-2xl font-extrabold tracking-tight sm:text-3xl">{formTitle}</h2>
             <p className="mt-3 leading-relaxed text-muted">
-              Напишете модел, година и бюджет. Ще ви изпратим подходящи коли с крайна цена в България.
+              Изберете марка, модел и година и оставете телефон — ще ви се обадим с подходящи коли с крайна цена в
+              България. Или ни пишете направо във Viber.
             </p>
           </div>
           <InquiryForm />

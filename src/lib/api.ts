@@ -33,6 +33,7 @@ export type CarSearch = Record<string, string | undefined>;
 export const SEARCH_KEYS = [
   "q",
   "make",
+  "model",
   "fuelType",
   "transmission",
   "origin",
