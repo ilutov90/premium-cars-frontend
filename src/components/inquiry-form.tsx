@@ -6,6 +6,7 @@ import { PUBLIC_API_URL } from "@/lib/config";
 import { heardFromLabels } from "@/lib/format";
 import { trackEvent, visitAttribution } from "@/lib/marketing";
 import { site, viberChatHref } from "@/lib/site";
+import { ViberIcon } from "./icons";
 import type { FilterOptions, HeardFrom, PostSettings } from "@/lib/types";
 
 const heardFromOptions = Object.keys(heardFromLabels) as HeardFrom[];
@@ -242,12 +243,4 @@ function wanted(form: FormData): string {
   const car = [text("make"), text("model")].filter(Boolean).join(" ");
   const parts = [car, text("year") && `от ${text("year")} г.`].filter(Boolean);
   return parts.length ? `Търся: ${parts.join(", ")}` : "Търся кола (без избрани марка, модел и година).";
-}
-
-function ViberIcon() {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden className="h-5 w-5 fill-current">
-      <path d="M11.4 1C8.6 1 3 1.7 3 9.6v3.2c0 3.4 1.6 5.6 4.3 6.6V22c0 .8 1 1.2 1.6.6l2.4-2.5h1.1c2.8 0 8.6-.7 8.6-8.6V9.6C21 1.7 15.4 1 12.6 1h-1.2Zm.2 2h1c2.5 0 6.4.5 6.4 6.6v1.9c0 6.1-3.9 6.6-6.6 6.6h-1.6l-1.5 1.6v-1.8l-.7-.2C6.3 17.1 5 15.6 5 12.8V9.6C5 3.5 8.9 3 11.6 3Zm.4 2.1a.5.5 0 0 0 0 1c2.6 0 4.4 1.9 4.4 4.4a.5.5 0 0 0 1 0c0-3-2.3-5.4-5.4-5.4Zm-3.3.7c-.3 0-.6.1-.9.4-.5.5-1 1.2-.8 2 .5 1.6 1.4 3.1 2.6 4.3 1.2 1.2 2.7 2.1 4.3 2.6.8.2 1.5-.3 2-.8.5-.5.5-1.2 0-1.6l-1.2-.9c-.4-.3-1-.3-1.3.1l-.5.6c-1.4-.6-2.5-1.7-3.1-3.1l.6-.5c.4-.3.4-.9.1-1.3l-.9-1.2c-.2-.4-.5-.6-.9-.6Zm3.5 1.4a.5.5 0 0 0 0 1c1 0 1.7.7 1.7 1.7a.5.5 0 0 0 1 0c0-1.5-1.2-2.7-2.7-2.7Z" />
-    </svg>
-  );
 }
