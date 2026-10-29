@@ -50,7 +50,7 @@ Run `npm run lint` and `npm run build` before finishing a change.
   English (add the part or pattern there).
 - Photos of guazi and autohome are linked: their URLs point at the source site's CDN (`AdminImage.linked`), autowini's
   are served from our `/media`. Car photos load with `referrerPolicy="no-referrer"` and a photo that does not load is
-  hidden (`car-image.tsx`, `car-gallery.tsx`). Anything that needs a photo's bytes (downloads, the mobile.bg extension)
+  hidden (`car-image.tsx`, `car-gallery.tsx`). Photos swipe (`photo-swiper.tsx`: native scroll snapping, arrows on a computer) on the cards (`card-photos.tsx`, the list's first 8 photos `CarSummary.imageUrls`), in the car page gallery and in its full screen view. Anything that needs a photo's bytes (downloads, the mobile.bg extension)
   uses `AdminImage.fileUrl` (`/media/photo/{id}`, our origin), never `url`.
 - Customers never see the Facebook/Instagram/Viber text. It comes from two templates (`src/lib/post-template.ts`:
   placeholders, defaults, rendering; one shared by Facebook and Instagram, stored as `FACEBOOK`, and one for Viber;
@@ -93,9 +93,9 @@ Run `npm run lint` and `npm run build` before finishing a change.
 
 | Path | What |
 |---|---|
-| `src/app/page.tsx` | home: hero, latest cars, how import works, "find me a car" form |
+| `src/app/page.tsx` | home: hero with the quick search (`quick-search.tsx`, the catalog's short search fields from `search-fields.tsx`; "Разширено търсене" opens `/cars?more=1`), latest cars, how import works, "find me a car" form |
 | `src/app/cars/page.tsx` | catalog with filters in the URL (GET form, `catalog-filters.tsx`: the short search is make, model (from `FilterOptions.models`), year and fuel; "Разширено търсене" shows the rest and opens by itself when one of those is set) |
-| `src/app/cars/[slug]/page.tsx` | car page: gallery, share buttons, grouped specs, notes, final price (only `priceEur`), inquiry form |
+| `src/app/cars/[slug]/page.tsx` | car page: gallery, title, final price (only `priceEur`, right under the title), share buttons, grouped specs, notes, inquiry form. The page sends no Referer (`referrer: "no-referrer"`), so guazi's inspection videos load as when opened directly; a video that fails offers a direct link |
 | `src/app/delivered`, `koli-na-gaz-ot-koreya`, `elektromobili-ot-kitay` | "Доставени коли" and the landing pages for ads |
 | `src/app/about`, `src/app/privacy` | "За нас" and the privacy policy (company details in `site.ts` → `company`); the inquiry form requires the privacy checkbox (`privacyAccepted`) |
 | `src/app/sitemap.ts`, `robots.ts`, `og/` | SEO: sitemap with the public cars (built per request), robots, the default preview image; `src/lib/seo.ts` has `SITE_URL` and the car JSON-LD |

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import type { CarSummary } from "@/lib/types";
 import { formatEur, formatKm, formatKwh, fuelShortLabels, originLabels, transmissionLabels } from "@/lib/format";
-import { CarImage } from "./car-image";
+import { CardPhotos } from "./card-photos";
 
 export function CarCard({ car }: { car: CarSummary }) {
   const facts = [
@@ -21,12 +21,11 @@ export function CarCard({ car }: { car: CarSummary }) {
       className="group flex flex-col overflow-hidden rounded-2xl border border-line bg-card transition hover:-translate-y-0.5 hover:shadow-[0_18px_40px_-24px_rgba(18,19,22,0.45)]"
     >
       <div className="relative aspect-[4/3] overflow-hidden bg-line/50">
-        <CarImage
-          src={car.coverImageUrl}
+        <CardPhotos
+          images={car.imageUrls?.length ? car.imageUrls : car.coverImageUrl ? [car.coverImageUrl] : []}
           alt={car.title}
-          className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.03]"
         />
-        <div className="absolute top-3 left-3 flex gap-1.5">
+        <div className="pointer-events-none absolute top-3 left-3 flex gap-1.5">
           {car.origin && (
             <span className="rounded-full bg-paper/90 px-2.5 py-1 text-[11px] font-bold tracking-wide uppercase backdrop-blur">
               {originLabels[car.origin]}
