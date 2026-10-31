@@ -262,17 +262,21 @@ export interface PricingProfile {
   seaFreight: number;
   landTransport: number;
   commission: number;
-  /** duty and VAT, percent of FOB + sea freight (20 = 20 %; autowini 0: its step instead) */
+  /** duty and VAT, percent of FOB + sea freight (20 = 20 %); unused when the formula has a table */
   dutyVatPct: number;
-  /** step = stepBase + stepPct % of the FOB above stepFrom (autowini 1700 + 10 % over 10 000; 0 = none) */
-  stepBase: number;
-  stepFrom: number;
-  stepPct: number;
+  /** duty and VAT by FOB (autowini), ascending, the open row last; empty = the percent */
+  dutyBrackets: DutyBracket[];
   /** our markup: markupLow up to markupThreshold FOB (inclusive), markupHigh above */
   markupLow: number;
   markupHigh: number;
   markupThreshold: number;
   updatedAt: string;
+}
+
+/** A row of a duty and VAT table: dutyVat for a FOB up to fobUpTo (inclusive); fobUpTo null = above all rows. */
+export interface DutyBracket {
+  fobUpTo: number | null;
+  dutyVat: number;
 }
 
 export interface CarDetail {
@@ -331,7 +335,10 @@ export interface PriceBreakdown {
   fixedTotal: boolean;
   /** the exchange rate the price was calculated with: EUR per 1 unit of sourceCurrency (null when not calculated) */
   eurPerUnit?: number | null;
-  /** the step (since 31.10.2026): stepBaseEur + stepPct % of the FOB above stepFromEur */
+  /** duty and VAT came from the formula's table, and its row ("FOB up to"; null = above all rows) */
+  dutyVatTable?: boolean | null;
+  dutyVatFobUpToEur?: number | null;
+  /** the step of 31.10.2026 (autowini, until recalculated): stepBaseEur + stepPct % of the FOB above stepFromEur */
   stepEur?: number | null;
   stepBaseEur?: number | null;
   stepFromEur?: number | null;

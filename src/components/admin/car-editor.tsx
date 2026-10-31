@@ -407,16 +407,25 @@ function PriceSummary({ car, busy, onRecalculate }: { car: AdminCar; busy: boole
                 ["Морски транспорт", p.seaFreightEur ?? null],
                 ["Сухопътен транспорт", p.landTransportEur ?? null],
                 ["Комисионна", p.commissionEur ?? null],
-                ...(p.dutyVatPct
+                ...(p.dutyVatTable
                   ? ([
                       [
-                        `Мито и ДДС (${formatNumber(p.dutyVatPct)} % от ${formatNumber(
-                          Math.round((p.carPriceEur ?? 0) + (p.seaFreightEur ?? 0)),
-                        )} €)`,
+                        `Мито и ДДС (по таблицата, ${
+                          p.dutyVatFobUpToEur != null ? `FOB до ${formatNumber(p.dutyVatFobUpToEur)} €` : "над последния ред"
+                        })`,
                         p.dutyVatEur ?? null,
                       ],
                     ] as [string, number | null][])
-                  : []),
+                  : p.dutyVatPct
+                    ? ([
+                        [
+                          `Мито и ДДС (${formatNumber(p.dutyVatPct)} % от ${formatNumber(
+                            Math.round((p.carPriceEur ?? 0) + (p.seaFreightEur ?? 0)),
+                          )} €)`,
+                          p.dutyVatEur ?? null,
+                        ],
+                      ] as [string, number | null][])
+                    : []),
                 ...(p.stepEur
                   ? ([
                       [
