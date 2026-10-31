@@ -1,5 +1,7 @@
-// Packs extension/mobile-bg into public/downloads/premium-cars-mobile-bg.zip (no dependencies: a plain "stored"
-// zip), so the admin panel can offer it for download. Runs before every build (npm "prebuild").
+// Packs extension/mobile-bg (mobile.bg and cars.bg) into public/downloads/premium-cars-mobile-bg.zip (no
+// dependencies: a plain "stored" zip), so the admin panel can offer it for download. Runs before every build (npm
+// "prebuild"). Fails when a file names one of the sites' publishing or deleting controls: the extension fills in,
+// the admin publishes.
 import { mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
@@ -19,6 +21,12 @@ const crc32 = (buf) => {
 };
 
 const files = readdirSync(SRC).filter((f) => !f.startsWith(".")).sort();
+const FORBIDDEN = [/publishBtn/i, /deleteoffer/i, /editcar\.php/i, /changephotoorder/i];
+for (const name of files) {
+  const text = readFileSync(join(SRC, name), "utf8");
+  const hit = FORBIDDEN.find((re) => re.test(text));
+  if (hit) throw new Error(`${name}: the extension must not touch ${hit} (the admin publishes)`);
+}
 const local = [];
 const central = [];
 let offset = 0;

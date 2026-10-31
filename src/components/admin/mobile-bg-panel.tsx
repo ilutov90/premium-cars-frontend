@@ -93,7 +93,7 @@ export function MobileBgPanel({ car }: { car: AdminCar }) {
             handled.current.delete(key); // tried again on the next page load
           }
         }
-      } else if (msg.type === "started") {
+      } else if (msg.type === "started" && msg.site !== "CARS_BG") {
         setMessage(
           msg.ok
             ? { ok: true, text: "Отворих mobile.bg в нов таб: разширението попълва формата стъпка по стъпка." }

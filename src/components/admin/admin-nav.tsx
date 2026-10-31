@@ -9,6 +9,7 @@ const links: [string, string][] = [
   ["/admin/auto-import", "Автоматичен импорт"],
   ["/admin/pricing", "Цени"],
   ["/admin/templates", "Шаблони"],
+  ["/admin/marketplace", "Модели в обявите"],
   ["/admin/scheduled", "Насрочени"],
   ["/admin/inquiries", "Запитвания"],
   ["/admin/reports", "Отчет"],

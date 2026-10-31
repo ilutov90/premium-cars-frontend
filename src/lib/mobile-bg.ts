@@ -1,10 +1,10 @@
 "use client";
 
 // The admin panel's mobile.bg module: mobile.bg's fixed lists (used until the extension has sent mobile.bg's own),
-// the warnings in Bulgarian, and the messages to the browser extension (extension/mobile-bg), which types the form
-// into mobile.bg in the admin's own browser.
+// the warnings in Bulgarian, and the messages to the browser extension (extension/mobile-bg, also for cars.bg:
+// see cars-bg.ts), which types the form into the site in the admin's own browser.
 import { useCallback, useEffect, useState } from "react";
-import type { MobileBgCatalog, MobileBgDraft, MobileBgWarningCode } from "./types";
+import type { CarsBgCatalog, MobileBgCatalog, MobileBgDraft, MobileBgWarningCode } from "./types";
 
 export const MOBILE_BG_MAX_PHOTOS = 17;
 export const MOBILE_BG_TEXT_MAX = 11000;
@@ -47,7 +47,11 @@ export const warningText = (code: MobileBgWarningCode, value: string | null): st
     case "BRAND_NOT_FOUND":
       return `Марката „${value ?? ""}“ я няма в mobile.bg: изберете най-близката.`;
     case "MODEL_NOT_FOUND":
-      return `Моделът „${value ?? ""}“ го няма в mobile.bg: изберете най-близкия (може „Друг“).`;
+      return `Моделът „${value ?? ""}“ го няма в mobile.bg: изберете най-близкия (може „Друг“) или го съпоставете в „Съпоставяне на модели“.`;
+    case "MODEL_SUGGESTED":
+      return `Моделът е предположен („${value ?? ""}“): проверете го. Потвърдете го в „Съпоставяне на модели“, за да не излиза това.`;
+    case "MODEL_UNAVAILABLE":
+      return "Отбелязано е, че mobile.bg няма този модел: изберете марка и модел ръчно.";
     case "RANGE_EXTENDER":
       return "mobile.bg няма „разширител на пробега“: колата е като „Plug-in хибрид“.";
     case "CATEGORY_UNKNOWN":
@@ -107,12 +111,38 @@ export interface ListingReport {
   at: string;
 }
 
+/** An offer the extension saw published on cars.bg. */
+export interface CarsBgReport {
+  carId: number;
+  offerId: string | null;
+  url: string | null;
+  at: string;
+}
+
 export type ExtMessage =
   | { type: "ready"; version: string }
-  | { type: "started"; ok: boolean; error?: string }
+  | { type: "started"; site?: "MOBILE_BG" | "CARS_BG"; ok: boolean; error?: string }
+  | { type: "refreshing"; ok: boolean; sites: string[]; error?: string }
   | { type: "catalog"; catalog: MobileBgCatalog | null }
+  | { type: "carsBgCatalog"; catalog: CarsBgCatalog | null }
   | { type: "reports"; reports: Record<string, ListingReport> }
+  | { type: "carsBgReports"; reports: Record<string, CarsBgReport> }
   | { type: "error"; error: string };
+
+/** The extension's first version that knows cars.bg and reading the lists again. */
+export const CARS_BG_EXTENSION = "1.1.0";
+
+/** "1.0.1" < "1.1.0" */
+export function versionAtLeast(version: string | null, min: string): boolean {
+  if (!version) return false;
+  const a = version.split(".").map(Number);
+  const b = min.split(".").map(Number);
+  for (let i = 0; i < Math.max(a.length, b.length); i++) {
+    const d = (a[i] ?? 0) - (b[i] ?? 0);
+    if (d !== 0) return d > 0;
+  }
+  return true;
+}
 
 const post = (msg: Record<string, unknown>) =>
   window.postMessage({ source: "pci-page", ...msg }, window.location.origin);

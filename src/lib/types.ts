@@ -614,6 +614,8 @@ export type MobileBgWarningCode =
   | "CATALOG_MISSING"
   | "BRAND_NOT_FOUND"
   | "MODEL_NOT_FOUND"
+  | "MODEL_SUGGESTED"
+  | "MODEL_UNAVAILABLE"
   | "RANGE_EXTENDER"
   | "CATEGORY_UNKNOWN"
   | "COLOR_UNKNOWN"
@@ -647,6 +649,117 @@ export interface MobileBgCatalog {
   selects: Record<string, { value: string; text: string }[]>;
   extras: { field: string; value: string }[];
   capturedAt: string | null;
+}
+
+// ---------------------------------------------------------------- cars.bg (backend carsbg)
+
+/** cars.bg's "Публикувай обява" form filled in from a car, in cars.bg's ids (backend CarsBgDraft). */
+export interface CarsBgDraft {
+  brandId: string | null;
+  brandName: string | null;
+  modelId: string | null;
+  modelName: string | null;
+  /** "Двигател/модификация", at most 15 characters */
+  engine: string | null;
+  /** make, model and trim as we name them: the description's first line */
+  fullName: string | null;
+  categoryId: number | null;
+  fuelId: number | null;
+  gearId: number | null;
+  power: number | null;
+  cubature: number | null;
+  productionYear: number | null;
+  monthId: number | null;
+  run: number | null;
+  doorId: number | null;
+  colorId: number | null;
+  metallic: boolean;
+  euroId: number | null;
+  price: number | null;
+  currencyId: number;
+  stateId: number;
+  conditionId: number;
+  inBulgaria: boolean;
+  usageId: number;
+  leasing: boolean;
+  barter: boolean;
+  /** ids of the e[] checkboxes */
+  extras: number[];
+}
+
+export type CarsBgWarningCode =
+  | "CATALOG_MISSING"
+  | "BRAND_NOT_FOUND"
+  | "MODEL_NOT_FOUND"
+  | "MODEL_SUGGESTED"
+  | "MODEL_UNAVAILABLE"
+  | "CATEGORY_UNKNOWN"
+  | "CATEGORY_MPV"
+  | "COLOR_UNKNOWN"
+  | "DOORS_UNKNOWN"
+  | "YEAR_ADJUSTED"
+  | "PRODUCTION_MONTH_UNKNOWN"
+  | "NO_PRICE";
+
+/** Where a car was posted on cars.bg (backend CarsBgListing). */
+export interface CarsBgListing {
+  carId: number;
+  offerId: string | null;
+  url: string | null;
+  publishedAt: string;
+  publishedBy: string | null;
+}
+
+export type ModelMatchStatus =
+  | "NO_CATALOG"
+  | "BRAND_MISSING"
+  | "MODEL_MISSING"
+  | "SUGGESTED"
+  | "AUTO"
+  | "MANUAL"
+  | "UNAVAILABLE";
+
+/** GET /api/admin/cars/{id}/cars-bg */
+export interface CarsBgForm {
+  draft: CarsBgDraft;
+  warnings: { code: CarsBgWarningCode; value: string | null }[];
+  match: ModelMatchStatus;
+  listing: CarsBgListing | null;
+  catalogCapturedAt: string | null;
+}
+
+/** cars.bg's makes and models with ids, as the browser extension read them (backend CarsBgCatalog). */
+export interface CarsBgCatalog {
+  brands: { id: string; name: string; models: { id: string; name: string }[] }[];
+  capturedAt: string | null;
+}
+
+// ---------------------------------------------------------------- model mapping (backend marketplace)
+
+export type MarketplaceSite = "MOBILE_BG" | "CARS_BG";
+
+export interface SiteMatch {
+  status: ModelMatchStatus;
+  brand: string | null;
+  model: string | null;
+  suggestions: string[];
+  setBy: string | null;
+  setAt: string | null;
+}
+
+export interface MarketplaceRow {
+  make: string;
+  model: string;
+  cars: number;
+  publicCars: number;
+  sites: Record<MarketplaceSite, SiteMatch>;
+}
+
+/** GET /api/admin/marketplace/models */
+export interface MarketplaceOverview {
+  rows: MarketplaceRow[];
+  /** per site: when its lists were read, how many makes, the models of the makes the rows matched */
+  sites: Record<MarketplaceSite, { capturedAt: string | null; brandCount: number; brands: Record<string, string[]> }>;
 }
 
 // ---------------------------------------------------------------- automatic import (backend AutoImportDtos)
@@ -714,7 +827,7 @@ export interface AutoImportRun {
 
 /** Where a car was posted through the admin panel (backend PostedChannels.Post). */
 export interface PostedChannel {
-  network: "FACEBOOK" | "INSTAGRAM" | "VIBER" | "MOBILE_BG";
+  network: "FACEBOOK" | "INSTAGRAM" | "VIBER" | "MOBILE_BG" | "CARS_BG";
   url: string | null;
   at: string;
 }
