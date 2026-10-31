@@ -141,7 +141,7 @@
         if (res.ok) {
           const doc = new DOMParser().parseFromString(await res.text(), "text/html");
           models = [...doc.querySelectorAll("input[name=modelId]")]
-            .filter((i) => /^\d+$/.test(i.value))
+            .filter((i) => /^[1-9]\d*$/.test(i.value))
             .map((i) => {
               const l = i.id ? doc.querySelector(`label[for="${CSS.escape(i.id)}"]`) : null;
               return { id: i.value, name: (l?.textContent ?? i.parentElement?.textContent ?? "").replace(/\s+/g, " ").trim() };

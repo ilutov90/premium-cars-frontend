@@ -33,7 +33,7 @@
   /** The makes of the form with their ids. */
   function brands() {
     return [...document.querySelectorAll("input[name=brandId]")]
-      .filter((i) => /^\d+$/.test(i.value))
+      .filter((i) => /^[1-9]\d*$/.test(i.value))
       .map((i) => ({ id: i.value, name: labelOf(i) }))
       .filter((b) => b.name);
   }
