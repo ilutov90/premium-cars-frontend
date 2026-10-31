@@ -7,12 +7,13 @@ import { PostedChips } from "@/components/admin/posted-chips";
 import { formatDate, formatEur, sourceLabels, statusLabels } from "@/lib/format";
 import type { CarSource, PageResponse, PriceRecalcItem, PriceRecalcRun } from "@/lib/types";
 
+// Per source site: a site's cars imported by hand and automatically alike. Cars without a site (entered by hand
+// in the editor) go with "Всички сайтове".
 const scopes: [CarSource | "", string][] = [
   ["", "Всички сайтове"],
   ["AUTOWINI", "autowini"],
   ["GUAZI", "guazi"],
   ["AUTOHOME", "autohome"],
-  ["MANUAL", "Ръчно добавени"],
 ];
 
 const modeLabels: Record<PriceRecalcRun["mode"], string> = {
@@ -119,16 +120,16 @@ export function PriceRecalcPanel() {
         </button>
         <button
           type="button"
-          disabled={busy || running || scope === "MANUAL"}
+          disabled={busy || running}
           onClick={() => start("SOURCE")}
           className="btn-ghost"
-          title={scope === "MANUAL" ? "Ръчно добавените коли нямат обява, от която да се изтегли цената" : undefined}
         >
           Изтегли ФОБ наново от сайтовете и преизчисли
         </button>
       </div>
       <p className="mt-2 text-xs text-muted">
-        „От записаната ФОБ“ отнема секунди. „Изтегли наново“ отваря всяка обява (по една в секунда) и хваща смяна на
+        Сайтът включва всичките му коли — импортирани ръчно по линк и от автоматичния импорт. „От записаната ФОБ“
+        отнема секунди. „Изтегли наново“ отваря всяка обява (по една в секунда) и хваща смяна на
         цената при продавача; ако обявата не може да се прочете, колата се преизчислява от записаната ФОБ и се показва
         в отчета.
       </p>
