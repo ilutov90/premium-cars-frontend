@@ -407,19 +407,37 @@ function PriceSummary({ car, busy, onRecalculate }: { car: AdminCar; busy: boole
                 ["Морски транспорт", p.seaFreightEur ?? null],
                 ["Сухопътен транспорт", p.landTransportEur ?? null],
                 ["Комисионна", p.commissionEur ?? null],
-                [
-                  `Мито и ДДС (${formatNumber(p.dutyVatPct ?? 0)} % от ${formatNumber(
-                    Math.round((p.carPriceEur ?? 0) + (p.seaFreightEur ?? 0)),
-                  )} €)`,
-                  p.dutyVatEur ?? null,
-                ],
+                ...(p.dutyVatPct
+                  ? ([
+                      [
+                        `Мито и ДДС (${formatNumber(p.dutyVatPct)} % от ${formatNumber(
+                          Math.round((p.carPriceEur ?? 0) + (p.seaFreightEur ?? 0)),
+                        )} €)`,
+                        p.dutyVatEur ?? null,
+                      ],
+                    ] as [string, number | null][])
+                  : []),
+                ...(p.stepEur
+                  ? ([
+                      [
+                        `Стъпка (${formatNumber(p.stepBaseEur ?? 0)} €${
+                          p.stepPct ? ` + ${formatNumber(p.stepPct)} % над ${formatNumber(p.stepFromEur ?? 0)} €` : ""
+                        })`,
+                        p.stepEur,
+                      ],
+                    ] as [string, number | null][])
+                  : []),
               ] as [string, number | null][])),
           [
             p.profitOverridden
               ? "Надценка (за тази кола)"
-              : p.profitPct != null
-                ? `Надценка (${formatNumber(p.profitPct)} % от FOB, мин. ${formatNumber(p.profitMinEur ?? 0)} €)`
-                : "Надценка",
+              : p.markupThresholdEur != null
+                ? `Надценка (FOB ${(p.carPriceEur ?? 0) <= p.markupThresholdEur ? "до" : "над"} ${formatNumber(
+                    p.markupThresholdEur,
+                  )} €)`
+                : p.profitPct != null
+                  ? `Надценка (${formatNumber(p.profitPct)} % от FOB, мин. ${formatNumber(p.profitMinEur ?? 0)} €)`
+                  : "Надценка",
             p.profitEur,
           ],
         ];

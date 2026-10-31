@@ -1,7 +1,9 @@
 "use client";
 
+import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { useAdmin } from "@/components/admin/admin-context";
+import { PostedChips } from "@/components/admin/posted-chips";
 import { formatDate } from "@/lib/format";
 import type {
   AutoImportBrand,
@@ -10,6 +12,7 @@ import type {
   AutoImportModel,
   AutoImportOverview,
   AutoImportPreview,
+  AutoImportRemoved,
   AutoImportRun,
   AutoImportRunStatus,
   AutoImportSource,
@@ -151,32 +154,20 @@ export default function AdminAutoImportPage() {
 
           <Runs runs={overview.runs} />
 
-          {overview.failures.length > 0 && (
-            <section className="mt-10">
-              <h2 className="mb-3 font-bold">Неуспешни импорти</h2>
-              <p className="mb-3 text-sm text-muted">
-                Опитва се до 3 пъти подред; след следващото нощно пускане — отново (общо до 6 опита).
+          <section className="mt-10 flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-card p-5 ring-1 ring-line">
+            <div>
+              <h2 className="font-bold">Неуспешни импорти</h2>
+              <p className="mt-1 text-sm text-muted">
+                {overview.sources
+                  .map((s) => `${sourceNames[s.source]}: ${(s.queue.FAILED ?? 0).toLocaleString("bg-BG")}`)
+                  .join(" · ")}
+                . Всяка обява се опитва до 3 пъти при пускане; ако е още в сайта, следващата нощ — пак.
               </p>
-              <div className="overflow-x-auto rounded-2xl bg-card ring-1 ring-line">
-                <table className="w-full text-sm">
-                  <tbody>
-                    {overview.failures.map((f) => (
-                      <tr key={`${f.source}-${f.listingId}`} className="border-t border-line first:border-0">
-                        <td className="p-3 whitespace-nowrap">{f.source}</td>
-                        <td className="p-3">
-                          <a href={f.url} target="_blank" rel="noreferrer" className="font-semibold hover:underline">
-                            {f.title ?? f.listingId}
-                          </a>
-                        </td>
-                        <td className="p-3 whitespace-nowrap">{f.attempts} опита</td>
-                        <td className="p-3 text-muted">{f.error}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </section>
-          )}
+            </div>
+            <Link href="/admin/auto-import/failures" className="btn-primary">
+              Виж всички и причините →
+            </Link>
+          </section>
         </>
       )}
     </div>
@@ -638,6 +629,9 @@ function Runs({ runs }: { runs: AutoImportRun[] }) {
                 <th className="p-3 text-right">Нови</th>
                 <th className="p-3 text-right">Махнати</th>
                 <th className="p-3 text-right">Върнати</th>
+                <th className="p-3 text-right" title="Ръчно добавени коли (и от марки извън импорта): проверени / махнати">
+                  Ръчни
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -669,10 +663,13 @@ function RunRow({ run, open, onToggle }: { run: AutoImportRun; open: boolean; on
         <td className="p-3 text-right">{run.newCount.toLocaleString("bg-BG")}</td>
         <td className="p-3 text-right">{run.goneCount.toLocaleString("bg-BG")}</td>
         <td className="p-3 text-right">{run.returnedCount.toLocaleString("bg-BG")}</td>
+        <td className="p-3 text-right whitespace-nowrap">
+          {run.manualChecked.toLocaleString("bg-BG")} / {run.manualGone.toLocaleString("bg-BG")}
+        </td>
       </tr>
       {open && (
         <tr className="bg-paper">
-          <td colSpan={8} className="p-3 text-xs">
+          <td colSpan={9} className="p-3 text-xs">
             {run.message && <p className="mb-2">{run.message}</p>}
             {run.brands.length > 0 && (
               <table>
@@ -692,9 +689,57 @@ function RunRow({ run, open, onToggle }: { run: AutoImportRun; open: boolean; on
               </table>
             )}
             {run.finishedAt && <p className="mt-2 text-muted">Край: {formatDate(run.finishedAt)}</p>}
+            {!run.dryRun && run.goneCount + run.manualGone > 0 && <RemovedCars runId={run.id} />}
           </td>
         </tr>
       )}
     </>
+  );
+}
+
+/** The cars a run hid, with where they were posted: those posts are to be taken down by hand. */
+function RemovedCars({ runId }: { runId: number }) {
+  const { adminFetch } = useAdmin();
+  const [cars, setCars] = useState<AutoImportRemoved[] | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    adminFetch<AutoImportRemoved[]>(`/api/admin/auto-import/runs/${runId}/removed`)
+      .then(setCars)
+      .catch((e: Error) => setError(e.message));
+  }, [adminFetch, runId]);
+
+  if (error) return <p className="mt-3 text-warn">{error}</p>;
+  if (!cars) return <p className="mt-3 text-muted">Зареждане на махнатите коли…</p>;
+  if (cars.length === 0) return null;
+  const posted = cars.filter((c) => c.posted.length > 0).length;
+  return (
+    <div className="mt-4">
+      <p className="mb-2 text-sm font-bold">
+        Махнати коли: {cars.length}
+        {posted > 0 && <span className="text-warn"> · {posted} са публикувани — свали постовете ръчно</span>}
+      </p>
+      <table className="w-full text-sm">
+        <tbody>
+          {cars.map((c) => (
+            <tr key={c.id} className="border-t border-line align-top">
+              <td className="py-1.5 pr-3">
+                {c.carId ? (
+                  <Link href={`/admin/cars/${c.carId}`} className="font-semibold hover:underline">
+                    {c.title ?? `#${c.carId}`}
+                  </Link>
+                ) : (
+                  <span className="font-semibold">{c.title ?? "изтрита кола"}</span>
+                )}
+                <span className="ml-2 text-xs text-muted">{c.manual ? "ръчно добавена" : "от автоматичния импорт"}</span>
+              </td>
+              <td className="py-1.5">
+                <PostedChips posted={c.posted} />
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
   );
 }

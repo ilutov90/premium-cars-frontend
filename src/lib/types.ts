@@ -262,12 +262,16 @@ export interface PricingProfile {
   seaFreight: number;
   landTransport: number;
   commission: number;
-  /** profit, percent of FOB (10 = 10 %) */
-  profitPct: number;
-  /** the least profit, EUR */
-  profitMin: number;
-  /** duty and VAT, percent of FOB + sea freight (20 = 20 %) */
+  /** duty and VAT, percent of FOB + sea freight (20 = 20 %; autowini 0: its step instead) */
   dutyVatPct: number;
+  /** step = stepBase + stepPct % of the FOB above stepFrom (autowini 1700 + 10 % over 10 000; 0 = none) */
+  stepBase: number;
+  stepFrom: number;
+  stepPct: number;
+  /** our markup: markupLow up to markupThreshold FOB (inclusive), markupHigh above */
+  markupLow: number;
+  markupHigh: number;
+  markupThreshold: number;
   updatedAt: string;
 }
 
@@ -327,6 +331,15 @@ export interface PriceBreakdown {
   fixedTotal: boolean;
   /** the exchange rate the price was calculated with: EUR per 1 unit of sourceCurrency (null when not calculated) */
   eurPerUnit?: number | null;
+  /** the step (since 31.10.2026): stepBaseEur + stepPct % of the FOB above stepFromEur */
+  stepEur?: number | null;
+  stepBaseEur?: number | null;
+  stepFromEur?: number | null;
+  stepPct?: number | null;
+  /** the markup's threshold FOB (null when the markup was set for the car, or before the change) */
+  markupLowEur?: number | null;
+  markupHighEur?: number | null;
+  markupThresholdEur?: number | null;
 }
 
 export interface AdminImage {
@@ -687,6 +700,30 @@ export interface AutoImportRun {
   returnedCount: number;
   brands: AutoImportBrandPass[];
   message: string | null;
+  /** cars added by hand (or of makes not imported) checked at the source, and of them hidden */
+  manualChecked: number;
+  manualGone: number;
+}
+
+/** Where a car was posted through the admin panel (backend PostedChannels.Post). */
+export interface PostedChannel {
+  network: "FACEBOOK" | "INSTAGRAM" | "VIBER" | "MOBILE_BG";
+  url: string | null;
+  at: string;
+}
+
+/** A car a run hid (backend AutoImportRunRepository.Removed). */
+export interface AutoImportRemoved {
+  id: number;
+  carId: number | null;
+  source: AutoImportSource;
+  title: string | null;
+  slug: string | null;
+  sourceUrl: string | null;
+  /** added by hand (or of a make not imported) */
+  manual: boolean;
+  posted: PostedChannel[];
+  removedAt: string;
 }
 
 export interface AutoImportFailure {
@@ -698,6 +735,53 @@ export interface AutoImportFailure {
   state: string;
   attempts: number;
   error: string | null;
+  updatedAt: string;
+}
+
+/** The failures tab (backend AutoImportDtos.Failures). */
+export interface AutoImportFailures {
+  page: PageResponse<AutoImportFailure>;
+  /** the failures grouped by reason (URLs as "…", numbers as "N"), most first */
+  reasons: { reason: string; count: number }[];
+}
+
+/** A price recalculation started by hand (backend PriceRecalcRepository.Run). */
+export interface PriceRecalcRun {
+  id: number;
+  /** "ALL" or a CarSource */
+  scope: string;
+  /** STORED: the FOB kept at the import; SOURCE: read again from each listing */
+  mode: "STORED" | "SOURCE";
+  status: "RUNNING" | "DONE" | "FAILED";
+  startedBy: string | null;
+  startedAt: string;
+  finishedAt: string | null;
+  total: number;
+  processed: number;
+  changed: number;
+  /** cars with a final price set by hand: kept */
+  fixedPrice: number;
+  /** SOURCE: listings that could not be read (recalculated from the kept FOB) */
+  failed: number;
+  message: string | null;
+}
+
+export interface PriceRecalcItem {
+  id: number;
+  carId: number | null;
+  kind: "CHANGED" | "FAILED";
+  title: string | null;
+  slug: string | null;
+  carStatus: CarStatus | null;
+  source: CarSource | null;
+  sourceUrl: string | null;
+  oldPriceEur: number | null;
+  newPriceEur: number | null;
+  oldSourcePrice: number | null;
+  newSourcePrice: number | null;
+  sourceCurrency: string | null;
+  note: string | null;
+  posted: PostedChannel[];
 }
 
 export interface AutoImportOverview {
@@ -709,7 +793,6 @@ export interface AutoImportOverview {
   maxMileageKm: number | null;
   sources: AutoImportSourceView[];
   runs: AutoImportRun[];
-  failures: AutoImportFailure[];
 }
 
 export interface AutoImportCatalogEntry {

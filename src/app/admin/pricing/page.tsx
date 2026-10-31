@@ -2,15 +2,17 @@
 
 import { useEffect, useState } from "react";
 import { useAdmin } from "@/components/admin/admin-context";
+import { PriceRecalcPanel } from "@/components/admin/price-recalc-panel";
 import { formatDate, formatEur, priceProfileLabels } from "@/lib/format";
 import type { ExchangeRates, PricingProfile } from "@/lib/types";
 
 /** Same formula as the backend PriceCalculator; used only for the live example. */
 function priceParts(fob: number, p: Omit<PricingProfile, "id" | "updatedAt">) {
   const dutyVat = Math.round((fob + p.seaFreight) * p.dutyVatPct) / 100;
-  const profit = Math.max(Math.round(fob * p.profitPct) / 100, p.profitMin);
-  const total = Math.round(fob + p.seaFreight + p.landTransport + p.commission + dutyVat + profit);
-  return { dutyVat, profit, total };
+  const step = Math.round((p.stepBase + (Math.max(0, fob - p.stepFrom) * p.stepPct) / 100) * 100) / 100;
+  const markup = fob <= p.markupThreshold ? p.markupLow : p.markupHigh;
+  const total = Math.round(fob + p.seaFreight + p.landTransport + p.commission + dutyVat + step + markup);
+  return { dutyVat, step, markup, total };
 }
 
 export default function AdminPricingPage() {
@@ -29,13 +31,12 @@ export default function AdminPricingPage() {
       <h1 className="text-xl font-extrabold">Цени</h1>
       <p className="mt-1 max-w-2xl text-sm text-muted">
         Всичко се смята от FOB цената от обявата (в евро): крайна цена = FOB + морски транспорт + сухопътен
-        транспорт + комисионна + мито и ДДС + надценка, където мито и ДДС = процент от (FOB + морски транспорт), а
-        надценката = процент от FOB, но не по-малко от минимума. Пример за Китай, FOB 21 450 €: 21 450 + 2000 + 1600
-        + 500 + 4690 (20 % от 23 450) + 2145 (10 % от 21 450) = 32 385 €. При FOB 8000 € надценката е минимумът
-        1000 €, не 800 €.
-        Тази цена се показва в сайта и в постовете. Промяна на формулата важи за новите импорти: цените на вече
-        добавените коли остават същите (може да са публикувани). Отделна кола се преизчислява от страницата ѝ
-        („Преизчисли“).
+        транспорт + комисионна + мито и ДДС + стъпка + надценка. Мито и ДДС = процент от (FOB + морски транспорт);
+        стъпка = основа + процент от FOB над прага на стъпката; надценка = фиксирана сума според FOB (до прага
+        включително едната, над него другата). Пример за autowini, FOB 17 000 €: 17 000 + 1200 + 1600 + 500 + стъпка
+        2400 (1700 + 10 % от 7000) + надценка 1000 = 23 700 €. Тази цена се показва в сайта и в постовете. Промяна на
+        формулата важи за новите импорти; качените коли се преизчисляват само ръчно (по-долу) или една по една от
+        страницата им („Преизчисли“).
       </p>
       {error && <p className="mt-4 text-sm font-semibold text-warn">{error}</p>}
       {!profiles && !error && <p className="mt-6 text-sm text-muted">Зареждане…</p>}
@@ -49,6 +50,7 @@ export default function AdminPricingPage() {
           />
         ))}
       </div>
+      <PriceRecalcPanel />
     </div>
   );
 }
@@ -96,15 +98,19 @@ function RatesCard() {
 
 const rateFormat = new Intl.NumberFormat("bg-BG", { maximumSignificantDigits: 5 });
 
-type FieldName = "seaFreight" | "landTransport" | "commission" | "profitPct" | "profitMin" | "dutyVatPct";
+type FieldName = Exclude<keyof PricingProfile, "id" | "updatedAt">;
 
 const fields: { name: FieldName; label: string; hint: string; max?: number }[] = [
   { name: "seaFreight", label: "Морски транспорт, €", hint: "до европейското пристанище" },
   { name: "landTransport", label: "Сухопътен транспорт, €", hint: "от пристанището до България" },
   { name: "commission", label: "Комисионна, €", hint: "на посредника" },
-  { name: "profitPct", label: "Надценка, %", hint: "процент от FOB цената", max: 100 },
-  { name: "profitMin", label: "Минимална надценка, €", hint: "ако процентът дава по-малко" },
-  { name: "dutyVatPct", label: "Мито и ДДС, %", hint: "процент от FOB + морски транспорт", max: 100 },
+  { name: "dutyVatPct", label: "Мито и ДДС, %", hint: "процент от FOB + морски транспорт (0 = няма)", max: 100 },
+  { name: "stepBase", label: "Стъпка, €", hint: "за кола до прага на стъпката (0 = няма стъпка)" },
+  { name: "stepFrom", label: "Праг на стъпката (FOB), €", hint: "над него се добавя и процентът" },
+  { name: "stepPct", label: "Стъпка над прага, %", hint: "процент от FOB над прага", max: 100 },
+  { name: "markupThreshold", label: "Праг на надценката (FOB), €", hint: "до него включително — първата сума" },
+  { name: "markupLow", label: "Надценка до прага, €", hint: "фиксирана сума" },
+  { name: "markupHigh", label: "Надценка над прага, €", hint: "фиксирана сума" },
 ];
 
 function ProfileForm({ profile, onSaved }: { profile: PricingProfile; onSaved: (p: PricingProfile) => void }) {
@@ -131,7 +137,7 @@ function ProfileForm({ profile, onSaved }: { profile: PricingProfile; onSaved: (
       });
       onSaved(saved);
       setValues(saved);
-      setMessage({ ok: true, text: "Записано ✓ Важи за новите импорти." });
+      setMessage({ ok: true, text: "Записано ✓ Важи за новите импорти; качените коли — след преизчисляване." });
     } catch (err) {
       setMessage({ ok: false, text: err instanceof Error ? err.message : "Грешка" });
     } finally {
@@ -186,7 +192,9 @@ function ProfileForm({ profile, onSaved }: { profile: PricingProfile; onSaved: (
         {parts && (
           <p className="mt-2 text-xs text-muted">
             {formatEur(example)} + {formatEur(values.seaFreight)} + {formatEur(values.landTransport)} +{" "}
-            {formatEur(values.commission)} + мито и ДДС {formatEur(parts.dutyVat)} + надценка {formatEur(parts.profit)}
+            {formatEur(values.commission)}
+            {parts.dutyVat > 0 && <> + мито и ДДС {formatEur(parts.dutyVat)}</>}
+            {parts.step > 0 && <> + стъпка {formatEur(parts.step)}</>} + надценка {formatEur(parts.markup)}
           </p>
         )}
       </div>
