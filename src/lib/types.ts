@@ -776,6 +776,8 @@ export interface AutoImportFilters {
 export interface AutoImportModel {
   code: string;
   name: string;
+  /** autowini: the model's fuel types not imported (absent or empty = all) */
+  excludedFuels?: string[];
 }
 
 /** A make to import; models empty = all models. */
@@ -785,6 +787,15 @@ export interface AutoImportBrand {
   enabled: boolean;
   yearFrom: number;
   models: AutoImportModel[];
+  /** autowini, no model chosen: the whole make's fuel types not imported */
+  excludedFuels: string[];
+}
+
+/** One of autowini's fuel types for a make or model, with its listings now (GET .../catalog/{brand}/fuels). */
+export interface AutoImportFuel {
+  code: string;
+  name: string;
+  count: number;
 }
 
 export interface AutoImportSourceView {
