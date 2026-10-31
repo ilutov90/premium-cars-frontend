@@ -9,6 +9,7 @@ import type {
   AutoImportBrand,
   AutoImportCatalogEntry,
   AutoImportFilters,
+  AutoImportFuel,
   AutoImportModel,
   AutoImportOverview,
   AutoImportPreview,
@@ -262,7 +263,7 @@ function SourceCard({
   const dirty =
     enabled !== view.enabled ||
     JSON.stringify(filters) !== JSON.stringify(view.filters) ||
-    JSON.stringify(brands) !== JSON.stringify(view.brands);
+    comparable(brands) !== comparable(view.brands);
   const valid = brands.every((b) => b.yearFrom >= 1990 && b.yearFrom <= 2100);
   const base = `/api/admin/auto-import/${view.source}`;
   const body = () => JSON.stringify({ enabled, filters, brands });
@@ -322,7 +323,7 @@ function SourceCard({
     const entry = catalog?.find((c) => c.code === code);
     if (!entry || brands.some((b) => b.code === code)) return;
     const year = view.source === "GUAZI" ? 2022 : 2018;
-    setBrands((all) => [...all, { code, name: entry.name, enabled: true, yearFrom: year, models: [] }]);
+    setBrands((all) => [...all, { code, name: entry.name, enabled: true, yearFrom: year, models: [], excludedFuels: [] }]);
   }
 
   const queue = view.queue;
@@ -393,6 +394,11 @@ function SourceCard({
               <th className="py-2 pr-3">Марка</th>
               <th className="py-2 pr-3">От година{view.source === "GUAZI" ? " (производство)" : ""}</th>
               <th className="py-2 pr-3">Модели</th>
+              {view.source === "AUTOWINI" && (
+                <th className="py-2 pr-3" title="Горивата (Fuel Type в autowini), които да НЕ се внасят">
+                  Двигател (без)
+                </th>
+              )}
               <th className="py-2" />
             </tr>
           </thead>
@@ -600,12 +606,161 @@ function BrandRow({
           </div>
         )}
       </td>
+      {source === "AUTOWINI" && (
+        <td className="py-2 pr-3">
+          {brand.models.length === 0 ? (
+            <FuelPicker
+              source={source}
+              brandCode={brand.code}
+              modelCode={null}
+              label="Цялата марка"
+              yearFrom={brand.yearFrom}
+              excluded={brand.excludedFuels ?? []}
+              onChange={(excludedFuels) => onChange({ excludedFuels })}
+              onError={onError}
+            />
+          ) : (
+            <div className="space-y-1.5">
+              {brand.models.map((m) => (
+                <FuelPicker
+                  key={m.code}
+                  source={source}
+                  brandCode={brand.code}
+                  modelCode={m.code}
+                  label={m.name}
+                  yearFrom={brand.yearFrom}
+                  excluded={m.excludedFuels ?? []}
+                  onChange={(excludedFuels) =>
+                    onChange({
+                      models: brand.models.map((x) => (x.code === m.code ? withFuels(x, excludedFuels) : x)),
+                    })
+                  }
+                  onError={onError}
+                />
+              ))}
+            </div>
+          )}
+        </td>
+      )}
       <td className="py-2 text-right">
         <button type="button" className="text-xs text-muted hover:text-accent" onClick={onRemove} aria-label={`Махни ${brand.name}`}>
           ✕
         </button>
       </td>
     </tr>
+  );
+}
+
+/** The brands as saved, for "changed?": no empty exclusion lists, the make's own only without models. */
+function comparable(brands: AutoImportBrand[]): string {
+  return JSON.stringify(
+    brands.map((b) => ({
+      ...b,
+      excludedFuels: b.models.length ? [] : (b.excludedFuels ?? []),
+      models: b.models.map((m) => ({ code: m.code, name: m.name, excludedFuels: m.excludedFuels ?? [] })),
+    })),
+  );
+}
+
+function withFuels(m: AutoImportModel, excludedFuels: string[]): AutoImportModel {
+  return { code: m.code, name: m.name, ...(excludedFuels.length ? { excludedFuels } : {}) };
+}
+
+/**
+ * The "Двигател" cell of a make or one of its models: the fuel types autowini has for it now (with listings), the
+ * ticked ones left out of the automatic import. Nothing ticked = every fuel type.
+ */
+function FuelPicker({
+  source,
+  brandCode,
+  modelCode,
+  label,
+  yearFrom,
+  excluded,
+  onChange,
+  onError,
+}: {
+  source: AutoImportSource;
+  brandCode: string;
+  modelCode: string | null;
+  label: string;
+  yearFrom: number;
+  excluded: string[];
+  onChange: (excluded: string[]) => void;
+  onError: (e: string | null) => void;
+}) {
+  const { adminFetch } = useAdmin();
+  const [open, setOpen] = useState(false);
+  const [fuels, setFuels] = useState<AutoImportFuel[] | null>(null);
+
+  async function toggleOpen() {
+    if (open) {
+      setOpen(false);
+      return;
+    }
+    setOpen(true);
+    setFuels(null);
+    try {
+      const p = new URLSearchParams({ yearFrom: String(yearFrom) });
+      if (modelCode) p.set("model", modelCode);
+      setFuels(
+        await adminFetch<AutoImportFuel[]>(
+          `/api/admin/auto-import/${source}/catalog/${encodeURIComponent(brandCode)}/fuels?${p}`,
+        ),
+      );
+    } catch (e) {
+      onError((e as Error).message);
+      setOpen(false);
+    }
+  }
+
+  const same = (a: string, b: string) => a.toLowerCase() === b.toLowerCase();
+  // left-out fuel types the site does not show now stay listed (and can be taken back)
+  const options = [
+    ...(fuels ?? []),
+    ...excluded.filter((e) => !(fuels ?? []).some((f) => same(f.name, e))).map((name) => ({ code: name, name, count: 0 })),
+  ];
+  const allOut = fuels !== null && fuels.length > 0 && fuels.every((f) => excluded.some((e) => same(e, f.name)));
+
+  return (
+    <div className="text-xs">
+      <span className="font-semibold">{label}:</span>{" "}
+      {excluded.length === 0 ? <span className="text-muted">всички</span> : <span className="text-warn">без {excluded.join(", ")}</span>}{" "}
+      <button type="button" className="font-semibold text-accent hover:underline" onClick={toggleOpen}>
+        {open ? "затвори" : "избери"}
+      </button>
+      {open && (
+        <div className="mt-1 rounded-xl bg-paper p-2.5">
+          {fuels === null ? (
+            <p className="text-muted">Зареждане…</p>
+          ) : options.length === 0 ? (
+            <p className="text-muted">autowini не показва горива за това.</p>
+          ) : (
+            <>
+              <p className="mb-1 text-muted">Отметнатите НЕ се внасят:</p>
+              {options.map((f) => {
+                const on = excluded.some((e) => same(e, f.name));
+                return (
+                  <label key={f.name} className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={on}
+                      onChange={(e) =>
+                        onChange(e.target.checked ? [...excluded, f.name] : excluded.filter((x) => !same(x, f.name)))
+                      }
+                    />
+                    <span className="flex-1">{f.name}</span>
+                    <span className="text-muted tabular-nums">{f.count.toLocaleString("bg-BG")}</span>
+                  </label>
+                );
+              })}
+              {allOut && <p className="mt-1 font-semibold text-warn">Всички горива са изключени: нищо от това няма да се внася.</p>}
+              <p className="mt-1 text-muted">Броят е с филтрите на autowini, както са записани.</p>
+            </>
+          )}
+        </div>
+      )}
+    </div>
   );
 }
 
