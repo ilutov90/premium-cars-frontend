@@ -129,11 +129,55 @@
     if (catalog && catalog.brands?.length) await chrome.storage.local.set({ catalog });
   }
 
+  /** The admin panel asked to read mobile.bg's lists again (page "Съпоставяне на модели"). */
+  async function refreshing() {
+    const refresh = (await get("refresh")) ?? {};
+    const at = refresh.MOBILE_BG;
+    if (!at) return false;
+    if (Date.now() - at > 30 * 60 * 1000) {
+      delete refresh.MOBILE_BG;
+      await chrome.storage.local.set({ refresh });
+      return false;
+    }
+    if (isStep1()) {
+      delete refresh.MOBILE_BG;
+      await chrome.storage.local.set({ refresh });
+      render({
+        title: "Списъците на mobile.bg са прочетени",
+        text: "Марките и моделите са изпратени към админ панела. Можете да затворите този таб.",
+        cancel: false,
+      });
+      return true;
+    }
+    const add = [...document.querySelectorAll("a")].find((a) => /ДОБАВИ ОБЯВА/i.test(a.textContent ?? ""));
+    // once per tab: the form may first ask for the category, whose page has the same link
+    let navigated = false;
+    try {
+      navigated = sessionStorage.getItem("pci-refresh-nav") === String(at);
+      sessionStorage.setItem("pci-refresh-nav", String(at));
+    } catch {
+      navigated = true;
+    }
+    if (add?.href && !navigated) {
+      window.location.href = add.href;
+      return true;
+    }
+    render({
+      title: "Четене на списъците на mobile.bg",
+      text: "Отворете „ДОБАВИ ОБЯВА“ (категория „Автомобили и Джипове“). Ако не сте влезли в профила, влезте първо.",
+      cancel: false,
+    });
+    return true;
+  }
+
   async function run() {
     if (!(await pageScriptReady())) return;
     if (isStep1()) await captureCatalog(); // mobile.bg's lists for the admin panel, on every visit of the form
     const job = await get("job");
-    if (!job) return;
+    if (!job) {
+      await refreshing();
+      return;
+    }
     // a job left over for a day is not continued
     if (Date.now() - (job.startedAt ?? 0) > 24 * 3600 * 1000) {
       await clearJob();

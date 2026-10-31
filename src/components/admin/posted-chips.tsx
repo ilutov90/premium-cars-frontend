@@ -5,6 +5,7 @@ const networkLabels: Record<PostedChannel["network"], string> = {
   INSTAGRAM: "Instagram",
   VIBER: "Viber",
   MOBILE_BG: "mobile.bg",
+  CARS_BG: "cars.bg",
 };
 
 /** Where a car was posted through the admin panel, each a link to the post when known. */
