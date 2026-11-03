@@ -10,6 +10,7 @@ import type {
   AutoImportCatalogCheck,
   AutoImportCatalogEntry,
   AutoImportDuplicates,
+  AutoImportStaleHidden,
   AutoImportFilters,
   AutoImportFuel,
   AutoImportModel,
@@ -334,6 +335,7 @@ function SourceCard({
   const [preview, setPreview] = useState<AutoImportPreview | null>(null);
   const [check, setCheck] = useState<AutoImportCatalogCheck | null>(null);
   const [dupes, setDupes] = useState<AutoImportDuplicates | null>(null);
+  const [stale, setStale] = useState<AutoImportStaleHidden | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
 
@@ -373,6 +375,21 @@ function SourceCard({
       setCheck(c);
       setDupes(d);
     });
+
+  const hideStale = () => {
+    if (
+      !window.confirm(
+        "Да се скрият ли от сайта колите, чиито обяви търсенето не е виждало от 3 или повече дни? Стават „Махната от източника“: ако обявата се върне, колата се публикува отново, иначе се изтрива след 30 дни.",
+      )
+    )
+      return;
+    act("stale", async () => {
+      const r = await adminFetch<AutoImportStaleHidden>(`${base}/stale/hide?days=3`, { method: "POST" });
+      setStale(r);
+      setMessage(`Скрити: ${r.hidden.toLocaleString("bg-BG")}`);
+      setCheck(await adminFetch<AutoImportCatalogCheck>(`${base}/check`));
+    });
+  };
 
   const deleteDupes = () => {
     if (!dupes || dupes.cars === 0) return;
@@ -594,6 +611,32 @@ function SourceCard({
       </div>
 
       {check && <CatalogCheck check={check} />}
+      {check && check.notSeen > 0 && (
+        <div className="mt-3 rounded-xl bg-paper p-4 text-sm">
+          <p>
+            Колите, които търсенето не вижда, се махат сами само при марка, прочетена докрай при две поредни пускания.
+            Ако пусканията остават „Непълно“, можеш да ги скриеш оттук (тези, невиждани от 3+ дни).
+          </p>
+          <button type="button" className="btn-primary mt-2 px-4! py-2!" disabled={!!busy} onClick={hideStale}>
+            {busy === "stale" ? "Скриване…" : "Скрий невижданите от 3+ дни"}
+          </button>
+        </div>
+      )}
+      {stale && stale.posted.length > 0 && (
+        <div className="mt-3 rounded-xl bg-warn/10 p-4 text-sm">
+          <p className="font-semibold text-warn">Скрити коли, публикувани през панела: свалете постовете</p>
+          <ul className="mt-2 space-y-1">
+            {stale.posted.map((p) => (
+              <li key={p.carId} className="flex flex-wrap items-center gap-2">
+                <Link href={`/admin/cars/${p.carId}`} className="font-semibold text-accent hover:underline">
+                  #{p.carId} {p.title}
+                </Link>
+                <PostedChips posted={p.posts} />
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
       {dupes && (
         <div className="mt-3 rounded-xl bg-paper p-4 text-sm">
           <p>
