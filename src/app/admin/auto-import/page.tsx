@@ -422,6 +422,12 @@ function SourceCard({
         {(queue.PRICE_SKIPPED ?? 0) > 0 && <> · {queue.PRICE_SKIPPED} над максималната цена</>}
         {(queue.NO_PRICE ?? 0) > 0 && <> · {queue.NO_PRICE} без FOB цена (търг)</>}
       </p>
+      {view.pausedUntil && (
+        <p className="mt-2 rounded-xl bg-warn/10 p-3 text-sm text-warn">
+          {sourceNames[view.source]} отказва заявките на сървъра (HTTP 403, защита от ботове): опашката е на пауза до{" "}
+          {formatDate(view.pausedUntil)} и тогава продължава сама. Обявите остават в опашката, не се броят за неуспешни.
+        </p>
+      )}
 
       <div className="mt-4 flex flex-wrap gap-4 text-sm">
         {view.source === "AUTOWINI" ? (
