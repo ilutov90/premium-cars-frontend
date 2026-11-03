@@ -9,6 +9,7 @@ import type {
   AutoImportBrand,
   AutoImportCatalogCheck,
   AutoImportCatalogEntry,
+  AutoImportDuplicates,
   AutoImportFilters,
   AutoImportFuel,
   AutoImportModel,
@@ -332,6 +333,7 @@ function SourceCard({
   const [catalog, setCatalog] = useState<AutoImportCatalogEntry[] | null>(null);
   const [preview, setPreview] = useState<AutoImportPreview | null>(null);
   const [check, setCheck] = useState<AutoImportCatalogCheck | null>(null);
+  const [dupes, setDupes] = useState<AutoImportDuplicates | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
 
@@ -364,8 +366,33 @@ function SourceCard({
 
   const runCheck = () =>
     act("check", async () => {
-      setCheck(await adminFetch<AutoImportCatalogCheck>(`${base}/check`));
+      const [c, d] = await Promise.all([
+        adminFetch<AutoImportCatalogCheck>(`${base}/check`),
+        adminFetch<AutoImportDuplicates>(`${base}/duplicates`),
+      ]);
+      setCheck(c);
+      setDupes(d);
     });
+
+  const deleteDupes = () => {
+    if (!dupes || dupes.cars === 0) return;
+    if (
+      !window.confirm(
+        `Да се изтрият ли ${dupes.cars} коли в повече? От всяка обява остава по една кола (тази, която импортът следи, иначе вече публикуваната в мрежите, иначе най-новата).`,
+      )
+    )
+      return;
+    act("dupes", async () => {
+      const r = await adminFetch<AutoImportDuplicates>(`${base}/duplicates/delete`, { method: "POST" });
+      setMessage(`Изтрити дубликати: ${r.cars.toLocaleString("bg-BG")}`);
+      const [c, d] = await Promise.all([
+        adminFetch<AutoImportCatalogCheck>(`${base}/check`),
+        adminFetch<AutoImportDuplicates>(`${base}/duplicates`),
+      ]);
+      setCheck(c);
+      setDupes(d);
+    });
+  };
 
   const runPreview = () =>
     act("preview", async () => {
@@ -567,6 +594,40 @@ function SourceCard({
       </div>
 
       {check && <CatalogCheck check={check} />}
+      {dupes && (
+        <div className="mt-3 rounded-xl bg-paper p-4 text-sm">
+          <p>
+            <span className="font-semibold">Една обява, качена повече от веднъж</span> (по номера на обявата, не по
+            линка: линкът в guazi съдържа километрите и се сменя):{" "}
+            <span className="font-bold">{dupes.cars.toLocaleString("bg-BG")}</span> коли в повече в{" "}
+            {dupes.groups.toLocaleString("bg-BG")} обяви.
+          </p>
+          {dupes.cars > 0 && (
+            <>
+              <button type="button" className="btn-primary mt-2 px-4! py-2!" disabled={!!busy} onClick={deleteDupes}>
+                {busy === "dupes" ? "Изтриване…" : `Изтрий дубликатите (${dupes.cars.toLocaleString("bg-BG")})`}
+              </button>
+              <details className="mt-2">
+                <summary className="cursor-pointer text-xs font-semibold">Кои ({dupes.sample.length} обяви)</summary>
+                <ul className="mt-1 space-y-0.5 text-xs">
+                  {dupes.sample.map((g) => (
+                    <li key={g.keep}>
+                      {g.title ?? "—"}: остава{" "}
+                      <Link href={`/admin/cars/${g.keep}`} className="font-semibold text-accent hover:underline">
+                        #{g.keep}
+                      </Link>
+                      , трие се {g.delete.map((id) => `#${id}`).join(", ")}
+                      {g.posted.some((id) => g.delete.includes(id)) && (
+                        <span className="text-warn"> (изтритата е публикувана в мрежите: свалете поста)</span>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              </details>
+            </>
+          )}
+        </div>
+      )}
 
       {preview && (
         <div className="mt-4 rounded-xl bg-paper p-4 text-sm">
