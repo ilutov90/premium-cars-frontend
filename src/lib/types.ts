@@ -801,6 +801,8 @@ export interface AutoImportSourceView {
   brands: AutoImportBrand[];
   /** listings per state: QUEUED, IMPORTED, FAILED */
   queue: Record<string, number>;
+  /** the site refused the server (HTTP 403/429): its queue waits until then; null when not paused */
+  pausedUntil: string | null;
 }
 
 export interface AutoImportBrandPass {
