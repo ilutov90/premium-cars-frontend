@@ -7,7 +7,6 @@ import {
   bodyTypeLabel,
   colorLabel,
   drivetrainLabels,
-  formatYearMonth,
   fuelLabels,
   listingId,
   originLabels,
@@ -40,7 +39,6 @@ export const placeholders: { key: string; description: string; example: string }
   { key: "price", description: "Крайна цена в евро", example: "22,300" },
   { key: "model", description: "Марка, модел и версия", example: "Kia Sportage Diesel 2.0 2WD Prestige" },
   { key: "year", description: "Година", example: "2024" },
-  { key: "first_registration", description: "Първа регистрация", example: "03.2024" },
   { key: "mileage", description: "Километри", example: "43,213 Km" },
   { key: "engine", description: "Двигател (кубатура и гориво; за електрически — мощност)", example: "1,998cc Дизел" },
   { key: "fuel", description: "Гориво", example: "Дизел" },
@@ -86,7 +84,9 @@ export function carLink(siteOrigin: string, slug: string, kind?: TemplateKind): 
 /** The shared details with the site.ts defaults filled in where nothing is saved. */
 export const effectiveSettings = (saved: PostSettings | null | undefined) => contactDetails(saved);
 
-const KNOWN = new Set(placeholders.map((p) => p.key));
+/** Placeholders no longer offered: saved templates may still have them; they render empty (the line is dropped). */
+const RETIRED = ["first_registration"];
+const KNOWN = new Set([...placeholders.map((p) => p.key), ...RETIRED]);
 const PLACEHOLDER = /\{\{\s*([a-zA-Z_]+)\s*\}\}/g;
 
 const carPart = [
@@ -161,7 +161,6 @@ export function templateValues(
     price: price != null ? enNumber.format(Math.round(price)) : "",
     model: fullModel(s),
     year: s.year?.toString() ?? "",
-    first_registration: formatYearMonth(s.firstRegistration) ?? "",
     mileage: s.mileageKm != null ? `${enNumber.format(s.mileageKm)} Km` : "",
     engine: engineLine && engineLine !== "—" ? engineLine : "",
     fuel: s.fuelType ? fuelLabels[s.fuelType] : "",

@@ -175,8 +175,6 @@ export interface CarSpecs {
   model: string | null;
   trim: string | null;
   year: number | null;
-  /** "YYYY-MM" when known */
-  firstRegistration: string | null;
   mileageKm: number | null;
   fuelType: FuelType | null;
   transmission: Transmission | null;
@@ -620,7 +618,6 @@ export type MobileBgWarningCode =
   | "CATEGORY_UNKNOWN"
   | "COLOR_UNKNOWN"
   | "RANGE_NOT_WLTP"
-  | "PRODUCTION_MONTH_UNKNOWN"
   | "NO_PRICE";
 
 /** Where a car was posted on mobile.bg (backend MobileBgListing). */
@@ -698,7 +695,6 @@ export type CarsBgWarningCode =
   | "COLOR_UNKNOWN"
   | "DOORS_UNKNOWN"
   | "YEAR_ADJUSTED"
-  | "PRODUCTION_MONTH_UNKNOWN"
   | "NO_PRICE";
 
 /** Where a car was posted on cars.bg (backend CarsBgListing). */
@@ -931,6 +927,19 @@ export interface AutoImportOverview {
 export interface AutoImportCatalogEntry {
   code: string;
   name: string;
+}
+
+/** GET /api/admin/auto-import/{source}/check: our cars of the source against what the import knows. */
+export interface AutoImportCatalogCheck {
+  /** our cars of the source on the site or drafts */
+  cars: number;
+  /** of them, not from the automatic import (by hand, or before it) */
+  withoutListing: number;
+  /** of them, listings the searches have not seen for 2 days or more */
+  notSeen: number;
+  /** cars with the same title, year and km as another car */
+  lookAlike: number;
+  lookAlikes: { title: string; year: number | null; mileageKm: number | null; carIds: number[] }[];
 }
 
 export interface AutoImportPreview {
