@@ -18,7 +18,6 @@ import {
   formatPower,
   formatRange,
   formatEur,
-  formatYearMonth,
   fuelLabels,
   hasTractionBattery,
   originLabels,
@@ -94,7 +93,6 @@ function factGroups(s: CarSpecs, origin: Origin | null): { title: string; facts:
       title: "Основни данни",
       facts: [
         ["Година", s.year?.toString()],
-        ["Първа регистрация", formatYearMonth(s.firstRegistration)],
         ["Пробег", s.mileageKm != null ? formatKm(s.mileageKm) : null],
         ["Произход", origin ? originLabels[origin] : null],
         ["Купе", bodyTypeLabel(s.bodyType)],

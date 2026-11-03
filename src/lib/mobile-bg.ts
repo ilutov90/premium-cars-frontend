@@ -60,8 +60,6 @@ export const warningText = (code: MobileBgWarningCode, value: string | null): st
       return `Цветът „${value ?? ""}“ не е разпознат: изберете го.`;
     case "RANGE_NOT_WLTP":
       return `Пробегът на ток е по ${value ?? "друг стандарт"}, а mobile.bg иска WLTP: проверете числото.`;
-    case "PRODUCTION_MONTH_UNKNOWN":
-      return "Месецът на производство/регистрация не е известен: изберете го.";
     case "NO_PRICE":
       return "Колата няма цена.";
   }

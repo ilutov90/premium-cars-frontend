@@ -179,8 +179,6 @@ export const carsBgWarningText = (code: CarsBgWarningCode, value: string | null)
       return "Броят врати не е известен: изберете го.";
     case "YEAR_ADJUSTED":
       return `Годината на колата е ${value ?? ""}, а cars.bg стига до тази година: избрана е тази година. Моделната година е в описанието.`;
-    case "PRODUCTION_MONTH_UNKNOWN":
-      return "Месецът на производство/регистрация не е известен: изберете го.";
     case "NO_PRICE":
       return "Колата няма цена.";
   }

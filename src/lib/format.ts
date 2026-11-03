@@ -170,13 +170,6 @@ export function formatPower(hp: number | null | undefined, kw?: number | null): 
   return kw != null ? `${num.format(h)} к.с. (${num.format(kw)} kW)` : `${num.format(h)} к.с.`;
 }
 
-/** "2020-10" -> "10.2020" */
-export function formatYearMonth(value: string | null | undefined): string | null {
-  if (!value) return null;
-  const m = /^(\d{4})-(\d{2})$/.exec(value);
-  return m ? `${m[2]}.${m[1]}` : value;
-}
-
 export function formatDate(iso: string): string {
   return new Date(iso).toLocaleString("bg-BG", { dateStyle: "medium", timeStyle: "short" });
 }

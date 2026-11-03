@@ -67,7 +67,6 @@ function readForm(form: HTMLFormElement): { specs: CarSpecs; pricing: PricingInp
       model: text("model"),
       trim: text("trim"),
       year: number("year"),
-      firstRegistration: text("firstRegistration"),
       mileageKm: number("mileageKm"),
       fuelType: text("fuelType") as FuelType | null,
       transmission: text("transmission") as Transmission | null,
@@ -204,7 +203,6 @@ export function CarEditor({ params }: { params: Promise<{ id: string }> }) {
             <Field label="Модел" name="model" value={s.model} />
             <Field label="Версия" name="trim" value={s.trim} wide />
             <Field label="Година" name="year" value={s.year} type="number" />
-            <Field label="Първа регистрация (ГГГГ-ММ)" name="firstRegistration" value={s.firstRegistration} />
             <Field label="Пробег, км" name="mileageKm" value={s.mileageKm} type="number" />
             <Choice label="Гориво" name="fuelType" value={s.fuelType} options={fuelLabels} />
             <Choice label="Скоростна кутия" name="transmission" value={s.transmission} options={transmissionLabels} />

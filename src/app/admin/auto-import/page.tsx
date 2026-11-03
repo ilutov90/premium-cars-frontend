@@ -7,6 +7,7 @@ import { PostedChips } from "@/components/admin/posted-chips";
 import { formatDate } from "@/lib/format";
 import type {
   AutoImportBrand,
+  AutoImportCatalogCheck,
   AutoImportCatalogEntry,
   AutoImportFilters,
   AutoImportFuel,
@@ -330,6 +331,7 @@ function SourceCard({
   const [brands, setBrands] = useState<AutoImportBrand[]>(view.brands);
   const [catalog, setCatalog] = useState<AutoImportCatalogEntry[] | null>(null);
   const [preview, setPreview] = useState<AutoImportPreview | null>(null);
+  const [check, setCheck] = useState<AutoImportCatalogCheck | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
 
@@ -358,6 +360,11 @@ function SourceCard({
     act("save", async () => {
       onOverview(await adminFetch<AutoImportOverview>(base, { method: "PUT", body: body() }));
       setMessage("Запазено.");
+    });
+
+  const runCheck = () =>
+    act("check", async () => {
+      setCheck(await adminFetch<AutoImportCatalogCheck>(`${base}/check`));
     });
 
   const runPreview = () =>
@@ -528,6 +535,9 @@ function SourceCard({
         <button type="button" className="btn-ghost" disabled={!valid || !!busy} onClick={runPreview}>
           {busy === "preview" ? "Броене…" : "Преглед (колко коли)"}
         </button>
+        <button type="button" className="btn-ghost" disabled={!!busy} onClick={runCheck}>
+          {busy === "check" ? "Проверка…" : "Проверка на колите"}
+        </button>
         <button
           type="button"
           className="btn-ghost"
@@ -549,6 +559,8 @@ function SourceCard({
         {dirty && <span className="text-sm text-warn">Има незапазени промени</span>}
         {message && <span className="text-sm text-ok">{message}</span>}
       </div>
+
+      {check && <CatalogCheck check={check} />}
 
       {preview && (
         <div className="mt-4 rounded-xl bg-paper p-4 text-sm">
@@ -738,6 +750,62 @@ function BrandRow({
         </button>
       </td>
     </tr>
+  );
+}
+
+/** Our cars of the source against the import's listings: where a difference with the preview comes from. */
+function CatalogCheck({ check }: { check: AutoImportCatalogCheck }) {
+  const n = (v: number) => v.toLocaleString("bg-BG");
+  return (
+    <div className="mt-4 rounded-xl bg-paper p-4 text-sm">
+      <table className="w-full max-w-xl">
+        <tbody>
+          <tr>
+            <td className="py-0.5 pr-4">Наши коли от сайта (публикувани, резервирани, чернови)</td>
+            <td className="py-0.5 text-right font-bold">{n(check.cars)}</td>
+          </tr>
+          <tr>
+            <td className="py-0.5 pr-4">от тях не са от автоматичния импорт (ръчно или преди него)</td>
+            <td className="py-0.5 text-right font-semibold">{n(check.withoutListing)}</td>
+          </tr>
+          <tr>
+            <td className="py-0.5 pr-4" title="Още стоят на сайта: махат се само при марка, прочетена докрай (2 пъти подред)">
+              от тях търсенето не ги е виждало от 2+ дни
+            </td>
+            <td className="py-0.5 text-right font-semibold">{n(check.notSeen)}</td>
+          </tr>
+          <tr>
+            <td className="py-0.5 pr-4">еднакви заглавие, година и км с друга кола (възможни дубликати)</td>
+            <td className="py-0.5 text-right font-semibold">{n(check.lookAlike)}</td>
+          </tr>
+        </tbody>
+      </table>
+      <p className="mt-2 text-xs text-muted">
+        Един линк към обява може да е само на една кола (базата не позволява друго). Разликата с „Преглед“ идва
+        най-вече от колите, които търсенето вече не вижда, но още не са махнати: махат се само при марка, прочетена
+        докрай при две поредни пускания.
+      </p>
+      {check.lookAlikes.length > 0 && (
+        <details className="mt-3">
+          <summary className="cursor-pointer font-semibold">Възможни дубликати ({check.lookAlikes.length} групи)</summary>
+          <ul className="mt-2 space-y-1">
+            {check.lookAlikes.map((g) => (
+              <li key={g.carIds.join("-")}>
+                {g.title} · {g.year ?? "—"} · {g.mileageKm != null ? `${n(g.mileageKm)} км` : "—"}:{" "}
+                {g.carIds.map((id, i) => (
+                  <span key={id}>
+                    {i > 0 && ", "}
+                    <Link href={`/admin/cars/${id}`} className="font-semibold text-accent hover:underline">
+                      #{id}
+                    </Link>
+                  </span>
+                ))}
+              </li>
+            ))}
+          </ul>
+        </details>
+      )}
+    </div>
   );
 }
 
