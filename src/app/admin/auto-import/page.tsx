@@ -572,6 +572,14 @@ function SourceCard({
         <button type="button" className="btn-ghost" disabled={!!busy} onClick={runCheck}>
           {busy === "check" ? "Проверка…" : "Проверка на колите"}
         </button>
+        <a
+          className="btn-ghost"
+          href={`${base}/export`}
+          download
+          title="ZIP с всички обяви на сайта в импорта (състояние, грешка, колата ни) и последните 50 пускания"
+        >
+          Изтегли отчет (CSV)
+        </a>
         <button
           type="button"
           className="btn-ghost"
