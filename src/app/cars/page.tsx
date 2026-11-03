@@ -11,9 +11,10 @@ export const metadata: Metadata = {
   description: "Налични автомобили от Южна Корея и Китай с крайна цена в България.",
 };
 
+/** "" = the default: the cheapest first */
 const sorts: [string, string][] = [
-  ["", "Най-нови"],
-  ["price_asc", "Цена ↑"],
+  ["", "Цена ↑"],
+  ["newest", "Най-нови"],
   ["price_desc", "Цена ↓"],
   ["year_desc", "Година ↓"],
   ["mileage_asc", "Пробег ↑"],
@@ -38,7 +39,8 @@ async function Catalog({ searchParams }: { searchParams: PageProps<"/cars">["sea
     Object.entries(raw).map(([k, v]) => [k, Array.isArray(v) ? v[0] : v]),
   );
 
-  const result = await Promise.all([searchCars(current), getFilterOptions()]).then(
+  // the catalog shows the cheapest first unless another order is chosen
+  const result = await Promise.all([searchCars({ ...current, sort: current.sort || "price_asc" }), getFilterOptions()]).then(
     ([page, options]) => ({ page, options, error: null }),
     (e: unknown) => ({ page: null, options: null, error: e instanceof Error ? e.message : "Грешка" }),
   );
