@@ -10,7 +10,7 @@ import type {
   AutoImportCatalogCheck,
   AutoImportCatalogEntry,
   AutoImportDuplicates,
-  AutoImportStaleHidden,
+  AutoImportStaleDeleted,
   AutoImportFilters,
   AutoImportFuel,
   AutoImportModel,
@@ -100,10 +100,11 @@ export default function AdminAutoImportPage() {
       <p className="mt-1 max-w-3xl text-sm text-muted">
         Всяка нощ в 03:00 се преглеждат всички обяви по избраните марки, години и филтри (двата сайта едновременно;
         ако предишното пускане на сайта още върви, тази нощ се пропуска). Новите се импортират една по една и се
-        публикуват директно (с до 20 снимки), опашката на всеки сайт отделно и едновременно. Кола, чиято обява липсва
-        две нощи подред, се сваля от сайта („Махната от източника“) и се изтрива след 30 дни; ако обявата се върне,
-        колата се публикува отново. Ако наведнъж трябва да се махнат над 20% от колите, нищо не се маха и идва имейл.
-        Ръчният импорт не се променя.
+        публикуват директно (с до 20 снимки), опашката на всеки сайт отделно и едновременно. Кола, чиято обява вече я
+        няма в източника, се изтрива още при това пускане (при марка, която сайтът не показва цялата: когато обявата
+        не е виждана 2 дни); резервираните, продадените и архивираните остават. В отчета на пускането са изтритите
+        коли с постовете им във Facebook, Instagram, Viber, mobile.bg и cars.bg, за да ги свалиш. Ако наведнъж трябва
+        да се изтрият над 20% от колите, нищо не се трие и идва имейл. Ръчният импорт не се променя.
       </p>
       {error && <p className="mt-4 rounded-xl bg-accent/10 p-3 text-sm font-medium text-accent-dark">{error}</p>}
       {!overview && !error && <p className="mt-6 text-sm text-muted">Зареждане…</p>}
@@ -335,7 +336,7 @@ function SourceCard({
   const [preview, setPreview] = useState<AutoImportPreview | null>(null);
   const [check, setCheck] = useState<AutoImportCatalogCheck | null>(null);
   const [dupes, setDupes] = useState<AutoImportDuplicates | null>(null);
-  const [stale, setStale] = useState<AutoImportStaleHidden | null>(null);
+  const [stale, setStale] = useState<AutoImportStaleDeleted | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
 
@@ -376,17 +377,17 @@ function SourceCard({
       setDupes(d);
     });
 
-  const hideStale = () => {
+  const deleteStale = () => {
     if (
       !window.confirm(
-        "Да се скрият ли от сайта колите, чиито обяви търсенето не е виждало от 3 или повече дни? Стават „Махната от източника“: ако обявата се върне, колата се публикува отново, иначе се изтрива след 30 дни.",
+        "Да се изтрият ли колите, чиито обяви търсенето не е виждало от 3 или повече дни? Резервираните, продадените и архивираните остават. Изтриването не може да се върне.",
       )
     )
       return;
     act("stale", async () => {
-      const r = await adminFetch<AutoImportStaleHidden>(`${base}/stale/hide?days=3`, { method: "POST" });
+      const r = await adminFetch<AutoImportStaleDeleted>(`${base}/stale/delete?days=3`, { method: "POST" });
       setStale(r);
-      setMessage(`Скрити: ${r.hidden.toLocaleString("bg-BG")}`);
+      setMessage(`Изтрити: ${r.deleted.toLocaleString("bg-BG")}`);
       setCheck(await adminFetch<AutoImportCatalogCheck>(`${base}/check`));
     });
   };
@@ -614,23 +615,23 @@ function SourceCard({
       {check && check.notSeen > 0 && (
         <div className="mt-3 rounded-xl bg-paper p-4 text-sm">
           <p>
-            Колите, които търсенето не вижда, се махат сами само при марка, прочетена докрай при две поредни пускания.
-            Ако пусканията остават „Непълно“, можеш да ги скриеш оттук (тези, невиждани от 3+ дни).
+            Пусканията изтриват сами колите, чиито обяви търсенето не вижда (при непрочетена докрай марка: след 2 дни).
+            Можеш да изтриеш оттук и веднага тези, невиждани от 3+ дни.
           </p>
-          <button type="button" className="btn-primary mt-2 px-4! py-2!" disabled={!!busy} onClick={hideStale}>
-            {busy === "stale" ? "Скриване…" : "Скрий невижданите от 3+ дни"}
+          <button type="button" className="btn-primary mt-2 px-4! py-2!" disabled={!!busy} onClick={deleteStale}>
+            {busy === "stale" ? "Изтриване…" : "Изтрий невижданите от 3+ дни"}
           </button>
         </div>
       )}
       {stale && stale.posted.length > 0 && (
         <div className="mt-3 rounded-xl bg-warn/10 p-4 text-sm">
-          <p className="font-semibold text-warn">Скрити коли, публикувани през панела: свалете постовете</p>
+          <p className="font-semibold text-warn">Изтрити коли, публикувани през панела: свалете постовете</p>
           <ul className="mt-2 space-y-1">
             {stale.posted.map((p) => (
               <li key={p.carId} className="flex flex-wrap items-center gap-2">
-                <Link href={`/admin/cars/${p.carId}`} className="font-semibold text-accent hover:underline">
+                <span className="font-semibold">
                   #{p.carId} {p.title}
-                </Link>
+                </span>
                 <PostedChips posted={p.posts} />
               </li>
             ))}
@@ -892,8 +893,7 @@ function CatalogCheck({ check }: { check: AutoImportCatalogCheck }) {
       </table>
       <p className="mt-2 text-xs text-muted">
         Един линк към обява може да е само на една кола (базата не позволява друго). Разликата с „Преглед“ идва
-        най-вече от колите, които търсенето вече не вижда, но още не са махнати: махат се само при марка, прочетена
-        докрай при две поредни пускания.
+        най-вече от колите, които търсенето вече не вижда, но още не са изтрити: следващото пускане ги изтрива.
       </p>
       {check.lookAlikes.length > 0 && (
         <details className="mt-3">
@@ -1050,9 +1050,9 @@ function Runs({ runs }: { runs: AutoImportRun[] }) {
                 <th className="p-3">Статус</th>
                 <th className="p-3 text-right">Намерени</th>
                 <th className="p-3 text-right">Нови</th>
-                <th className="p-3 text-right">Махнати</th>
+                <th className="p-3 text-right">Изтрити</th>
                 <th className="p-3 text-right">Върнати</th>
-                <th className="p-3 text-right" title="Ръчно добавени коли (и от марки извън импорта): проверени / махнати">
+                <th className="p-3 text-right" title="Ръчно добавени коли (и от марки извън импорта): проверени / изтрити">
                   Ръчни
                 </th>
               </tr>
@@ -1066,7 +1066,7 @@ function Runs({ runs }: { runs: AutoImportRun[] }) {
         </div>
       )}
       <p className="mt-2 text-xs text-muted">
-        При пробно пускане „Нови“ и „Махнати“ са колко биха били — нищо не се променя.
+        При пробно пускане „Нови“ и „Изтрити“ са колко биха били — нищо не се променя.
       </p>
     </section>
   );
@@ -1133,13 +1133,13 @@ function RemovedCars({ runId }: { runId: number }) {
   }, [adminFetch, runId]);
 
   if (error) return <p className="mt-3 text-warn">{error}</p>;
-  if (!cars) return <p className="mt-3 text-muted">Зареждане на махнатите коли…</p>;
+  if (!cars) return <p className="mt-3 text-muted">Зареждане на изтритите коли…</p>;
   if (cars.length === 0) return null;
   const posted = cars.filter((c) => c.posted.length > 0).length;
   return (
     <div className="mt-4">
       <p className="mb-2 text-sm font-bold">
-        Махнати коли: {cars.length}
+        Изтрити коли: {cars.length}
         {posted > 0 && <span className="text-warn"> · {posted} са публикувани — свали постовете ръчно</span>}
       </p>
       <table className="w-full text-sm">

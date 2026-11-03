@@ -114,7 +114,7 @@ export type CarFeature =
   | "N1_HOMOLOGATION";
 export type Transmission = "AUTOMATIC" | "MANUAL";
 export type Origin = "KR" | "CN";
-/** REMOVED: the listing disappeared from the source (automatic import); hidden, deleted after 30 days. */
+/** REMOVED: hidden by an earlier automatic import (the listing disappeared); the next run deletes it. */
 export type CarStatus = "DRAFT" | "PUBLISHED" | "RESERVED" | "SOLD" | "ARCHIVED" | "REMOVED";
 export type CarSource = "AUTOHOME" | "AUTOWINI" | "GUAZI" | "OTHER" | "MANUAL";
 
@@ -954,9 +954,9 @@ export interface AutoImportDuplicates {
   sample: { title: string | null; keep: number; delete: number[]; posted: number[] }[];
 }
 
-/** POST /api/admin/auto-import/{source}/stale/hide: cars hidden because their listing was not seen for days. */
-export interface AutoImportStaleHidden {
-  hidden: number;
+/** POST /api/admin/auto-import/{source}/stale/delete: cars deleted because their listing was not seen for days. */
+export interface AutoImportStaleDeleted {
+  deleted: number;
   /** of them, posted through the panel: take the posts down */
   posted: { carId: number; title: string; slug: string; posts: PostedChannel[] }[];
 }
