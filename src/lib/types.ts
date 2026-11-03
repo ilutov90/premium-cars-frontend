@@ -954,6 +954,13 @@ export interface AutoImportDuplicates {
   sample: { title: string | null; keep: number; delete: number[]; posted: number[] }[];
 }
 
+/** POST /api/admin/auto-import/{source}/stale/hide: cars hidden because their listing was not seen for days. */
+export interface AutoImportStaleHidden {
+  hidden: number;
+  /** of them, posted through the panel: take the posts down */
+  posted: { carId: number; title: string; slug: string; posts: PostedChannel[] }[];
+}
+
 export interface AutoImportPreview {
   source: AutoImportSource;
   /** leftOut: of the count, set aside by the limits (km, price, no FOB price) as far as the last runs saw */
