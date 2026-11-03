@@ -918,10 +918,12 @@ export interface PriceRecalcItem {
 export interface AutoImportOverview {
   /** the main switch */
   enabled: boolean;
-  /** the run going on now, e.g. "GUAZI (dry run)" */
+  /** the runs going on now, e.g. "GUAZI, AUTOWINI (dry run)" */
   running: string | null;
   /** listings with more km are not imported (both sites); null = no limit */
   maxMileageKm: number | null;
+  /** listings with a higher FOB price in EUR are not imported (both sites); null = no limit */
+  maxPriceEur: number | null;
   sources: AutoImportSourceView[];
   runs: AutoImportRun[];
 }
@@ -933,7 +935,9 @@ export interface AutoImportCatalogEntry {
 
 export interface AutoImportPreview {
   source: AutoImportSource;
-  brands: { code: string; name: string; count: number | null; error: string | null }[];
+  /** leftOut: of the count, set aside by the limits (km, price, no FOB price) as far as the last runs saw */
+  brands: { code: string; name: string; count: number | null; leftOut: number | null; error: string | null }[];
   total: number;
+  leftOut: number;
   error: string | null;
 }

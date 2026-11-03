@@ -32,6 +32,9 @@ export function PhotoSwiper({
 }) {
   const track = useRef<HTMLDivElement>(null);
   const shown = useRef(index);
+  // while scrolling to an index set from outside, the scroll events pass the photos in between: they are not the
+  // user's swipe and must not be reported (two swipers on one index, page + full screen, would pull each other back)
+  const target = useRef<{ index: number; until: number } | null>(null);
 
   // opened at a later photo (full screen): start there, without animation
   useEffect(() => {
@@ -44,6 +47,7 @@ export function PhotoSwiper({
     const el = track.current;
     if (!el || shown.current === index) return;
     shown.current = index;
+    target.current = { index, until: Date.now() + 1000 };
     el.scrollTo({ left: index * el.clientWidth, behavior: "smooth" });
   }, [index]);
 
@@ -51,6 +55,11 @@ export function PhotoSwiper({
     const el = track.current;
     if (!el || el.clientWidth === 0) return;
     const i = Math.round(el.scrollLeft / el.clientWidth);
+    const t = target.current;
+    if (t) {
+      if (i === t.index || Date.now() > t.until) target.current = null;
+      if (Date.now() <= t.until) return;
+    }
     if (i !== shown.current && i >= 0 && i < images.length) {
       shown.current = i;
       onIndex(i);

@@ -95,8 +95,9 @@ export default function AdminAutoImportPage() {
     <div>
       <h1 className="text-xl font-extrabold">Автоматичен импорт</h1>
       <p className="mt-1 max-w-3xl text-sm text-muted">
-        Всяка нощ в 03:00 (първо guazi, после autowini) се преглеждат всички обяви по избраните марки, години и
-        филтри. Новите се импортират една по една и се публикуват директно (с до 20 снимки). Кола, чиято обява липсва
+        Всяка нощ в 03:00 се преглеждат всички обяви по избраните марки, години и филтри (двата сайта едновременно;
+        ако предишното пускане на сайта още върви, тази нощ се пропуска). Новите се импортират една по една и се
+        публикуват директно (с до 20 снимки), опашката на всеки сайт отделно и едновременно. Кола, чиято обява липсва
         две нощи подред, се сваля от сайта („Махната от източника“) и се изтрива след 30 дни; ако обявата се върне,
         колата се публикува отново. Ако наведнъж трябва да се махнат над 20% от колите, нищо не се маха и идва имейл.
         Ръчният импорт не се променя.
@@ -137,6 +138,12 @@ export default function AdminAutoImportPage() {
           <MileageLimit
             key={overview.maxMileageKm ?? "none"}
             value={overview.maxMileageKm}
+            onOverview={setOverview}
+            onError={setError}
+          />
+          <PriceLimit
+            key={`price-${overview.maxPriceEur ?? "none"}`}
+            value={overview.maxPriceEur}
             onOverview={setOverview}
             onError={setError}
           />
@@ -216,9 +223,10 @@ function MileageLimit({
         Максимален пробег
       </label>
       <p className="mt-1 max-w-3xl text-sm text-muted">
-        Обяви с повече километри не се импортират (за двата сайта). guazi показва пробега още в търсенето, а при
-        autowini той се проверява при импорта, преди да се запише нещо. Пропуснатите се броят в отчета и се
-        импортират, ако вдигнеш ограничението. Празно поле = без ограничение. Вече качените коли не се пипат.
+        Обяви с повече километри не се импортират (за двата сайта). Пробегът се чете още от търсенето (при autowini,
+        ако търсенето не го покаже, при импорта, преди да се запише нещо). Пропуснатите се пазят и не се отварят
+        отново, броят се в отчета и се импортират, ако вдигнеш ограничението. Празно поле = без ограничение. Вече
+        качените коли не се пипат.
       </p>
       <div className="mt-3 flex flex-wrap items-center gap-2">
         <input
@@ -234,6 +242,71 @@ function MileageLimit({
           {busy ? "Запис…" : "Запази"}
         </button>
         {!valid && <span className="text-sm text-warn">Между 1 000 и 2 000 000 км</span>}
+        {valid && dirty && <span className="text-sm text-warn">Незапазено</span>}
+      </div>
+    </form>
+  );
+}
+
+/** The highest FOB price of both sites (EUR): listings over it are not imported. */
+function PriceLimit({
+  value,
+  onOverview,
+  onError,
+}: {
+  value: number | null;
+  onOverview: (o: AutoImportOverview) => void;
+  onError: (message: string) => void;
+}) {
+  const { adminFetch } = useAdmin();
+  const [text, setText] = useState(value == null ? "" : String(value));
+  const [busy, setBusy] = useState(false);
+  const eur = text.trim() === "" ? null : Number(text);
+  const valid = eur === null || (Number.isInteger(eur) && eur >= 1000 && eur <= 10_000_000);
+  const dirty = eur !== value;
+
+  async function save(e: React.FormEvent) {
+    e.preventDefault();
+    if (!valid || !dirty) return;
+    setBusy(true);
+    try {
+      onOverview(
+        await adminFetch<AutoImportOverview>("/api/admin/auto-import/max-price", {
+          method: "PUT",
+          body: JSON.stringify({ maxPriceEur: eur }),
+        }),
+      );
+    } catch (err) {
+      onError((err as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <form onSubmit={save} className="mt-4 rounded-2xl bg-card p-5 ring-1 ring-line">
+      <label className="font-bold" htmlFor="max-price">
+        Максимална FOB цена
+      </label>
+      <p className="mt-1 max-w-3xl text-sm text-muted">
+        Обяви с по-висока FOB цена не се импортират (за двата сайта; цената в търсенето е в USD и се сравнява в EUR
+        по днешния курс). Пропуснатите се пазят и се импортират, ако вдигнеш ограничението или цената им падне.
+        Празно поле = без ограничение. Вече качените коли не се пипат.
+      </p>
+      <div className="mt-3 flex flex-wrap items-center gap-2">
+        <input
+          id="max-price"
+          value={text}
+          onChange={(e) => setText(e.target.value.replace(/[^\d]/g, ""))}
+          inputMode="numeric"
+          placeholder="без ограничение"
+          className="field w-44 py-2!"
+        />
+        <span className="text-sm text-muted">€ FOB</span>
+        <button type="submit" disabled={busy || !dirty || !valid} className="btn-primary px-4! py-2!">
+          {busy ? "Запис…" : "Запази"}
+        </button>
+        {!valid && <span className="text-sm text-warn">Между 1 000 и 10 000 000 €</span>}
         {valid && dirty && <span className="text-sm text-warn">Незапазено</span>}
       </div>
     </form>
@@ -339,6 +412,8 @@ function SourceCard({
       <p className="mt-1 text-sm text-muted">
         Опашка: {queue.QUEUED ?? 0} за импорт · {queue.IMPORTED ?? 0} импортирани · {queue.FAILED ?? 0} неуспешни
         {(queue.SKIPPED ?? 0) > 0 && <> · {queue.SKIPPED} пропуснати заради пробега</>}
+        {(queue.PRICE_SKIPPED ?? 0) > 0 && <> · {queue.PRICE_SKIPPED} над максималната цена</>}
+        {(queue.NO_PRICE ?? 0) > 0 && <> · {queue.NO_PRICE} без FOB цена (търг)</>}
       </p>
 
       <div className="mt-4 flex flex-wrap gap-4 text-sm">
@@ -482,23 +557,38 @@ function SourceCard({
           )}
           <table className="w-full max-w-md">
             <tbody>
+              <tr className="text-xs text-muted">
+                <td className="pb-1" />
+                <td className="pb-1 pl-3 text-right">в сайта</td>
+                <td className="pb-1 pl-3 text-right" title="Над пробега или цената, или без FOB цена (търг): не се внасят">
+                  пропускани
+                </td>
+                <td className="pb-1 pl-3 text-right">за внос</td>
+              </tr>
               {preview.brands.map((b) => (
                 <tr key={b.code}>
                   <td className="py-0.5 pr-4">{b.name}</td>
-                  <td className="py-0.5 text-right font-semibold">
+                  <td className="py-0.5 pl-3 text-right">
                     {b.count != null ? b.count.toLocaleString("bg-BG") : <span className="text-warn">грешка</span>}
+                  </td>
+                  <td className="py-0.5 pl-3 text-right text-muted">{b.leftOut ? `−${b.leftOut.toLocaleString("bg-BG")}` : ""}</td>
+                  <td className="py-0.5 pl-3 text-right font-semibold">
+                    {b.count != null ? (b.count - (b.leftOut ?? 0)).toLocaleString("bg-BG") : ""}
                   </td>
                 </tr>
               ))}
               <tr className="border-t border-line">
                 <td className="pt-1 pr-4 font-bold">Общо</td>
-                <td className="pt-1 text-right font-bold">{preview.total.toLocaleString("bg-BG")}</td>
+                <td className="pt-1 pl-3 text-right">{preview.total.toLocaleString("bg-BG")}</td>
+                <td className="pt-1 pl-3 text-right text-muted">{preview.leftOut ? `−${preview.leftOut.toLocaleString("bg-BG")}` : ""}</td>
+                <td className="pt-1 pl-3 text-right font-bold">{(preview.total - preview.leftOut).toLocaleString("bg-BG")}</td>
               </tr>
             </tbody>
           </table>
           <p className="mt-2 text-xs text-muted">
-            Броят е по текущите (и незапазени) настройки, към този момент. Ограничението за пробег не е включено:
-            сайтът не филтрира по километри, затова колите над него се пропускат при импорта (виж отчета).
+            Броят е по текущите (и незапазени) настройки, към този момент. „Пропускани“ са обявите, които последните
+            пускания вече знаят, че са над пробега или цената, или са без FOB цена 3 нощи подред (търг); новите такива
+            се разбират чак при следващото пускане.
           </p>
         </div>
       )}
