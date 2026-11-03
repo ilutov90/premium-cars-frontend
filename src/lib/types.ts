@@ -935,13 +935,6 @@ export interface AutoImportCatalogEntry {
 export interface AutoImportCatalogCheck {
   /** our cars of the source on the site or drafts */
   cars: number;
-  /** of them, not from the automatic import (by hand, or before it) */
-  withoutListing: number;
-  /** of them, listings the searches have not seen for 2 days or more */
-  notSeen: number;
-  /** cars with the same title, year and km as another car */
-  lookAlike: number;
-  lookAlikes: { title: string; year: number | null; mileageKm: number | null; carIds: number[] }[];
 }
 
 /** GET /api/admin/auto-import/{source}/duplicates: cars that are one listing more than once. */
@@ -950,15 +943,14 @@ export interface AutoImportDuplicates {
   groups: number;
   /** cars in excess (deleted by "Изтрий дубликатите") */
   cars: number;
-  /** keep: the car that stays; posted: cars of the group posted through the panel */
-  sample: { title: string | null; keep: number; delete: number[]; posted: number[] }[];
-}
-
-/** POST /api/admin/auto-import/{source}/stale/delete: cars deleted because their listing was not seen for days. */
-export interface AutoImportStaleDeleted {
-  deleted: number;
-  /** of them, posted through the panel: take the posts down */
-  posted: { carId: number; title: string; slug: string; posts: PostedChannel[] }[];
+  /** keep: the car that stays; posted: cars of the group posted through the panel; cars: all of the group's cars */
+  sample: {
+    title: string | null;
+    keep: number;
+    delete: number[];
+    posted: number[];
+    cars: { id: number; slug: string; status: CarStatus }[];
+  }[];
 }
 
 export interface AutoImportPreview {
