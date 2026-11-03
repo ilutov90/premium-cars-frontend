@@ -944,6 +944,16 @@ export interface AutoImportCatalogCheck {
   lookAlikes: { title: string; year: number | null; mileageKm: number | null; carIds: number[] }[];
 }
 
+/** GET /api/admin/auto-import/{source}/duplicates: cars that are one listing more than once. */
+export interface AutoImportDuplicates {
+  /** listings with more than one car */
+  groups: number;
+  /** cars in excess (deleted by "Изтрий дубликатите") */
+  cars: number;
+  /** keep: the car that stays; posted: cars of the group posted through the panel */
+  sample: { title: string | null; keep: number; delete: number[]; posted: number[] }[];
+}
+
 export interface AutoImportPreview {
   source: AutoImportSource;
   /** leftOut: of the count, set aside by the limits (km, price, no FOB price) as far as the last runs saw */
