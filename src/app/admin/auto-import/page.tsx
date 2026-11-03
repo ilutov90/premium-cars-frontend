@@ -10,7 +10,6 @@ import type {
   AutoImportCatalogCheck,
   AutoImportCatalogEntry,
   AutoImportDuplicates,
-  AutoImportStaleDeleted,
   AutoImportFilters,
   AutoImportFuel,
   AutoImportModel,
@@ -336,7 +335,6 @@ function SourceCard({
   const [preview, setPreview] = useState<AutoImportPreview | null>(null);
   const [check, setCheck] = useState<AutoImportCatalogCheck | null>(null);
   const [dupes, setDupes] = useState<AutoImportDuplicates | null>(null);
-  const [stale, setStale] = useState<AutoImportStaleDeleted | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
 
@@ -376,21 +374,6 @@ function SourceCard({
       setCheck(c);
       setDupes(d);
     });
-
-  const deleteStale = () => {
-    if (
-      !window.confirm(
-        "Да се изтрият ли колите, чиито обяви търсенето не е виждало от 3 или повече дни? Резервираните, продадените и архивираните остават. Изтриването не може да се върне.",
-      )
-    )
-      return;
-    act("stale", async () => {
-      const r = await adminFetch<AutoImportStaleDeleted>(`${base}/stale/delete?days=3`, { method: "POST" });
-      setStale(r);
-      setMessage(`Изтрити: ${r.deleted.toLocaleString("bg-BG")}`);
-      setCheck(await adminFetch<AutoImportCatalogCheck>(`${base}/check`));
-    });
-  };
 
   const deleteDupes = () => {
     if (!dupes || dupes.cars === 0) return;
@@ -612,32 +595,6 @@ function SourceCard({
       </div>
 
       {check && <CatalogCheck check={check} />}
-      {check && check.notSeen > 0 && (
-        <div className="mt-3 rounded-xl bg-paper p-4 text-sm">
-          <p>
-            Пусканията изтриват сами колите, чиито обяви търсенето не вижда (при непрочетена докрай марка: след 2 дни).
-            Можеш да изтриеш оттук и веднага тези, невиждани от 3+ дни.
-          </p>
-          <button type="button" className="btn-primary mt-2 px-4! py-2!" disabled={!!busy} onClick={deleteStale}>
-            {busy === "stale" ? "Изтриване…" : "Изтрий невижданите от 3+ дни"}
-          </button>
-        </div>
-      )}
-      {stale && stale.posted.length > 0 && (
-        <div className="mt-3 rounded-xl bg-warn/10 p-4 text-sm">
-          <p className="font-semibold text-warn">Изтрити коли, публикувани през панела: свалете постовете</p>
-          <ul className="mt-2 space-y-1">
-            {stale.posted.map((p) => (
-              <li key={p.carId} className="flex flex-wrap items-center gap-2">
-                <span className="font-semibold">
-                  #{p.carId} {p.title}
-                </span>
-                <PostedChips posted={p.posts} />
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
       {dupes && (
         <div className="mt-3 rounded-xl bg-paper p-4 text-sm">
           <p>
@@ -651,16 +608,26 @@ function SourceCard({
               <button type="button" className="btn-primary mt-2 px-4! py-2!" disabled={!!busy} onClick={deleteDupes}>
                 {busy === "dupes" ? "Изтриване…" : `Изтрий дубликатите (${dupes.cars.toLocaleString("bg-BG")})`}
               </button>
-              <details className="mt-2">
-                <summary className="cursor-pointer text-xs font-semibold">Кои ({dupes.sample.length} обяви)</summary>
+              <details className="mt-2" open>
+                <summary className="cursor-pointer text-xs font-semibold">Кои са ({dupes.sample.length} обяви)</summary>
                 <ul className="mt-1 space-y-0.5 text-xs">
                   {dupes.sample.map((g) => (
                     <li key={g.keep}>
-                      {g.title ?? "—"}: остава{" "}
-                      <Link href={`/admin/cars/${g.keep}`} className="font-semibold text-accent hover:underline">
-                        #{g.keep}
-                      </Link>
-                      , трие се {g.delete.map((id) => `#${id}`).join(", ")}
+                      {g.title ?? "—"}:{" "}
+                      {g.cars.map((c, i) => (
+                        <span key={c.id}>
+                          {i > 0 && ", "}
+                          <a
+                            href={c.status === "PUBLISHED" || c.status === "RESERVED" ? `/cars/${c.slug}` : `/admin/cars/${c.id}`}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="font-semibold text-accent hover:underline"
+                          >
+                            #{c.id}
+                          </a>
+                          {c.id === g.keep ? " (остава)" : " (трие се)"}
+                        </span>
+                      ))}
                       {g.posted.some((id) => g.delete.includes(id)) && (
                         <span className="text-warn"> (изтритата е публикувана в мрежите: свалете поста)</span>
                       )}
@@ -864,57 +831,18 @@ function BrandRow({
   );
 }
 
-/** Our cars of the source against the import's listings: where a difference with the preview comes from. */
+/** How many cars of the source are on the site or drafts. */
 function CatalogCheck({ check }: { check: AutoImportCatalogCheck }) {
-  const n = (v: number) => v.toLocaleString("bg-BG");
   return (
     <div className="mt-4 rounded-xl bg-paper p-4 text-sm">
       <table className="w-full max-w-xl">
         <tbody>
           <tr>
             <td className="py-0.5 pr-4">Наши коли от сайта (публикувани, резервирани, чернови)</td>
-            <td className="py-0.5 text-right font-bold">{n(check.cars)}</td>
-          </tr>
-          <tr>
-            <td className="py-0.5 pr-4">от тях не са от автоматичния импорт (ръчно или преди него)</td>
-            <td className="py-0.5 text-right font-semibold">{n(check.withoutListing)}</td>
-          </tr>
-          <tr>
-            <td className="py-0.5 pr-4" title="Още стоят на сайта: махат се само при марка, прочетена докрай (2 пъти подред)">
-              от тях търсенето не ги е виждало от 2+ дни
-            </td>
-            <td className="py-0.5 text-right font-semibold">{n(check.notSeen)}</td>
-          </tr>
-          <tr>
-            <td className="py-0.5 pr-4">еднакви заглавие, година и км с друга кола (възможни дубликати)</td>
-            <td className="py-0.5 text-right font-semibold">{n(check.lookAlike)}</td>
+            <td className="py-0.5 text-right font-bold">{check.cars.toLocaleString("bg-BG")}</td>
           </tr>
         </tbody>
       </table>
-      <p className="mt-2 text-xs text-muted">
-        Един линк към обява може да е само на една кола (базата не позволява друго). Разликата с „Преглед“ идва
-        най-вече от колите, които търсенето вече не вижда, но още не са изтрити: следващото пускане ги изтрива.
-      </p>
-      {check.lookAlikes.length > 0 && (
-        <details className="mt-3">
-          <summary className="cursor-pointer font-semibold">Възможни дубликати ({check.lookAlikes.length} групи)</summary>
-          <ul className="mt-2 space-y-1">
-            {check.lookAlikes.map((g) => (
-              <li key={g.carIds.join("-")}>
-                {g.title} · {g.year ?? "—"} · {g.mileageKm != null ? `${n(g.mileageKm)} км` : "—"}:{" "}
-                {g.carIds.map((id, i) => (
-                  <span key={id}>
-                    {i > 0 && ", "}
-                    <Link href={`/admin/cars/${id}`} className="font-semibold text-accent hover:underline">
-                      #{id}
-                    </Link>
-                  </span>
-                ))}
-              </li>
-            ))}
-          </ul>
-        </details>
-      )}
     </div>
   );
 }
