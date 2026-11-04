@@ -108,6 +108,12 @@ export default function AdminAutoImportPage() {
       {error && <p className="mt-4 rounded-xl bg-accent/10 p-3 text-sm font-medium text-accent-dark">{error}</p>}
       {!overview && !error && <p className="mt-6 text-sm text-muted">Зареждане…</p>}
 
+      {overview && !overview.runsHere && (
+        <p className="mt-4 rounded-xl bg-warn/10 p-3 text-sm font-medium text-warn">
+          Автоматичният импорт не се пуска от този сървър: в момента върви от друг (например от лаптоп срещу същата
+          база). Пускане, преглед и пробно пускане тук не работят; настройките и отчетите са общи.
+        </p>
+      )}
       {overview && (
         <>
           <div

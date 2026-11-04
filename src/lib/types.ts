@@ -924,6 +924,8 @@ export interface AutoImportOverview {
   maxPriceEur: number | null;
   sources: AutoImportSourceView[];
   runs: AutoImportRun[];
+  /** this server runs the automatic import; false: another one does (e.g. a laptop), runs and previews are refused */
+  runsHere: boolean;
 }
 
 export interface AutoImportCatalogEntry {
