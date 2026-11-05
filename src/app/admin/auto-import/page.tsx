@@ -381,6 +381,20 @@ function SourceCard({
       setDupes(d);
     });
 
+  const clearQueue = () => {
+    const n = view.queue.QUEUED ?? 0;
+    if (
+      !window.confirm(
+        `Да се изчисти ли опашката на ${sourceNames[view.source]} (${n.toLocaleString("bg-BG")} обяви за импорт)? Импортът спира след обявата, по която работи в момента. Следващото пускане ще прочете сайта наново и ще сложи в опашката обявите, които още са там и не са импортирани.`,
+      )
+    )
+      return;
+    act("clear", async () => {
+      onOverview(await adminFetch<AutoImportOverview>(`${base}/queue/clear`, { method: "POST" }));
+      setMessage(`Опашката е изчистена (${n.toLocaleString("bg-BG")} обяви).`);
+    });
+  };
+
   const deleteDupes = () => {
     if (!dupes || dupes.cars === 0) return;
     if (
@@ -455,6 +469,16 @@ function SourceCard({
         {(queue.SKIPPED ?? 0) > 0 && <> · {queue.SKIPPED} пропуснати заради пробега</>}
         {(queue.PRICE_SKIPPED ?? 0) > 0 && <> · {queue.PRICE_SKIPPED} над максималната цена</>}
         {(queue.NO_PRICE ?? 0) > 0 && <> · {queue.NO_PRICE} без FOB цена (търг)</>}
+        {(queue.QUEUED ?? 0) > 0 && (
+          <button
+            type="button"
+            className="ml-2 font-semibold text-accent hover:underline disabled:opacity-50"
+            disabled={!!busy}
+            onClick={clearQueue}
+          >
+            {busy === "clear" ? "Изчистване…" : "Изчисти опашката"}
+          </button>
+        )}
       </p>
       {view.pausedUntil && (
         <p className="mt-2 rounded-xl bg-warn/10 p-3 text-sm text-warn">
