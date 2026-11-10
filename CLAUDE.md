@@ -11,6 +11,14 @@ Next.js 16 (App Router, Cache Components + Partial Prefetching enabled), React 1
 font Onest. Next.js 16 differs from older versions: read the guide in `node_modules/next/dist/docs/` before
 using an API you are not sure about (see AGENTS.md).
 
+## Where the code lives
+
+GitHub (`ilutov90/premium-cars-frontend`) is the main place: a branch from `main`, a pull request to `main`, merged there (with a
+merge commit, not squash or rebase, so GitLab's `main` stays an ancestor). Never push to `main`.
+GitLab (`premium-cars-import/premium-cars-frontend`) is the backup way (Google Cloud Build, `cloudbuild.yaml`): it is updated only
+by `.github/workflows/mirror-gitlab.yml`, which pushes `main` there after every push to GitHub's `main` (never
+forced, token `GITLAB_MIRROR_TOKEN` in a header). Do not push branches or merge requests to GitLab.
+
 ## Commands
 
 ```bash
@@ -40,9 +48,14 @@ Run `npm run lint` and `npm run build` before finishing a change.
   page shows it as "Пълна спецификация" through `src/lib/spec-sheet.ts` (Bulgarian names and values, unknown text
   stays as the source wrote it: add a line there when a car shows English). It is read-only: the editor never sends it.
 - The car type is nested like the API: `car.specs.*` (title, make, EV fields …) and, for admin, `car.pricing.*`.
-- Car status `REMOVED` ("Махната от източника"): left from an earlier automatic import that hid cars whose listing
-  disappeared; the next run deletes them. The automatic import now deletes such a car at once (reserved, sold and
-  archived ones stay) and its run report lists the deleted cars with their posts, to take them down.
+- A car whose listing is gone has no status: the automatic import deletes it at once (reserved, sold and archived
+  ones stay) and its run report lists the deleted cars with their posts, to take them down.
+- A car page that is not on the site answers a real 404: `src/proxy.ts` (Next.js 16's proxy, matcher `/cars/:slug`)
+  asks the backend (`/api/public/cars/{slug}/exists`) before the page renders and rewrites to the not-found page with
+  status 404. The page streams, so `notFound()` inside it alone gives 200 + noindex, which Google reports. No answer
+  or an older backend lets the page through.
+- The car page shows "Обява № {id}" under the title and the Viber draft / inquiry text carries it; the admin list
+  finds a car by that number or by its pasted site link.
 - Import sources (`CarSource`): AUTOHOME and GUAZI (China, priced with the AUTOHOME formula), AUTOWINI (Korea).
   `specs.batteryHealthPct` (battery SOH, from guazi) shows with the EV figures on the car page. `specs.inspection`
   (guazi's inspection report: grade, accident/water/fire checks, areas, remarks with the inspector's note and video)
@@ -99,8 +112,8 @@ Run `npm run lint` and `npm run build` before finishing a change.
   (`bg-card`, `text-muted`, `bg-accent`, ...) instead of raw colours. Shared utilities: `field`, `label`,
   `btn-primary`, `btn-accent`, `btn-ghost`.
 - No new dependencies without a clear need.
-- `Dockerfile` is the production image (CI pushes it to GHCR, built with `API_URL=http://backend:8080`); local
-  development never needs it.
+- `Dockerfile` is the production image (GitHub CI pushes it to GHCR, Cloud Build on GitLab to the GitLab registry;
+  built with `API_URL=http://backend:8080`); local development never needs it.
 
 ## Layout
 
@@ -112,6 +125,6 @@ Run `npm run lint` and `npm run build` before finishing a change.
 | `src/app/delivered`, `koli-na-gaz-ot-koreya`, `elektromobili-ot-kitay` | "Доставени коли" and the landing pages for ads |
 | `src/app/about`, `src/app/privacy` | "За нас" and the privacy policy (company details in `site.ts` → `company`); the inquiry form requires the privacy checkbox (`privacyAccepted`) |
 | `src/app/sitemap.ts`, `robots.ts`, `og/` | SEO: sitemap with the public cars (built per request), robots, the default preview image; `src/lib/seo.ts` has `SITE_URL` and the car JSON-LD |
-| `src/app/admin/**` | admin: the car list (`admin/page.tsx`: pages of 48, status tabs with counts, text search, source site, sort; the state is in the URL), import by link, automatic import (`auto-import/`: main switch, the mileage limit, the highest FOB price, per-site switch, filters, makes with year from and models, autowini's "Двигател (без)" column: per chosen model (or the whole make) the fuel types with their counts, the ticked ones not imported, preview counts, "Проверка на колите" (how many cars of the site we have; the cars that are one listing more than once, by listing id, with links to them and "Изтрий дубликатите"), "Изчисти опашката" (`/{source}/queue/clear`: the next run queues again what is still at the source), "Изтегли отчет (CSV)" (`/{source}/export`: a ZIP with the listings and the last runs), a warning when this server does not run the import (`runsHere` false: another one, e.g. a laptop, does), dry run, run now, the runs' report with the cars each run deleted and their posts, and the checked cars added by hand; `auto-import/failures/`: every failed listing, paged, reasons grouped, batch delete; backend `AutoImportDtos`), edit car, photos, statuses, price formulas (`pricing/`: per site sea, land, commission, duty and VAT as a percent or a table by FOB (`DutyBracket` rows, the next row up, autowini), and the fixed markup by FOB threshold; `price-recalc-panel.tsx` recalculates by hand per site or all, from the kept FOB or read again from the listings, with reports of the changed cars and where they were posted, `posted-chips.tsx`), post templates (`templates/`), model mapping for mobile.bg and cars.bg (`marketplace/`), scheduled posts (`scheduled/`), inquiries, the inquiry report (`reports/`), delivered cars (`delivered/`), admin users (`users/`, one-time passwords; `admin-context.tsx` forces the password change) |
+| `src/app/admin/**` | admin: the car list (`admin/page.tsx`: pages of 48, status tabs with counts, text search (a name, a link to the car on our site or at the source, the car's number: a link or number looks in every status), source site, where it is posted (backend `PostedFilter`), sort; each row shows the car's posts (`posted-chips.tsx`); the state is in the URL; `pager.tsx` pages this list and the runs' report), import by link, automatic import (`auto-import/`: main switch, the mileage limit, the highest FOB price, per-site switch, filters, makes with year from and models, autowini's "Двигател (без)" column: per chosen model (or the whole make) the fuel types with their counts, the ticked ones not imported, preview counts, "Проверка на колите" (how many cars of the site we have; the cars that are one listing more than once, by listing id, with links to them and "Изтрий дубликатите"), "Изчисти опашката" (`/{source}/queue/clear`: the next run queues again what is still at the source), "Изтегли отчет (CSV)" (`/{source}/export`: a ZIP with the listings and the last runs), a warning when this server does not run the import (`runsHere` false: another one, e.g. a laptop, does), dry run, run now, the runs' report (pages of 20, newest first, `/runs?page=`) with the cars each run deleted, the posted ones first with their posts and the rest folded, and the checked cars added by hand; `auto-import/failures/`: every failed listing, paged, reasons grouped, batch delete; backend `AutoImportDtos`), edit car, photos, statuses, price formulas (`pricing/`: per site sea, land, commission, duty and VAT as a percent or a table by FOB (`DutyBracket` rows, the next row up, autowini), and the fixed markup by FOB threshold; `price-recalc-panel.tsx` recalculates by hand per site or all, from the kept FOB or read again from the listings, with reports of the changed cars and where they were posted, `posted-chips.tsx`), post templates (`templates/`), model mapping for mobile.bg and cars.bg (`marketplace/`), scheduled posts (`scheduled/`), inquiries, the inquiry report (`reports/`), delivered cars (`delivered/`), admin users (`users/`, one-time passwords; `admin-context.tsx` forces the password change) |
 | `src/components/site-header.tsx`, `site-nav.tsx` | header: the pages (`pages` in `site-nav.tsx`, one list for both) as links on a wide screen and a ☰ menu below `xl` (rendered into `<body>`: the header's backdrop blur would hold a fixed element), the current page marked; call and Viber with the phone saved in the admin panel |
 | `src/components/**` | shared components; `admin/` for admin-only ones |

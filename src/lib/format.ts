@@ -65,7 +65,6 @@ export const statusLabels: Record<CarStatus, string> = {
   RESERVED: "Резервирана",
   SOLD: "Продадена",
   ARCHIVED: "Архив",
-  REMOVED: "Махната от източника",
 };
 
 export const inquiryStatusLabels: Record<InquiryStatus, string> = {

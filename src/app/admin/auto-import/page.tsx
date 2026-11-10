@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { useAdmin } from "@/components/admin/admin-context";
+import { Pager } from "@/components/admin/pager";
 import { PostedChips } from "@/components/admin/posted-chips";
 import { formatDate } from "@/lib/format";
 import type {
@@ -20,6 +21,7 @@ import type {
   AutoImportRunStatus,
   AutoImportSource,
   AutoImportSourceView,
+  PageResponse,
 } from "@/lib/types";
 
 const sourceNames: Record<AutoImportSource, string> = {
@@ -169,7 +171,7 @@ export default function AdminAutoImportPage() {
             ))}
           </div>
 
-          <Runs runs={overview.runs} />
+          <Runs latest={overview.runs} />
 
           <section className="mt-10 flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-card p-5 ring-1 ring-line">
             <div>
@@ -998,41 +1000,75 @@ function FuelPicker({
   );
 }
 
-function Runs({ runs }: { runs: AutoImportRun[] }) {
+const RUNS_PAGE_SIZE = 20;
+
+/** The runs' report, the newest first, a page at a time; the first page follows the runs going on. */
+function Runs({ latest }: { latest: AutoImportRun[] }) {
+  const { adminFetch } = useAdmin();
   const [openId, setOpenId] = useState<number | null>(null);
+  const [page, setPage] = useState(0);
+  const [runs, setRuns] = useState<PageResponse<AutoImportRun> | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  // changes when a run starts, ends or counts on: the overview is read again while something goes on
+  const stamp = latest.map((r) => `${r.id}:${r.status}:${r.found}:${r.newCount}:${r.goneCount}`).join(",");
+
+  useEffect(() => {
+    let cancelled = false;
+    adminFetch<PageResponse<AutoImportRun>>(`/api/admin/auto-import/runs?page=${page}&size=${RUNS_PAGE_SIZE}`)
+      .then((r) => {
+        if (cancelled) return;
+        setRuns(r);
+        setError(null);
+      })
+      .catch((e: Error) => !cancelled && setError(e.message));
+    return () => {
+      cancelled = true;
+    };
+  }, [adminFetch, page, stamp]);
+
   return (
     <section className="mt-10">
       <h2 className="mb-3 font-bold">Отчет от пусканията</h2>
-      {runs.length === 0 ? (
-        <p className="text-sm text-muted">Още няма пускания.</p>
-      ) : (
-        <div className="overflow-x-auto rounded-2xl bg-card ring-1 ring-line">
-          <table className="w-full text-sm">
-            <thead className="text-left text-xs text-muted">
-              <tr>
-                <th className="p-3">Начало</th>
-                <th className="p-3">Сайт</th>
-                <th className="p-3">Вид</th>
-                <th className="p-3">Статус</th>
-                <th className="p-3 text-right">Намерени</th>
-                <th className="p-3 text-right">Нови</th>
-                <th className="p-3 text-right">Изтрити</th>
-                <th className="p-3 text-right">Върнати</th>
-                <th className="p-3 text-right" title="Ръчно добавени коли (и от марки извън импорта): проверени / изтрити">
-                  Ръчни
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {runs.map((r) => (
-                <RunRow key={r.id} run={r} open={openId === r.id} onToggle={() => setOpenId(openId === r.id ? null : r.id)} />
-              ))}
-            </tbody>
-          </table>
-        </div>
+      {error && <p className="mb-2 text-sm text-warn">{error}</p>}
+      {!runs && !error && <p className="text-sm text-muted">Зареждане…</p>}
+      {runs && runs.totalItems === 0 && <p className="text-sm text-muted">Още няма пускания.</p>}
+      {runs && runs.totalItems > 0 && (
+        <>
+          <Pager page={runs} onPage={setPage} noun="пускания" />
+          <div className="overflow-x-auto rounded-2xl bg-card ring-1 ring-line">
+            <table className="w-full text-sm">
+              <thead className="text-left text-xs text-muted">
+                <tr>
+                  <th className="p-3">Начало</th>
+                  <th className="p-3">Сайт</th>
+                  <th className="p-3">Вид</th>
+                  <th className="p-3">Статус</th>
+                  <th className="p-3 text-right">Намерени</th>
+                  <th className="p-3 text-right" title="Новите обяви в източника, сложени в опашката за импорт">
+                    Нови от източника
+                  </th>
+                  <th
+                    className="p-3 text-right"
+                    title="Обявите, изчезнали от източника (и от опашката); изтритите от сайта коли са в отчета под реда"
+                  >
+                    Изтрити от източника
+                  </th>
+                  <th className="p-3 text-right" title="Ръчно добавени коли (и от марки извън импорта): проверени / изтрити">
+                    Ръчни
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {runs.items.map((r) => (
+                  <RunRow key={r.id} run={r} open={openId === r.id} onToggle={() => setOpenId(openId === r.id ? null : r.id)} />
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </>
       )}
       <p className="mt-2 text-xs text-muted">
-        При пробно пускане „Нови“ и „Изтрити“ са колко биха били — нищо не се променя.
+        Най-новите пускания са най-отгоре. При пробно пускане „Нови“ и „Изтрити“ са колко биха били — нищо не се променя.
       </p>
     </section>
   );
@@ -1051,14 +1087,13 @@ function RunRow({ run, open, onToggle }: { run: AutoImportRun; open: boolean; on
         <td className="p-3 text-right">{run.found.toLocaleString("bg-BG")}</td>
         <td className="p-3 text-right">{run.newCount.toLocaleString("bg-BG")}</td>
         <td className="p-3 text-right">{run.goneCount.toLocaleString("bg-BG")}</td>
-        <td className="p-3 text-right">{run.returnedCount.toLocaleString("bg-BG")}</td>
         <td className="p-3 text-right whitespace-nowrap">
           {run.manualChecked.toLocaleString("bg-BG")} / {run.manualGone.toLocaleString("bg-BG")}
         </td>
       </tr>
       {open && (
         <tr className="bg-paper">
-          <td colSpan={9} className="p-3 text-xs">
+          <td colSpan={8} className="p-3 text-xs">
             {run.message && <p className="mb-2">{run.message}</p>}
             {run.brands.length > 0 && (
               <table>
@@ -1086,11 +1121,15 @@ function RunRow({ run, open, onToggle }: { run: AutoImportRun; open: boolean; on
   );
 }
 
-/** The cars a run hid, with where they were posted: those posts are to be taken down by hand. */
+/**
+ * The cars a run deleted. Those posted somewhere come first, with their posts: these are to be taken down by hand.
+ * The rest, which need nothing, stay folded.
+ */
 function RemovedCars({ runId }: { runId: number }) {
   const { adminFetch } = useAdmin();
   const [cars, setCars] = useState<AutoImportRemoved[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [showRest, setShowRest] = useState(false);
 
   useEffect(() => {
     adminFetch<AutoImportRemoved[]>(`/api/admin/auto-import/runs/${runId}/removed`)
@@ -1101,34 +1140,57 @@ function RemovedCars({ runId }: { runId: number }) {
   if (error) return <p className="mt-3 text-warn">{error}</p>;
   if (!cars) return <p className="mt-3 text-muted">Зареждане на изтритите коли…</p>;
   if (cars.length === 0) return null;
-  const posted = cars.filter((c) => c.posted.length > 0).length;
+  const posted = cars.filter((c) => c.posted.length > 0);
+  const rest = cars.filter((c) => c.posted.length === 0);
   return (
     <div className="mt-4">
       <p className="mb-2 text-sm font-bold">
-        Изтрити коли: {cars.length}
-        {posted > 0 && <span className="text-warn"> · {posted} са публикувани — свали постовете ръчно</span>}
+        Изтрити коли: {cars.length.toLocaleString("bg-BG")}
+        {posted.length > 0 ? (
+          <span className="text-warn"> · {posted.length.toLocaleString("bg-BG")} са публикувани — свали постовете ръчно</span>
+        ) : (
+          <span className="font-normal text-muted"> · никоя не е била публикувана</span>
+        )}
       </p>
-      <table className="w-full text-sm">
-        <tbody>
-          {cars.map((c) => (
-            <tr key={c.id} className="border-t border-line align-top">
-              <td className="py-1.5 pr-3">
-                {c.carId ? (
-                  <Link href={`/admin/cars/${c.carId}`} className="font-semibold hover:underline">
-                    {c.title ?? `#${c.carId}`}
-                  </Link>
-                ) : (
-                  <span className="font-semibold">{c.title ?? "изтрита кола"}</span>
-                )}
-                <span className="ml-2 text-xs text-muted">{c.manual ? "ръчно добавена" : "от автоматичния импорт"}</span>
-              </td>
-              <td className="py-1.5">
-                <PostedChips posted={c.posted} />
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      {posted.length > 0 && <RemovedTable cars={posted} />}
+      {rest.length > 0 && (
+        <div className={posted.length > 0 ? "mt-3" : undefined}>
+          <button type="button" className="text-sm font-semibold underline underline-offset-2" onClick={() => setShowRest((v) => !v)}>
+            {showRest ? "Скрий" : "Покажи"} непубликуваните ({rest.length.toLocaleString("bg-BG")})
+          </button>
+          {showRest && (
+            <div className="mt-2">
+              <RemovedTable cars={rest} />
+            </div>
+          )}
+        </div>
+      )}
     </div>
+  );
+}
+
+function RemovedTable({ cars }: { cars: AutoImportRemoved[] }) {
+  return (
+    <table className="w-full text-sm">
+      <tbody>
+        {cars.map((c) => (
+          <tr key={c.id} className="border-t border-line align-top">
+            <td className="py-1.5 pr-3">
+              <span className="font-semibold">{c.title ?? (c.carId ? `#${c.carId}` : "изтрита кола")}</span>
+              <span className="ml-2 text-xs text-muted">
+                {c.carId ? `№ ${c.carId} · ` : ""}
+                {c.manual ? "ръчно добавена" : "от автоматичния импорт"}
+              </span>
+              {c.sourceUrl && (
+                <a href={c.sourceUrl} target="_blank" rel="noreferrer" className="ml-2 text-xs text-muted underline">
+                  обявата ↗
+                </a>
+              )}
+            </td>
+            <td className="py-1.5">{c.posted.length > 0 && <PostedChips posted={c.posted} />}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
   );
 }

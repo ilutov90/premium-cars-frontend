@@ -5,6 +5,8 @@ import { Suspense, useCallback, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAdmin } from "@/components/admin/admin-context";
 import { CarImage } from "@/components/car-image";
+import { Pager } from "@/components/admin/pager";
+import { PostedChips } from "@/components/admin/posted-chips";
 import { StatusBadge } from "@/components/admin/status-badge";
 import { formatEur, formatKm, listingId, sourceLabels } from "@/lib/format";
 import type { AdminCarCounts, AdminCarSummary, CarSource, CarStatus, ImportResult, PageResponse } from "@/lib/types";
@@ -16,8 +18,28 @@ const tabs: [CarStatus | "", string][] = [
   ["RESERVED", "Резервирани"],
   ["SOLD", "Продадени"],
   ["ARCHIVED", "Архив"],
-  ["REMOVED", "Махнати от източника"],
 ];
+
+/** Where the cars are posted (backend PostedFilter, sent in lower case). */
+const postedFilters: [string, string][] = [
+  ["", "Публикувани където и да е или не"],
+  ["none", "Никъде не са публикувани"],
+  ["any", "Публикувани някъде"],
+  ["not_facebook", "Не са във Facebook"],
+  ["not_instagram", "Не са в Instagram"],
+  ["not_viber", "Не са във Viber"],
+  ["not_mobile_bg", "Не са в mobile.bg"],
+  ["not_cars_bg", "Не са в cars.bg"],
+];
+
+/**
+ * Text that names one car: a link to its page on our site (as a customer sends it) or its number ("Обява № 123").
+ * Such a search looks in every status, not only in the open tab.
+ */
+function namesOneCar(q: string): boolean {
+  const text = q.trim();
+  return /\/cars\/[a-z0-9][a-z0-9-]*/i.test(text) || /^(#|№|no\.?)?\s*\d+$/i.test(text);
+}
 
 const sorts: [string, string][] = [
   ["updated", "Последно променени"],
@@ -35,6 +57,7 @@ interface ListState {
   status: CarStatus | "";
   q: string;
   source: CarSource | "";
+  posted: string;
   sort: string;
   page: number;
 }
@@ -43,12 +66,14 @@ function readState(p: URLSearchParams): ListState {
   const status = p.get("status");
   const source = p.get("source");
   const sort = p.get("sort");
+  const posted = p.get("posted");
   const page = Number(p.get("page"));
   return {
     // drafts by default: the cars waiting for a check
     status: status === "all" ? "" : statusValues.includes(status as CarStatus) ? (status as CarStatus) : "DRAFT",
     q: p.get("q") ?? "",
     source: sourceValues.includes(source as CarSource) ? (source as CarSource) : "",
+    posted: postedFilters.some(([v]) => v === posted) ? (posted as string) : "",
     sort: sorts.some(([v]) => v === sort) ? (sort as string) : "updated",
     page: Number.isInteger(page) && page > 1 ? page - 1 : 0,
   };
@@ -59,6 +84,7 @@ function writeState(s: ListState): string {
   if (s.status !== "DRAFT") p.set("status", s.status || "all");
   if (s.q.trim()) p.set("q", s.q.trim());
   if (s.source) p.set("source", s.source);
+  if (s.posted) p.set("posted", s.posted);
   if (s.sort !== "updated") p.set("sort", s.sort);
   if (s.page > 0) p.set("page", String(s.page + 1));
   return p.toString();
@@ -91,7 +117,7 @@ function AdminCars() {
   // the search box: wait until typing pauses
   useEffect(() => {
     if (qInput === state.q) return;
-    const t = setTimeout(() => update({ q: qInput }), 350);
+    const t = setTimeout(() => update(namesOneCar(qInput) ? { q: qInput, status: "" } : { q: qInput }), 350);
     return () => clearTimeout(t);
   }, [qInput, state.q, update]);
 
@@ -106,6 +132,7 @@ function AdminCars() {
     if (state.status) params.set("status", state.status);
     if (state.q.trim()) params.set("q", state.q.trim());
     if (state.source) params.set("source", state.source);
+    if (state.posted) params.set("posted", state.posted);
     let cancelled = false;
     adminFetch<PageResponse<AdminCarSummary>>(`/api/admin/cars?${params}`)
       .then((page) => {
@@ -123,6 +150,7 @@ function AdminCars() {
     const params = new URLSearchParams();
     if (state.q.trim()) params.set("q", state.q.trim());
     if (state.source) params.set("source", state.source);
+    if (state.posted) params.set("posted", state.posted);
     let cancelled = false;
     adminFetch<AdminCarCounts>(`/api/admin/cars/counts?${params}`)
       .then((c) => !cancelled && setCounts(c))
@@ -130,7 +158,7 @@ function AdminCars() {
     return () => {
       cancelled = true;
     };
-  }, [adminFetch, state.q, state.source, reload]);
+  }, [adminFetch, state.q, state.source, state.posted, reload]);
 
   const countOf = (value: CarStatus | "") =>
     counts == null ? null : value === "" ? counts.total : (counts.byStatus[value] ?? 0);
@@ -156,9 +184,10 @@ function AdminCars() {
             <input
               value={qInput}
               onChange={(e) => setQInput(e.target.value)}
-              placeholder="Име, линк или номер на обява…"
+              placeholder="Име, линк от сайта, № на обява…"
+              title="Име, марка или модел; линк към колата на нашия сайт или при източника; номерът на обявата от сайта (Обява №) или номерът при източника"
               aria-label="Търсене"
-              className="field w-64 py-2!"
+              className="field w-72 py-2!"
             />
             <select
               value={state.source}
@@ -170,6 +199,18 @@ function AdminCars() {
               {sourceValues.map((s) => (
                 <option key={s} value={s}>
                   {sourceLabels[s]}
+                </option>
+              ))}
+            </select>
+            <select
+              value={state.posted}
+              onChange={(e) => update({ posted: e.target.value })}
+              aria-label="Къде са публикувани"
+              className="field w-auto py-2!"
+            >
+              {postedFilters.map(([v, label]) => (
+                <option key={v} value={v}>
+                  {label}
                 </option>
               ))}
             </select>
@@ -214,94 +255,49 @@ function AdminCars() {
         {cars && cars.items.length === 0 && <p className="text-sm text-muted">Няма коли в този списък.</p>}
         {cars && cars.items.length > 0 && (
           <>
-            <Pager page={cars} onPage={goTo} />
+            <Pager page={cars} onPage={goTo} noun="коли" />
             <ul className="divide-y divide-line overflow-hidden rounded-2xl border border-line bg-card">
               {cars.items.map((car) => (
-                <li key={car.id} className="flex items-center gap-2 pr-3 hover:bg-paper">
-                  <Link href={`/admin/cars/${car.id}`} className="flex min-w-0 flex-1 items-center gap-4 p-3">
-                    <CarImage src={car.coverImageUrl} alt={car.title} className="h-14 w-20 shrink-0 rounded-lg object-cover" />
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate font-semibold">{car.title}</p>
-                      <p className="truncate text-xs text-muted">
-                        #{car.id} · {car.year ?? "—"} · {formatKm(car.mileageKm)} · {sourceLabels[car.source]}
-                        {listingId(car.source, car.sourceRef) && ` ${listingId(car.source, car.sourceRef)}`}
-                      </p>
+                <li key={car.id} className="hover:bg-paper">
+                  <div className="flex items-center gap-2 pr-3">
+                    <Link href={`/admin/cars/${car.id}`} className="flex min-w-0 flex-1 items-center gap-4 p-3">
+                      <CarImage src={car.coverImageUrl} alt={car.title} className="h-14 w-20 shrink-0 rounded-lg object-cover" />
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate font-semibold">{car.title}</p>
+                        <p className="truncate text-xs text-muted">
+                          #{car.id} · {car.year ?? "—"} · {formatKm(car.mileageKm)} · {sourceLabels[car.source]}
+                          {listingId(car.source, car.sourceRef) && ` ${listingId(car.source, car.sourceRef)}`}
+                        </p>
+                      </div>
+                      <span className="hidden text-sm font-bold sm:block">{formatEur(car.totalPriceEur)}</span>
+                      <StatusBadge status={car.status} />
+                    </Link>
+                    {car.sourceUrl ? (
+                      <a
+                        href={car.sourceUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        title={car.sourceUrl}
+                        className="shrink-0 rounded-full px-2 py-1 text-xs font-semibold text-muted ring-1 ring-line hover:text-ink hover:ring-ink"
+                      >
+                        оригинал ↗
+                      </a>
+                    ) : (
+                      <span className="w-[74px] shrink-0" aria-hidden />
+                    )}
+                  </div>
+                  {(car.posted ?? []).length > 0 && (
+                    <div className="-mt-1 flex items-center gap-2 pb-2.5 pl-[108px] pr-3">
+                      <PostedChips posted={car.posted} />
                     </div>
-                    <span className="hidden text-sm font-bold sm:block">{formatEur(car.totalPriceEur)}</span>
-                    <StatusBadge status={car.status} />
-                  </Link>
-                  {car.sourceUrl ? (
-                    <a
-                      href={car.sourceUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                      title={car.sourceUrl}
-                      className="shrink-0 rounded-full px-2 py-1 text-xs font-semibold text-muted ring-1 ring-line hover:text-ink hover:ring-ink"
-                    >
-                      оригинал ↗
-                    </a>
-                  ) : (
-                    <span className="w-[74px] shrink-0" aria-hidden />
                   )}
                 </li>
               ))}
             </ul>
-            <Pager page={cars} onPage={goTo} bottom />
+            <Pager page={cars} onPage={goTo} noun="коли" bottom />
           </>
         )}
       </section>
-    </div>
-  );
-}
-
-/** "‹ Предишна · Страница 3 от 1 042 · 49 983 коли · Следваща ›" with first / last and a page number to jump to. */
-function Pager({ page, onPage, bottom }: { page: PageResponse<unknown>; onPage: (p: number) => void; bottom?: boolean }) {
-  const [jump, setJump] = useState("");
-  const from = page.page * page.size + 1;
-  const to = Math.min(from + page.items.length - 1, page.totalItems);
-  const last = Math.max(page.totalPages - 1, 0);
-  const btn = "rounded-full px-3 py-1.5 text-xs font-semibold ring-1 ring-line hover:ring-ink disabled:opacity-40 disabled:hover:ring-line";
-  return (
-    <div className={`flex flex-wrap items-center justify-between gap-2 text-sm ${bottom ? "mt-4" : "mb-3"}`}>
-      <span className="text-muted">
-        {from.toLocaleString("bg-BG")}–{to.toLocaleString("bg-BG")} от {page.totalItems.toLocaleString("bg-BG")} коли
-      </span>
-      {page.totalPages > 1 && (
-        <div className="flex flex-wrap items-center gap-1.5">
-          <button type="button" className={btn} disabled={page.page === 0} onClick={() => onPage(0)} aria-label="Първа страница">
-            «
-          </button>
-          <button type="button" className={btn} disabled={page.page === 0} onClick={() => onPage(page.page - 1)}>
-            ‹ Предишна
-          </button>
-          <form
-            className="flex items-center gap-1.5 px-1"
-            onSubmit={(e) => {
-              e.preventDefault();
-              const n = Number(jump);
-              if (Number.isInteger(n) && n >= 1) onPage(Math.min(n, page.totalPages) - 1);
-              setJump("");
-            }}
-          >
-            <span className="text-muted">Страница</span>
-            <input
-              value={jump}
-              onChange={(e) => setJump(e.target.value.replace(/\D/g, ""))}
-              placeholder={String(page.page + 1)}
-              inputMode="numeric"
-              aria-label="Отиди на страница"
-              className="w-14 rounded-lg border border-line bg-card px-2 py-1 text-center text-xs font-semibold"
-            />
-            <span className="text-muted">от {page.totalPages.toLocaleString("bg-BG")}</span>
-          </form>
-          <button type="button" className={btn} disabled={page.page >= last} onClick={() => onPage(page.page + 1)}>
-            Следваща ›
-          </button>
-          <button type="button" className={btn} disabled={page.page >= last} onClick={() => onPage(last)} aria-label="Последна страница">
-            »
-          </button>
-        </div>
-      )}
     </div>
   );
 }

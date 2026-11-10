@@ -1,0 +1,66 @@
+# CI on Google Cloud Build, for the code on GitLab (premium-cars-infra docs/gitlab-cloud-build.md). GitHub Actions
+# (.github/workflows) stays as it is; this file changes nothing there.
+#
+# Two triggers run it: a merge request to main (_PUSH=false: lint, build, secrets scan, the image built and started
+# once) and a push to main (_PUSH=true: the image also goes to the GitLab registry as :latest and :<commit>).
+# Secret Manager: gitlab-registry = "<deploy token username>:<token>" with write_registry.
+# In Cloud Build "$$" is a shell "$"; "$X" / "${_X}" are Cloud Build's substitutions.
+timeout: 1800s
+options:
+  logging: CLOUD_LOGGING_ONLY
+  substitutionOption: ALLOW_LOOSE
+substitutions:
+  _PUSH: "false"
+  _IMAGE: registry.gitlab.com/premium-cars-import/premium-cars-frontend
+availableSecrets:
+  secretManager:
+    - versionName: projects/$PROJECT_ID/secrets/gitlab-registry/versions/latest
+      env: GITLAB_REGISTRY
+
+steps:
+  # Blocks commits that contain passwords, tokens or keys (the files of this commit)
+  - id: secrets
+    name: zricethezav/gitleaks:latest
+    args: ["dir", "--redact", "--verbose", "."]
+    waitFor: ["-"]
+
+  # Lint and the production build (it also type-checks)
+  - id: lint-and-build
+    name: node:22
+    entrypoint: bash
+    env:
+      - NEXT_TELEMETRY_DISABLED=1
+    args: ["-c", "set -e; npm ci; npm run lint; npm run build"]
+    waitFor: ["-"]
+
+  # The production image: started once on a merge request (it serves pages; no backend here, so the data parts are
+  # empty), pushed on main
+  - id: image
+    name: gcr.io/cloud-builders/docker
+    entrypoint: bash
+    secretEnv: [GITLAB_REGISTRY]
+    args:
+      - -c
+      - |
+        set -e
+        docker build --build-arg API_URL=http://backend:8080 --build-arg SITE_URL=https://premiumcarsimport.bg \
+          -t ${_IMAGE}:$COMMIT_SHA .
+        if [ "${_PUSH}" = "true" ]; then
+          echo "$${GITLAB_REGISTRY#*:}" | docker login registry.gitlab.com -u "$${GITLAB_REGISTRY%%:*}" --password-stdin
+          docker tag ${_IMAGE}:$COMMIT_SHA ${_IMAGE}:latest
+          docker push ${_IMAGE}:$COMMIT_SHA
+          docker push ${_IMAGE}:latest
+        else
+          docker run -d --name web-ci --network cloudbuild ${_IMAGE}:$COMMIT_SHA
+          ok=""
+          for i in $$(seq 1 30); do
+            if docker run --rm --network cloudbuild curlimages/curl:8.11.1 -fsS -o /dev/null http://web-ci:3000/admin; then ok=1; break; fi
+            sleep 1
+          done
+          docker logs web-ci
+          [ -n "$$ok" ]
+          docker run --rm --network cloudbuild curlimages/curl:8.11.1 -fsS http://web-ci:3000/admin | grep -q "Premium Cars"
+          docker exec web-ci id -un | grep -qx node
+          docker rm -f web-ci
+        fi
+    waitFor: ["lint-and-build"]
