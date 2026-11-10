@@ -1015,8 +1015,12 @@ function Runs({ runs }: { runs: AutoImportRun[] }) {
                 <th className="p-3">Вид</th>
                 <th className="p-3">Статус</th>
                 <th className="p-3 text-right">Намерени</th>
-                <th className="p-3 text-right">Нови</th>
-                <th className="p-3 text-right">Изтрити</th>
+                <th className="p-3 text-right" title="Новите обяви в източника, сложени в опашката за импорт">
+                  Нови от източника
+                </th>
+                <th className="p-3 text-right" title="Обявите, изчезнали от източника (и от опашката); изтритите от сайта коли са в отчета под реда">
+                  Изтрити от източника
+                </th>
                 <th className="p-3 text-right">Върнати</th>
                 <th className="p-3 text-right" title="Ръчно добавени коли (и от марки извън импорта): проверени / изтрити">
                   Ръчни
