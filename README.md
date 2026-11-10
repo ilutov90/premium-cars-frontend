@@ -73,6 +73,16 @@ premium-cars-infra's `docker-compose.prod.yml`) and `SITE_URL=https://premiumcar
 pull request and pushes `ghcr.io/ilutov90/premium-cars-frontend:latest` and `:<commit>` on main. Standalone output
 is on only when `NEXT_OUTPUT_STANDALONE=1` (set in the Dockerfile), so `npm run dev` / `npm run build` are unchanged.
 
+## Where the code lives
+
+The code lives on GitHub (`ilutov90/premium-cars-frontend`): changes go through a branch and a pull request to `main`, merged with
+a merge commit. GitHub Actions (`.github/workflows/ci.yml`) checks every pull request and pushes the image to GHCR on
+main. After every push to `main`, `.github/workflows/mirror-gitlab.yml` pushes `main` on to GitLab
+(`premium-cars-import/premium-cars-frontend`), the backup way to build and deploy with Google Cloud Build (`cloudbuild.yaml`,
+premium-cars-infra `docs/gitlab-cloud-build.md`). The mirror never forces: if GitLab's `main` got commits of its own,
+the run fails until they come to GitHub through a pull request. It needs the repository secret `GITLAB_MIRROR_TOKEN`
+(a GitLab token with `write_repository` whose user may push to the protected `main`), sent in a header.
+
 ## How the browser reaches the backend
 
 The browser talks only to this Next.js server: `/api/*` and `/media/*` are forwarded to the backend

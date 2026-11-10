@@ -11,6 +11,14 @@ Next.js 16 (App Router, Cache Components + Partial Prefetching enabled), React 1
 font Onest. Next.js 16 differs from older versions: read the guide in `node_modules/next/dist/docs/` before
 using an API you are not sure about (see AGENTS.md).
 
+## Where the code lives
+
+GitHub (`ilutov90/premium-cars-frontend`) is the main place: a branch from `main`, a pull request to `main`, merged there (with a
+merge commit, not squash or rebase, so GitLab's `main` stays an ancestor). Never push to `main`.
+GitLab (`premium-cars-import/premium-cars-frontend`) is the backup way (Google Cloud Build, `cloudbuild.yaml`): it is updated only
+by `.github/workflows/mirror-gitlab.yml`, which pushes `main` there after every push to GitHub's `main` (never
+forced, token `GITLAB_MIRROR_TOKEN` in a header). Do not push branches or merge requests to GitLab.
+
 ## Commands
 
 ```bash
@@ -104,8 +112,8 @@ Run `npm run lint` and `npm run build` before finishing a change.
   (`bg-card`, `text-muted`, `bg-accent`, ...) instead of raw colours. Shared utilities: `field`, `label`,
   `btn-primary`, `btn-accent`, `btn-ghost`.
 - No new dependencies without a clear need.
-- `Dockerfile` is the production image (CI pushes it to GHCR, built with `API_URL=http://backend:8080`); local
-  development never needs it.
+- `Dockerfile` is the production image (GitHub CI pushes it to GHCR, Cloud Build on GitLab to the GitLab registry;
+  built with `API_URL=http://backend:8080`); local development never needs it.
 
 ## Layout
 
