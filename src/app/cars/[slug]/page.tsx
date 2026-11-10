@@ -172,6 +172,8 @@ async function CarDetailView({ params }: { params: PageProps<"/cars/[slug]">["pa
             <span className="rounded-full bg-warn px-3 py-1 text-xs font-bold text-white uppercase">Резервирана</span>
           )}
           <h1 className="mt-2 text-3xl font-extrabold tracking-tight sm:text-4xl">{s.title}</h1>
+          {/* the number a customer names on the phone or in Viber; the admin panel finds the car by it */}
+          <p className="mt-1.5 text-sm text-muted">Обява № {car.id}</p>
           <div className="mt-5">
             <PriceCard priceEur={car.priceEur} />
           </div>

@@ -114,8 +114,7 @@ export type CarFeature =
   | "N1_HOMOLOGATION";
 export type Transmission = "AUTOMATIC" | "MANUAL";
 export type Origin = "KR" | "CN";
-/** REMOVED: hidden by an earlier automatic import (the listing disappeared); the next run deletes it. */
-export type CarStatus = "DRAFT" | "PUBLISHED" | "RESERVED" | "SOLD" | "ARCHIVED" | "REMOVED";
+export type CarStatus = "DRAFT" | "PUBLISHED" | "RESERVED" | "SOLD" | "ARCHIVED";
 export type CarSource = "AUTOHOME" | "AUTOWINI" | "GUAZI" | "OTHER" | "MANUAL";
 
 /** The admin list's counts (backend AdminCarCounts): cars matching the search and source, in all and per status. */
@@ -166,6 +165,8 @@ export interface AdminCarSummary {
   source: CarSource;
   sourceRef: string | null;
   sourceUrl: string | null;
+  /** where the car is posted through the panel: Facebook, Instagram, Viber, mobile.bg, cars.bg */
+  posted: PostedChannel[];
 }
 
 /** Public description of a car (backend CarSpecs). */
@@ -826,7 +827,6 @@ export interface AutoImportRun {
   found: number;
   newCount: number;
   goneCount: number;
-  returnedCount: number;
   brands: AutoImportBrandPass[];
   message: string | null;
   /** cars added by hand (or of makes not imported) checked at the source, and of them hidden */
@@ -841,7 +841,7 @@ export interface PostedChannel {
   at: string;
 }
 
-/** A car a run hid (backend AutoImportRunRepository.Removed). */
+/** A car a run deleted (backend AutoImportRunRepository.Removed). */
 export interface AutoImportRemoved {
   id: number;
   carId: number | null;

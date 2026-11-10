@@ -82,9 +82,12 @@ export function InquiryForm({ carId, carTitle }: { carId?: number; carTitle?: st
     }
   }
 
+  // the car's number goes with the name: the admin panel finds the car by it
+  const about = carTitle ? `Здравейте, интересувам се от ${carTitle}${carId != null ? ` (обява № ${carId})` : ""}.` : undefined;
+
   const viber = (
     <a
-      href={viberChatHref(phone, carTitle ? `Здравейте, интересувам се от ${carTitle}.` : undefined)}
+      href={viberChatHref(phone, about)}
       className="flex w-full items-center justify-center gap-2 rounded-full bg-[#7360f2] px-5 py-3 font-semibold text-white transition hover:bg-[#5e4bd8]"
     >
       <ViberIcon />
@@ -198,7 +201,7 @@ export function InquiryForm({ carId, carTitle }: { carId?: number; carTitle?: st
             rows={3}
             maxLength={4000}
             className="field resize-y"
-            defaultValue={`Здравейте, интересувам се от ${carTitle}.`}
+            defaultValue={about}
           />
         </div>
       )}
