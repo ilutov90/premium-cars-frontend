@@ -250,6 +250,12 @@ export function CarEditor({ params }: { params: Promise<{ id: string }> }) {
             <Field label="Батерия, kWh" name="batteryKwh" value={s.batteryKwh} type="number" step="0.1" />
             <Field label="Пробег на ток, км" name="electricRangeKm" value={s.electricRangeKm} type="number" />
             <Field label="Стандарт (CLTC, NEDC, WLTP, EPA)" name="rangeStandard" value={s.rangeStandard} />
+            {s.wltpRangeKm != null && s.rangeStandard?.trim().toUpperCase() !== "WLTP" && (
+              <p className="text-sm text-muted sm:col-span-2">
+                Пробег по WLTP: <span className="font-medium text-ink">{s.wltpRangeKm} км</span> (CLTC × 0,82, закръглено
+                до 5 км; сменя се, когато запишете нов пробег или стандарт). Отива и в mobile.bg.
+              </p>
+            )}
             <Field label="Електромотор(и), kW" name="motorPowerKw" value={s.motorPowerKw} type="number" />
             <Field label="Здраве на батерията (SOH), %" name="batteryHealthPct" value={s.batteryHealthPct} type="number" />
           </Fieldset>
