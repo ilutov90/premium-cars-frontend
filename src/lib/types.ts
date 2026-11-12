@@ -187,6 +187,8 @@ export interface CarSpecs {
   electricRangeKm: number | null;
   /** CLTC, NEDC, WLTP, EPA ... */
   rangeStandard: string | null;
+  /** The range on the WLTP cycle, from the backend (CLTC × 0.82, rounded to 5 km; WLTP as it is); read-only, never sent */
+  wltpRangeKm?: number | null;
   motorPowerKw: number | null;
   /** Traction battery state of health (SOH), percent; from guazi's battery report */
   batteryHealthPct: number | null;

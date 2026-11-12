@@ -57,7 +57,7 @@ Run `npm run lint` and `npm run build` before finishing a change.
 - The car page shows "Обява № {id}" under the title and the Viber draft / inquiry text carries it; the admin list
   finds a car by that number or by its pasted site link.
 - Import sources (`CarSource`): AUTOHOME and GUAZI (China, priced with the AUTOHOME formula), AUTOWINI (Korea).
-  `specs.batteryHealthPct` (battery SOH, from guazi) shows with the EV figures on the car page. `specs.inspection`
+  `specs.batteryHealthPct` (battery SOH, from guazi) shows with the EV figures on the car page. `specs.wltpRangeKm` (backend `WltpRange`: CLTC × 0.82 rounded to 5 km, WLTP as it is; read-only, never sent) shows as "Пробег на ток по WLTP" next to a CLTC range, in the editor, and is what the mobile.bg panel (and so the extension) fills in. `specs.inspection`
   (guazi's inspection report: grade, accident/water/fire checks, areas, remarks with the inspector's note and video)
   shows as "Техническа проверка" (`inspection-report.tsx`); `src/lib/inspection.ts` puts it in Bulgarian: fixed names
   by lookup, the notes by patterns and a parts dictionary with adjective agreement; an unknown sentence stays in

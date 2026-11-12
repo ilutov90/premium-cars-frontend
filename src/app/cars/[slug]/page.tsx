@@ -117,6 +117,7 @@ function factGroups(s: CarSpecs, origin: Origin | null): { title: string; facts:
       facts: [
         ["Батерия", s.batteryKwh != null ? formatKwh(s.batteryKwh) : null],
         ["Пробег на ток", formatRange(s.electricRangeKm, s.rangeStandard)],
+        ["Пробег на ток по WLTP", wltpRange(s)],
         ["Здраве на батерията (SOH)", s.batteryHealthPct != null ? `${s.batteryHealthPct}%` : null],
         [
           "Електромотор(и)",
@@ -153,6 +154,7 @@ async function CarDetailView({ params }: { params: PageProps<"/cars/[slug]">["pa
     ? ([
         ["Батерия", s.batteryKwh != null ? formatKwh(s.batteryKwh) : null],
         ["Пробег на ток", formatRange(s.electricRangeKm, s.rangeStandard)],
+        ["Пробег на ток по WLTP", wltpRange(s)],
         [
           s.fuelType === "ELECTRIC" ? "Мощност" : "Електромотор",
           formatPower(s.fuelType === "ELECTRIC" ? s.powerHp : null, s.motorPowerKw),
@@ -330,4 +332,10 @@ function DetailSkeleton() {
       <div className="h-80 animate-pulse rounded-2xl bg-line/50" />
     </div>
   );
+}
+
+/** The WLTP range when the car's own range is on another cycle (CLTC); shown next to it. */
+function wltpRange(s: CarSpecs): string | null {
+  if (s.wltpRangeKm == null || s.rangeStandard?.trim().toUpperCase() === "WLTP") return null;
+  return formatRange(s.wltpRangeKm);
 }
