@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { getFilterOptions, searchCars, toQuery, type CarSearch } from "@/lib/api";
 import { CarCard } from "@/components/car-card";
+import { ScrollToResults } from "@/components/scroll-to-results";
 import { CatalogFilters } from "@/components/catalog-filters";
 import { CardGridSkeleton, Notice } from "@/components/notice";
 
@@ -78,9 +79,17 @@ async function Catalog({ searchParams }: { searchParams: PageProps<"/cars">["sea
       <aside>
         {options && <CatalogFilters options={options} current={current} key={toQuery(current)} />}
       </aside>
-      <section>{content}</section>
+      <section>
+        <ScrollToResults key={toQuery(current)} active={searched(current)} />
+        {content}
+      </section>
     </div>
   );
+}
+
+/** A search was made (filters, sort or page), not just the catalog opened ("more" only opens the extra filters). */
+function searched(current: CarSearch): boolean {
+  return Object.entries(current).some(([k, v]) => k !== "more" && v != null && v !== "");
 }
 
 function ResultsBar({ total, current }: { total: number; current: CarSearch }) {
