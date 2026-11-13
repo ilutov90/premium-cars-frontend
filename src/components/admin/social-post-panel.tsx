@@ -6,6 +6,7 @@ import { createPortal } from "react-dom";
 import { useAdmin } from "./admin-context";
 import { CarImage } from "@/components/car-image";
 import { formatDate, scheduledStatusLabels } from "@/lib/format";
+import { fromSofiaInput, toSofiaInput } from "@/lib/sofia-time";
 import {
   defaultTemplates,
   networkLabels,
@@ -395,9 +396,8 @@ function PublishDialog({
     });
   }
 
-  const scheduleDate = when === "later" && publishAt ? new Date(publishAt) : null;
-  const scheduleInvalid =
-    when === "later" && (!scheduleDate || Number.isNaN(scheduleDate.getTime()) || scheduleDate.getTime() < openedAt + 60_000);
+  const scheduleDate = when === "later" && publishAt ? fromSofiaInput(publishAt) : null;
+  const scheduleInvalid = when === "later" && (!scheduleDate || scheduleDate.getTime() < openedAt + 60_000);
 
   async function publish() {
     setBusy(true);
@@ -566,7 +566,7 @@ function PublishDialog({
             <input
               type="datetime-local"
               value={publishAt}
-              min={toLocalInput(new Date(openedAt + 2 * 60_000))}
+              min={toSofiaInput(new Date(openedAt + 2 * 60_000))}
               onChange={(e) => {
                 setPublishAt(e.target.value);
                 setWhen("later");
@@ -578,8 +578,8 @@ function PublishDialog({
           {when === "later" && (
             <p className={`mt-2 text-xs ${scheduleInvalid ? "font-semibold text-warn" : "text-muted"}`}>
               {scheduleInvalid
-                ? "Изберете дата и час поне минута напред."
-                : `Ще се публикува ${picked.length > 1 ? "едновременно " : ""}на ${formatDate(scheduleDate!.toISOString())} (по часа на този компютър) с текстовете и снимките, избрани сега. Отменя се от „Насрочени“.`}
+                ? "Изберете дата и час поне минута напред (българско време)."
+                : `Ще се публикува ${picked.length > 1 ? "едновременно " : ""}на ${formatDate(scheduleDate!.toISOString())} (българско време) с текстовете и снимките, избрани сега. Отменя се от „Насрочени“.`}
             </p>
           )}
         </fieldset>
@@ -711,18 +711,9 @@ function ViberConnect({ onMessage }: { onMessage: (m: Message) => void }) {
   );
 }
 
-/** "2026-10-22T09:00" in the browser's time zone, the format of <input type="datetime-local">. */
-function toLocalInput(d: Date): string {
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-}
-
-/** Suggested time: tomorrow at 09:00. */
+/** Suggested time: an hour from now, Bulgarian time. */
 function defaultScheduleTime(): string {
-  const d = new Date();
-  d.setDate(d.getDate() + 1);
-  d.setHours(9, 0, 0, 0);
-  return toLocalInput(d);
+  return toSofiaInput(new Date(Date.now() + 60 * 60_000));
 }
 
 /** The car's first photos as files, in gallery order (for sharing and downloading). */
