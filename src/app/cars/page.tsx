@@ -24,7 +24,7 @@ const sorts: [string, string][] = [
 export default function CatalogPage({ searchParams }: PageProps<"/cars">) {
   return (
     <div className="mx-auto max-w-6xl px-4 pt-10 sm:px-6">
-      <h1 className="text-3xl font-extrabold tracking-tight sm:text-4xl">Налични коли</h1>
+      <h1 className="text-3xl font-extrabold tracking-tight sm:text-4xl">Каталог автомобили</h1>
       <p className="mt-2 text-muted">Всички цени са крайни за България — с транспорт, мито и ДДС.</p>
       {/* searchParams is request data: everything that reads it streams in at request time */}
       <Suspense fallback={<CatalogSkeleton />}>

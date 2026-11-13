@@ -27,6 +27,9 @@ const nextConfig: NextConfig = {
       { source: "/media/:path*", destination: `${backend}/media/:path*` },
     ];
   },
+  async redirects() {
+    return [{ source: "/koli-na-gaz-ot-koreya", destination: "/koli-ot-koreya", permanent: true }];
+  },
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }];
   },
