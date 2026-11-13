@@ -21,17 +21,17 @@ export function SiteFooter() {
           <ul className="space-y-2">
             <li>
               <Link href="/cars" className="hover:text-paper">
-                Каталог
+                Каталог автомобили
               </Link>
             </li>
             <li>
-              <Link href="/#how" className="hover:text-paper">
+              <Link href="/kak-raboti-vnosat" className="hover:text-paper">
                 Как работи вносът
               </Link>
             </li>
             <li>
               <Link href="/#contact" className="hover:text-paper">
-                Намери ми кола
+                Изпрати ни запитване
               </Link>
             </li>
             <li>
@@ -40,8 +40,8 @@ export function SiteFooter() {
               </Link>
             </li>
             <li>
-              <Link href="/koli-na-gaz-ot-koreya" className="hover:text-paper">
-                Коли на газ от Корея
+              <Link href="/koli-ot-koreya" className="hover:text-paper">
+                Коли от Корея
               </Link>
             </li>
             <li>

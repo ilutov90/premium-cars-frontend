@@ -8,13 +8,14 @@ import { phoneHref, viberChatHref, type Contact } from "@/lib/site";
 import { PhoneIcon, ViberIcon } from "./icons";
 
 /** The site's pages, in the order of the menu. */
+/** The desktop row (from xl, 1280px) must stay on one line: keep labels short and padding tight. */
 const pages: { href: string; label: string; desktop?: boolean }[] = [
   { href: "/", label: "Начало" },
-  { href: "/cars", label: "Налични коли", desktop: true },
-  { href: "/koli-na-gaz-ot-koreya", label: "Коли от Корея", desktop: true },
+  { href: "/cars", label: "Каталог автомобили", desktop: true },
+  { href: "/koli-ot-koreya", label: "Коли от Корея", desktop: true },
   { href: "/elektromobili-ot-kitay", label: "Коли от Китай", desktop: true },
   { href: "/delivered", label: "Доставени коли", desktop: true },
-  { href: "/#how", label: "Как работи вносът" },
+  { href: "/kak-raboti-vnosat", label: "Как работи вносът", desktop: true },
   { href: "/about", label: "За нас", desktop: true },
   { href: "/#contact", label: "Запитване" },
 ];
@@ -45,7 +46,7 @@ export function SiteNav({ contact }: { contact: Contact }) {
         </div>
         <a
           href={phoneHref(contact.phone)}
-          className="hidden items-center gap-1.5 rounded-full px-3 py-2 hover:bg-ink/5 md:inline-flex"
+          className="hidden items-center gap-1.5 rounded-full px-3 py-2 whitespace-nowrap hover:bg-ink/5 md:inline-flex xl:hidden 2xl:inline-flex"
         >
           <PhoneIcon className="h-4 w-4 text-accent" />
           {contact.phone}
@@ -53,7 +54,7 @@ export function SiteNav({ contact }: { contact: Contact }) {
         <a
           href={phoneHref(contact.phone)}
           aria-label={`Обадете се: ${contact.phone}`}
-          className="grid h-10 w-10 place-items-center rounded-full text-accent hover:bg-ink/5 md:hidden"
+          className="grid h-10 w-10 place-items-center rounded-full text-accent hover:bg-ink/5 md:hidden xl:grid 2xl:hidden"
         >
           <PhoneIcon />
         </a>
@@ -64,7 +65,7 @@ export function SiteNav({ contact }: { contact: Contact }) {
         >
           <ViberIcon />
         </a>
-        <Link href="/#contact" className="btn-primary ml-1 hidden px-4! py-2! sm:inline-flex">
+        <Link href="/#contact" className="btn-accent ml-1 hidden px-4! py-2! sm:inline-flex">
           Запитване
         </Link>
         <button
@@ -120,7 +121,7 @@ export function SiteNav({ contact }: { contact: Contact }) {
   );
 }
 
-/** "/cars/x" belongs to "Налични коли"; "/#how" and "/#contact" are parts of the home page, never marked. */
+/** "/cars/x" belongs to "Каталог автомобили"; "/#contact" is a part of the home page, never marked. */
 function activeHref(pathname: string): string | null {
   const match = pages
     .filter((p) => !p.href.includes("#"))
@@ -170,7 +171,7 @@ function DesktopLinks({ active }: { active: string | null }) {
             key={p.href}
             href={p.href}
             aria-current={p.href === active ? "page" : undefined}
-            className={`rounded-full px-3 py-2 ${p.href === active ? "bg-ink/5 text-accent" : "hover:bg-ink/5"}`}
+            className={`rounded-full px-2 py-2 whitespace-nowrap ${p.href === active ? "bg-ink/5 text-accent" : "hover:bg-ink/5"}`}
           >
             {p.label}
           </Link>

@@ -1,19 +1,25 @@
+import Form from "next/form";
 import Link from "next/link";
 import { Suspense } from "react";
 import { CarCard } from "@/components/car-card";
 import { InquiryForm } from "@/components/inquiry-form";
 import { CardGridSkeleton, Notice } from "@/components/notice";
-import { searchCars, type CarSearch } from "@/lib/api";
+import { BasicSearchFields } from "@/components/search-fields";
+import { getFilterOptions, searchCars, type CarSearch } from "@/lib/api";
 
 /**
- * A landing page for one kind of car (ads and Google lead here): what we offer, the matching cars from the catalog
- * and the inquiry form. Several searches are merged (e.g. electric + plug-in hybrid), newest first.
+ * A landing page for one kind of car (ads and Google lead here): the pitch, a car search restricted to the page's
+ * origin, the matching cars from the catalog and the inquiry form. Several searches are merged, newest first.
  */
 export function NichePage({
   kicker,
   title,
-  lead,
+  tagline,
+  intro,
   points,
+  highlight,
+  closing,
+  origin,
   searches,
   catalogHref,
   emptyText,
@@ -21,8 +27,12 @@ export function NichePage({
 }: {
   kicker: string;
   title: string;
-  lead: string;
+  tagline: string;
+  intro: string[];
   points: [string, string][];
+  highlight: string;
+  closing: string;
+  origin: "KR" | "CN";
   searches: CarSearch[];
   catalogHref: string;
   emptyText: string;
@@ -34,32 +44,37 @@ export function NichePage({
         <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-20">
           <p className="text-xs font-bold tracking-[0.25em] text-accent uppercase">{kicker}</p>
           <h1 className="mt-4 max-w-3xl text-3xl leading-tight font-extrabold tracking-tight sm:text-5xl">{title}</h1>
-          <p className="mt-5 max-w-2xl text-lg leading-relaxed text-paper/70">{lead}</p>
-          <div className="mt-8 flex flex-wrap gap-3">
-            <Link href={catalogHref} className="btn-accent px-6! py-3! text-base!">
-              Виж всички в каталога
-            </Link>
-            <Link href="#niche-contact" className="btn border border-paper/25 px-6! py-3! text-base! text-paper hover:border-paper">
-              Намери ми такава кола
-            </Link>
-          </div>
+          <p className="mt-5 max-w-2xl text-lg leading-relaxed text-paper/70">{tagline}</p>
         </div>
       </section>
 
       <section className="mx-auto max-w-6xl px-4 pt-12 sm:px-6">
-        <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="max-w-3xl space-y-4 text-lg leading-relaxed">
+          {intro.map((text) => (
+            <p key={text}>{text}</p>
+          ))}
+        </div>
+        <ul className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {points.map(([t, text]) => (
             <li key={t} className="rounded-2xl border border-line bg-card p-5">
               <p className="font-bold">{t}</p>
-              <p className="mt-1.5 text-sm leading-relaxed text-muted">{text}</p>
+              <p className="mt-1.5 text-sm leading-relaxed text-muted first-letter:uppercase">{text}</p>
             </li>
           ))}
         </ul>
+        <p className="mt-8 text-xl font-extrabold tracking-tight text-accent sm:text-2xl">{highlight}</p>
+        <p className="mt-4 max-w-3xl text-lg leading-relaxed">{closing}</p>
+      </section>
+
+      <section className="mx-auto max-w-xl px-4 pt-14 sm:px-6">
+        <Suspense fallback={<div className="h-[470px] animate-pulse rounded-3xl bg-card" aria-hidden />}>
+          <NicheSearch origin={origin} />
+        </Suspense>
       </section>
 
       <section className="mx-auto max-w-6xl px-4 pt-16 sm:px-6">
         <div className="mb-6 flex items-end justify-between gap-4">
-          <h2 className="text-2xl font-extrabold tracking-tight sm:text-3xl">Налични сега</h2>
+          <h2 className="text-2xl font-extrabold tracking-tight sm:text-3xl">Последно добавени</h2>
           <Link href={catalogHref} className="text-sm font-semibold text-accent hover:text-accent-dark">
             Всички →
           </Link>
@@ -82,6 +97,22 @@ export function NichePage({
         </div>
       </section>
     </>
+  );
+}
+
+/** The home page's quick search card, with the page's origin carried in the URL (QuickSearch itself has no such input). */
+async function NicheSearch({ origin }: { origin: "KR" | "CN" }) {
+  const options = await getFilterOptions().catch(() => null);
+  if (!options) return null;
+  return (
+    <Form action="/cars" className="space-y-4 rounded-3xl bg-card p-5 text-ink shadow-xl ring-1 ring-line sm:p-6">
+      <p className="text-xl font-extrabold tracking-tight">Бързо търсене</p>
+      <input type="hidden" name="origin" value={origin} />
+      <BasicSearchFields options={options} idPrefix="niche-qs" />
+      <button type="submit" className="btn-accent w-full py-3! text-base!">
+        Търсене →
+      </button>
+    </Form>
   );
 }
 

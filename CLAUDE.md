@@ -5,6 +5,9 @@
 Public website + admin panel for Premium Cars Import (cars from South Korea and China, sold in Bulgaria).
 Talks to the Spring Boot API in the sibling repo `premium-cars-backend` (default `http://localhost:8080`).
 
+The owner's session rules (answers in Bulgarian, generated content in English, the lead orchestrator's plan with a
+model per task approved before execution) are in `premium-cars-infra/CLAUDE.md`, "Session rules": they hold here too.
+
 ## Stack
 
 Next.js 16 (App Router, Cache Components + Partial Prefetching enabled), React 19, TypeScript, Tailwind CSS 4,
@@ -106,7 +109,10 @@ Run `npm run lint` and `npm run build` before finishing a change.
   cookie banner only when a pixel id is set and loads the pixel only after "Приемам" (PageView per page, Lead on a sent
   inquiry). Keep the privacy policy (`/privacy#cookies`) in line with it. `/admin/reports` shows inquiries per channel,
   campaign, car and week; `/admin/delivered` edits "Доставени коли" (shown on `/delivered` and the home page).
-  Landing pages for ads: `/koli-na-gaz-ot-koreya`, `/elektromobili-ot-kitay` (`niche-page.tsx`).
+  Landing pages: `/koli-ot-koreya` (all cars from Korea; the old `/koli-na-gaz-ot-koreya` redirects there, `next.config.ts`) and
+  `/elektromobili-ot-kitay` (`niche-page.tsx`: the owner's texts, the quick search limited to the origin, the latest cars,
+  the inquiry form). `/kak-raboti-vnosat` is the six-step guide (`import-steps.tsx`; its compact cards are the home
+  page's "Как работи вносът"). The owner writes the marketing texts of these pages: keep them verbatim.
 - Docs (README, CLAUDE.md) and code comments are English.
 - Design tokens are in `src/app/globals.css` (`@theme`: paper, card, ink, muted, line, accent). Use them
   (`bg-card`, `text-muted`, `bg-accent`, ...) instead of raw colours. Shared utilities: `field`, `label`,
@@ -122,7 +128,7 @@ Run `npm run lint` and `npm run build` before finishing a change.
 | `src/app/page.tsx` | home: hero with the quick search (`quick-search.tsx`, the catalog's short search fields from `search-fields.tsx`; "Разширено търсене" opens `/cars?more=1`), latest cars, how import works, "find me a car" form |
 | `src/app/cars/page.tsx` | catalog (the cheapest first unless another order is chosen: no `sort` = `price_asc`, "Най-нови" = `newest`) with filters in the URL (GET form, `catalog-filters.tsx`: the short search is make, model (from `FilterOptions.models`), year and fuel; "Разширено търсене" shows the rest and opens by itself when one of those is set; after a search, sort or page change `scroll-to-results.tsx` scrolls to the results when they start below the middle of the screen: on a phone, under the filters) |
 | `src/app/cars/[slug]/page.tsx` | car page: gallery, title, final price (only `priceEur`, right under the title), share buttons, grouped specs, notes, inquiry form. The page sends no Referer (`referrer: "no-referrer"`), so guazi's inspection videos load as when opened directly; a video that fails offers a direct link |
-| `src/app/delivered`, `koli-na-gaz-ot-koreya`, `elektromobili-ot-kitay` | "Доставени коли" and the landing pages for ads |
+| `src/app/delivered`, `koli-ot-koreya`, `elektromobili-ot-kitay`, `kak-raboti-vnosat` | "Доставени коли" (only real deliveries with the customer's consent, never made-up ones), the landing pages and the import guide |
 | `src/app/about`, `src/app/privacy` | "За нас" and the privacy policy (company details in `site.ts` → `company`); the inquiry form requires the privacy checkbox (`privacyAccepted`) |
 | `src/app/sitemap.ts`, `robots.ts`, `og/` | SEO: sitemap with the public cars (built per request), robots, the default preview image; `src/lib/seo.ts` has `SITE_URL` and the car JSON-LD |
 | `src/app/admin/**` | admin: the car list (`admin/page.tsx`: pages of 48, status tabs with counts, text search (a name, a link to the car on our site or at the source, the car's number: a link or number looks in every status), source site, where it is posted (backend `PostedFilter`), sort; each row shows the car's posts (`posted-chips.tsx`); the state is in the URL; `pager.tsx` pages this list and the runs' report), import by link, automatic import (`auto-import/`: main switch, the mileage limit, the highest FOB price, per-site switch, filters, makes with year from and models, autowini's "Двигател (без)" column: per chosen model (or the whole make) the fuel types with their counts, the ticked ones not imported, preview counts, "Проверка на колите" (how many cars of the site we have; the cars that are one listing more than once, by listing id, with links to them and "Изтрий дубликатите"), "Изчисти опашката" (`/{source}/queue/clear`: the next run queues again what is still at the source), "Изтегли отчет (CSV)" (`/{source}/export`: a ZIP with the listings and the last runs), a warning when this server does not run the import (`runsHere` false: another one, e.g. a laptop, does), dry run, run now, the runs' report (pages of 20, newest first, `/runs?page=`) with the cars each run deleted, the posted ones first with their posts and the rest folded, and the checked cars added by hand; `auto-import/failures/`: every failed listing, paged, reasons grouped, batch delete; backend `AutoImportDtos`), edit car, photos, statuses, price formulas (`pricing/`: per site sea, land, commission, duty and VAT as a percent or a table by FOB (`DutyBracket` rows, the next row up, autowini), and the fixed markup by FOB threshold; `price-recalc-panel.tsx` recalculates by hand per site or all, from the kept FOB or read again from the listings, with reports of the changed cars and where they were posted, `posted-chips.tsx`), post templates (`templates/`), model mapping for mobile.bg and cars.bg (`marketplace/`), scheduled posts (`scheduled/`), inquiries, the inquiry report (`reports/`), delivered cars (`delivered/`), admin users (`users/`, one-time passwords; `admin-context.tsx` forces the password change) |
