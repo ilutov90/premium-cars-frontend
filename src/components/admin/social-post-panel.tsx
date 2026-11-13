@@ -359,12 +359,7 @@ function PublishDialog({
   const [when, setWhen] = useState<"now" | "later">("now");
   const [publishAt, setPublishAt] = useState(defaultScheduleTime);
   // when the dialog opened (render must stay pure); the backend checks the time again when scheduling
-  // the current time, kept fresh so a time that passes while the dialog is open is refused
-  const [now, setNow] = useState(() => Date.now());
-  useEffect(() => {
-    const t = setInterval(() => setNow(Date.now()), 15_000);
-    return () => clearInterval(t);
-  }, []);
+  const [openedAt] = useState(() => Date.now());
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && !busy && onClose();
@@ -402,7 +397,7 @@ function PublishDialog({
   }
 
   const scheduleDate = when === "later" && publishAt ? fromSofiaInput(publishAt) : null;
-  const scheduleInvalid = when === "later" && (!scheduleDate || scheduleDate.getTime() < now + 60_000);
+  const scheduleInvalid = when === "later" && (!scheduleDate || scheduleDate.getTime() < openedAt + 60_000);
 
   async function publish() {
     setBusy(true);
@@ -571,7 +566,7 @@ function PublishDialog({
             <input
               type="datetime-local"
               value={publishAt}
-              min={toSofiaInput(new Date(now + 2 * 60_000))}
+              min={toSofiaInput(new Date(openedAt + 2 * 60_000))}
               onChange={(e) => {
                 setPublishAt(e.target.value);
                 setWhen("later");
@@ -583,7 +578,7 @@ function PublishDialog({
           {when === "later" && (
             <p className={`mt-2 text-xs ${scheduleInvalid ? "font-semibold text-warn" : "text-muted"}`}>
               {scheduleInvalid
-                ? "Този час е минал: изберете дата и час поне минута напред (българско време)."
+                ? "Изберете дата и час поне минута напред (българско време)."
                 : `Ще се публикува ${picked.length > 1 ? "едновременно " : ""}на ${formatDate(scheduleDate!.toISOString())} (българско време) с текстовете и снимките, избрани сега. Отменя се от „Насрочени“.`}
             </p>
           )}
