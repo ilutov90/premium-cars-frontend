@@ -169,8 +169,9 @@ export function formatPower(hp: number | null | undefined, kw?: number | null): 
   return kw != null ? `${num.format(h)} к.с. (${num.format(kw)} kW)` : `${num.format(h)} к.с.`;
 }
 
+/** Date and time in Bulgaria, whatever the computer's time zone. */
 export function formatDate(iso: string): string {
-  return new Date(iso).toLocaleString("bg-BG", { dateStyle: "medium", timeStyle: "short" });
+  return new Date(iso).toLocaleString("bg-BG", { dateStyle: "medium", timeStyle: "short", timeZone: "Europe/Sofia" });
 }
 
 /** A day without time ("2026-10-01" -> "01.10.2026"), read as written (no time zone shift). */
