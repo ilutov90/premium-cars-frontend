@@ -232,7 +232,7 @@ export function InquiryForm({ carId, carTitle }: { carId?: number; carTitle?: st
       <input name="website" tabIndex={-1} autoComplete="off" className="hidden" aria-hidden />
       {state.kind === "error" && <p className="text-sm font-medium text-accent-dark">{state.message}</p>}
       <button type="submit" className="btn-accent w-full" disabled={state.kind === "sending"}>
-        {state.kind === "sending" ? "Изпращане…" : general ? "Намерете ми кола" : "Изпрати запитване"}
+        {state.kind === "sending" ? "Изпращане…" : general ? "Изпрати ни запитване" : "Изпрати запитване"}
       </button>
       <p className="text-center text-xs text-muted">или</p>
       {viber}

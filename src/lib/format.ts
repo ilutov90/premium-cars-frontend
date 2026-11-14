@@ -174,6 +174,20 @@ export function formatDate(iso: string): string {
   return new Date(iso).toLocaleString("bg-BG", { dateStyle: "medium", timeStyle: "short", timeZone: "Europe/Sofia" });
 }
 
+const skippedNetworks: Record<string, string> = { FACEBOOK: "Facebook", INSTAGRAM: "Instagram", VIBER: "Viber" };
+const skippedError = /^Skipped: already posted to (FACEBOOK|INSTAGRAM|VIBER) on (\S+) after this was scheduled$/;
+
+/**
+ * A scheduled post's error text for people: a skipped post ("Skipped: already posted to FACEBOOK on <instant> after
+ * this was scheduled") in Bulgarian, any other text unchanged, null for none.
+ */
+export function scheduledPostNote(error: string | null | undefined): string | null {
+  if (!error) return null;
+  const match = skippedError.exec(error.trim());
+  if (!match) return error;
+  return `Пропусната: колата вече е публикувана във ${skippedNetworks[match[1]]} на ${formatDate(match[2])}`;
+}
+
 /** A day without time ("2026-10-01" -> "01.10.2026"), read as written (no time zone shift). */
 export function formatDay(isoDay: string): string {
   const [y, m, d] = isoDay.split("-");

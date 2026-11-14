@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useAdmin } from "./admin-context";
 import { CarImage } from "@/components/car-image";
-import { formatDate, scheduledStatusLabels } from "@/lib/format";
+import { formatDate, scheduledPostNote, scheduledStatusLabels } from "@/lib/format";
 import { fromSofiaInput, toSofiaInput } from "@/lib/sofia-time";
 import {
   defaultTemplates,
@@ -238,7 +238,7 @@ export function SocialPostPanel({ car }: { car: AdminCar }) {
               {p.status === "PUBLISHED" ? (
                 <span className="font-semibold text-ok">публикувано ✓</span>
               ) : p.status === "FAILED" ? (
-                <span className="font-semibold text-warn">не успя — {p.error ?? "грешка"}</span>
+                <span className="font-semibold text-warn">не успя — {scheduledPostNote(p.error) ?? "грешка"}</span>
               ) : p.status === "CANCELLED" ? (
                 <span className="text-muted">отменено</span>
               ) : (
@@ -264,7 +264,7 @@ export function SocialPostPanel({ car }: { car: AdminCar }) {
                   {scheduledStatusLabels[p.status]}
                 </span>{" "}
                 · {networkLabels[p.network]} · {formatDate(p.publishAt)}
-                {p.error && <span className="block break-words text-warn">{p.error}</span>}
+                {scheduledPostNote(p.error) && <span className="block break-words text-warn">{scheduledPostNote(p.error)}</span>}
               </span>
               {p.status === "SCHEDULED" && (
                 <button type="button" onClick={() => cancelScheduled(p)} className="shrink-0 font-semibold text-warn hover:underline">

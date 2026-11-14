@@ -29,7 +29,7 @@ export default function DeliveredPage() {
           Разгледай наличните коли
         </Link>
         <Link href="/#contact" className="btn-ghost">
-          Намери ми кола
+          Изпрати ни запитване
         </Link>
       </div>
     </div>

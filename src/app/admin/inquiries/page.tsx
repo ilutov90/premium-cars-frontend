@@ -94,7 +94,7 @@ export default function AdminInquiriesPage() {
                       {q.carTitle}
                     </Link>
                   ) : (
-                    <span className="font-semibold">Общо запитване („Намери ми кола“)</span>
+                    <span className="font-semibold">Общо запитване („Изпрати ни запитване“)</span>
                   )}
                 </p>
               </div>
