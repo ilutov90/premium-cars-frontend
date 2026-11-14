@@ -10,7 +10,7 @@ export const metadata: Metadata = {
 export default function AdminLayout({ children }: LayoutProps<"/admin">) {
   return (
     <AdminProvider>
-      <div className="mx-auto max-w-6xl px-4 pt-8 sm:px-6">
+      <div className="admin-root mx-auto max-w-6xl px-4 pt-8 sm:px-6">
         <AdminNav />
         {children}
       </div>

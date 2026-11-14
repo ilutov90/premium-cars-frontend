@@ -1,6 +1,14 @@
 // Server-side calls to the public API. Used from Server Components inside <Suspense>,
 // so every request gets fresh data (an admin change is visible on the next page load).
-import type { CarDetail, CarSummary, FilterOptions, PageResponse, PostSettings, PublicDeliveredCar } from "./types";
+import type {
+  CarDetail,
+  CarSummary,
+  FilterOptions,
+  PageResponse,
+  PostSettings,
+  PublicDeliveredCar,
+  SiteLogo,
+} from "./types";
 /** URL the Next.js server uses; differs from the public one inside Docker/Kubernetes. */
 /** Server components call the backend directly (not through the /api rewrite). */
 const SERVER_API_URL = process.env.API_URL ?? "http://localhost:8080";
@@ -79,6 +87,15 @@ export function getFilterOptions() {
 export async function getContact(): Promise<PostSettings | null> {
   try {
     return await get<PostSettings>("/api/public/contact");
+  } catch {
+    return null;
+  }
+}
+
+/** The site's logo uploaded in the admin panel; null = the built-in one (also when the backend cannot be reached or is older). */
+export async function getLogo(): Promise<string | null> {
+  try {
+    return (await get<SiteLogo>("/api/public/logo")).url ?? null;
   } catch {
     return null;
   }

@@ -88,7 +88,7 @@ export function InquiryForm({ carId, carTitle }: { carId?: number; carTitle?: st
   const viber = (
     <a
       href={viberChatHref(phone, about)}
-      className="flex w-full items-center justify-center gap-2 rounded-full bg-[#7360f2] px-5 py-3 font-semibold text-white transition hover:bg-[#5e4bd8]"
+      className="btn w-full bg-[#7360f2] text-white hover:bg-[#5e4bd8]"
     >
       <ViberIcon />
       Пишете ни във Viber

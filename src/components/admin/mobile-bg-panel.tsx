@@ -276,7 +276,6 @@ function MobileBgDialog({
   const [values, setValues] = useState<Values | null>(null);
   const [extras, setExtras] = useState<Set<CarFeature>>(() => new Set(form.draft.extras));
   const [selected, setSelected] = useState<number[]>(() => car.images.slice(0, MOBILE_BG_MAX_PHOTOS).map((i) => i.id));
-  const [tried, setTried] = useState(false);
 
   useEffect(() => {
     adminFetch<MobileBgCatalog>("/api/admin/mobile-bg/catalog").then(setCatalog).catch(() => setCatalog(null));
@@ -313,17 +312,24 @@ function MobileBgDialog({
 
   const set = (k: keyof Values, v: string) => setValues((cur) => (cur ? { ...cur, [k]: v === "" ? null : v } : cur));
   const battery = values.engineType === "Електрически" || values.engineType === "Plug-in хибрид";
-  const missing = REQUIRED.filter(([k]) => !values[k] || String(values[k]).trim() === "").map(([, l]) => l);
-  if (battery && !values.rangeKm) missing.push("Пробег на ток (WLTP)");
-  if (battery && !values.batteryKwh) missing.push("Капацитет на батерията");
-  if (values.price && !/^\d{1,7}$/.test(values.price)) missing.push("Цена (цяло число до 7 цифри)");
-  if (values.phone && !/^0\d{6,12}$/.test(values.phone)) missing.push("Телефон (само цифри, започва с 0)");
   const ordered = car.images.filter((i) => selected.includes(i.id));
   const brandKnown = !brands.length || brands.some((b) => b.name === values.brand);
   const modelKnown = !models.length || models.includes(values.model ?? "");
+  // what keeps the form from being sent: field -> what to fix, in the form's order
+  const problems = new Map<keyof Values, string>();
+  for (const [k, l] of REQUIRED) {
+    if (!values[k] || String(values[k]).trim() === "") problems.set(k, l);
+  }
+  if (values.brand && !brandKnown) problems.set("brand", "Марка (изберете от списъка на mobile.bg)");
+  if (values.model && !modelKnown) problems.set("model", "Модел (изберете от списъка на mobile.bg)");
+  if (values.price && !/^\d{1,7}$/.test(values.price)) problems.set("price", "Цена (цяло число до 7 цифри)");
+  if (values.phone && !/^0\d{6,12}$/.test(values.phone)) problems.set("phone", "Телефон (само цифри, започва с 0)");
+  if (battery && !values.rangeKm) problems.set("rangeKm", "Пробег на ток (WLTP)");
+  if (battery && !values.batteryKwh) problems.set("batteryKwh", "Капацитет на батерията");
+  const missing = [...problems.values()];
+  const bad = (k: keyof Values) => problems.has(k);
 
   function start() {
-    setTried(true);
     if (missing.length || !extensionReady || !values) return;
     const absolute = (u: string) => new URL(u, window.location.origin).href;
     onStart({
@@ -382,48 +388,48 @@ function MobileBgDialog({
         <Step n={1} title="Данни за обявата">
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {brands.length ? (
-              <Select label="Марка *" value={values.brand} onChange={(v) => setValues({ ...values, brand: v || null, model: null })}
+              <Select invalid={bad("brand")} label="Марка *" value={values.brand} onChange={(v) => setValues({ ...values, brand: v || null, model: null })}
                 options={brands.map((b) => ({ value: b.name, text: b.name }))} extra={brandKnown ? null : values.brand} />
             ) : (
-              <Text label="Марка *" value={values.brand} onChange={(v) => set("brand", v)} />
+              <Text invalid={bad("brand")} label="Марка *" value={values.brand} onChange={(v) => set("brand", v)} />
             )}
             {models.length ? (
-              <Select label="Модел *" value={values.model} onChange={(v) => set("model", v)}
+              <Select invalid={bad("model")} label="Модел *" value={values.model} onChange={(v) => set("model", v)}
                 options={models.map((m) => ({ value: m, text: m }))} extra={modelKnown ? null : values.model} />
             ) : (
-              <Text label="Модел *" value={values.model} onChange={(v) => set("model", v)} />
+              <Text invalid={bad("model")} label="Модел *" value={values.model} onChange={(v) => set("model", v)} />
             )}
-            <Text label="Модификация" value={values.modification} onChange={(v) => set("modification", v)} max={50} />
-            <Select label="Двигател *" value={values.engineType} onChange={(v) => set("engineType", v)} options={mobileBgOptions(catalog, "f8")} />
-            <Select label="Състояние *" value={values.condition} onChange={(v) => set("condition", v)} options={mobileBgOptions(catalog, "f25")} />
-            <Text label="Мощност, к.с." value={values.powerHp} onChange={(v) => set("powerHp", v)} type="number" />
-            <Select label="Евростандарт" value={values.euroStandard} onChange={(v) => set("euroStandard", v)} options={mobileBgOptions(catalog, "f29")} />
-            <Select label="Скоростна кутия *" value={values.gearbox} onChange={(v) => set("gearbox", v)} options={mobileBgOptions(catalog, "f10")} />
-            <Select label="Категория *" value={values.category} onChange={(v) => set("category", v)} options={mobileBgOptions(catalog, "f11")} />
-            <Text label="Кубатура, см³" value={values.engineCc} onChange={(v) => set("engineCc", v)} type="number" />
-            <Text label="Цена *" value={values.price} onChange={(v) => set("price", v)} type="number" />
-            <Select label="ДДС" value={values.vat} onChange={(v) => set("vat", v)} options={mobileBgOptions(catalog, "f31")} />
-            <Select label="Валута *" value={values.currency} onChange={(v) => set("currency", v)} options={mobileBgOptions(catalog, "f13")} />
-            <Text label="Пробег, км *" value={values.mileageKm} onChange={(v) => set("mileageKm", v)} type="number" />
-            <Select label="Месец на производство *" value={values.month} onChange={(v) => set("month", v)} options={mobileBgOptions(catalog, "f14")} />
-            <Text label="Година *" value={values.year} onChange={(v) => set("year", v)} type="number" />
+            <Text invalid={bad("modification")} label="Модификация" value={values.modification} onChange={(v) => set("modification", v)} max={50} />
+            <Select invalid={bad("engineType")} label="Двигател *" value={values.engineType} onChange={(v) => set("engineType", v)} options={mobileBgOptions(catalog, "f8")} />
+            <Select invalid={bad("condition")} label="Състояние *" value={values.condition} onChange={(v) => set("condition", v)} options={mobileBgOptions(catalog, "f25")} />
+            <Text invalid={bad("powerHp")} label="Мощност, к.с." value={values.powerHp} onChange={(v) => set("powerHp", v)} type="number" />
+            <Select invalid={bad("euroStandard")} label="Евростандарт" value={values.euroStandard} onChange={(v) => set("euroStandard", v)} options={mobileBgOptions(catalog, "f29")} />
+            <Select invalid={bad("gearbox")} label="Скоростна кутия *" value={values.gearbox} onChange={(v) => set("gearbox", v)} options={mobileBgOptions(catalog, "f10")} />
+            <Select invalid={bad("category")} label="Категория *" value={values.category} onChange={(v) => set("category", v)} options={mobileBgOptions(catalog, "f11")} />
+            <Text invalid={bad("engineCc")} label="Кубатура, см³" value={values.engineCc} onChange={(v) => set("engineCc", v)} type="number" />
+            <Text invalid={bad("price")} label="Цена *" value={values.price} onChange={(v) => set("price", v)} type="number" />
+            <Select invalid={bad("vat")} label="ДДС" value={values.vat} onChange={(v) => set("vat", v)} options={mobileBgOptions(catalog, "f31")} />
+            <Select invalid={bad("currency")} label="Валута *" value={values.currency} onChange={(v) => set("currency", v)} options={mobileBgOptions(catalog, "f13")} />
+            <Text invalid={bad("mileageKm")} label="Пробег, км *" value={values.mileageKm} onChange={(v) => set("mileageKm", v)} type="number" />
+            <Select invalid={bad("month")} label="Месец на производство *" value={values.month} onChange={(v) => set("month", v)} options={mobileBgOptions(catalog, "f14")} />
+            <Text invalid={bad("year")} label="Година *" value={values.year} onChange={(v) => set("year", v)} type="number" />
             {mobileBgOptions(catalog, "f17").length ? (
-              <Select label="Цвят" value={values.color} onChange={(v) => set("color", v)} options={mobileBgOptions(catalog, "f17")} extra={values.color} />
+              <Select invalid={bad("color")} label="Цвят" value={values.color} onChange={(v) => set("color", v)} options={mobileBgOptions(catalog, "f17")} extra={values.color} />
             ) : (
-              <Text label="Цвят" value={values.color} onChange={(v) => set("color", v)} />
+              <Text invalid={bad("color")} label="Цвят" value={values.color} onChange={(v) => set("color", v)} />
             )}
             {mobileBgOptions(catalog, "f18").length ? (
-              <Select label="Намира се в *" value={values.region} onChange={(v) => set("region", v)} options={mobileBgOptions(catalog, "f18")} extra={values.region} />
+              <Select invalid={bad("region")} label="Намира се в *" value={values.region} onChange={(v) => set("region", v)} options={mobileBgOptions(catalog, "f18")} extra={values.region} />
             ) : (
-              <Text label="Намира се в (област) *" value={values.region} onChange={(v) => set("region", v)} />
+              <Text invalid={bad("region")} label="Намира се в (област) *" value={values.region} onChange={(v) => set("region", v)} />
             )}
-            <Text label="Населено място *" value={values.city} onChange={(v) => set("city", v)} />
-            <Text label="VIN" value={values.vin} onChange={(v) => set("vin", v)} max={17} />
-            <Text label="Телефон *" value={values.phone} onChange={(v) => set("phone", v.replace(/\D/g, ""))} />
+            <Text invalid={bad("city")} label="Населено място *" value={values.city} onChange={(v) => set("city", v)} />
+            <Text invalid={bad("vin")} label="VIN" value={values.vin} onChange={(v) => set("vin", v)} max={17} />
+            <Text invalid={bad("phone")} label="Телефон *" value={values.phone} onChange={(v) => set("phone", v.replace(/\D/g, ""))} />
             {battery && (
               <>
-                <Text label="Пробег на ток WLTP, км *" value={values.rangeKm} onChange={(v) => set("rangeKm", v)} type="number" />
-                <Text label="Капацитет на батерията, kWh *" value={values.batteryKwh} onChange={(v) => set("batteryKwh", v)} type="number" />
+                <Text invalid={bad("rangeKm")} label="Пробег на ток WLTP, км *" value={values.rangeKm} onChange={(v) => set("rangeKm", v)} type="number" />
+                <Text invalid={bad("batteryKwh")} label="Капацитет на батерията, kWh *" value={values.batteryKwh} onChange={(v) => set("batteryKwh", v)} type="number" />
               </>
             )}
           </div>
@@ -528,22 +534,24 @@ function MobileBgDialog({
           </ol>
         </div>
 
-        {tried && missing.length > 0 && (
-          <p className="mt-3 text-sm font-semibold text-warn">Попълнете: {missing.join(", ")}.</p>
-        )}
         {!extensionReady && (
           <p className="mt-3 text-sm font-semibold text-warn">
             Разширението за mobile.bg не е инсталирано в този браузър (вижте „Разширението… не е инсталирано“ в карето mobile.bg).
           </p>
         )}
 
-        <div className="mt-5 flex flex-wrap justify-end gap-2 border-t border-line pt-4">
-          <button type="button" onClick={onClose} className="btn-ghost">
-            Откажи
-          </button>
-          <button type="button" onClick={start} disabled={!extensionReady || (tried && missing.length > 0)} className="btn-primary">
-            Попълни в mobile.bg ({ordered.length} {ordered.length === 1 ? "снимка" : "снимки"})
-          </button>
+        <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-line pt-4">
+          <p className="min-w-0 flex-1 basis-60 text-sm font-semibold text-danger" role="status">
+            {missing.length > 0 && <>Не е попълнено: {missing.join(", ")}.</>}
+          </p>
+          <div className="flex flex-wrap justify-end gap-2">
+            <button type="button" onClick={onClose} className="btn-ghost">
+              Откажи
+            </button>
+            <button type="button" onClick={start} disabled={!extensionReady || missing.length > 0} className="btn-primary">
+              Попълни в mobile.bg ({ordered.length} {ordered.length === 1 ? "снимка" : "снимки"})
+            </button>
+          </div>
         </div>
       </div>
     </div>,
@@ -569,17 +577,20 @@ function Text({
   onChange,
   type = "text",
   max,
+  invalid = false,
 }: {
   label: string;
   value: string | null;
   onChange: (v: string) => void;
   type?: string;
   max?: number;
+  invalid?: boolean;
 }) {
   return (
     <label className="block">
       <span className="label">{label}</span>
-      <input type={type} value={value ?? ""} maxLength={max} onChange={(e) => onChange(e.target.value)} className="field py-2!" />
+      <input type={type} value={value ?? ""} maxLength={max} onChange={(e) => onChange(e.target.value)}
+        aria-invalid={invalid} className={`field py-2! ${invalid ? "border-danger! ring-2 ring-danger/20" : ""}`} />
     </label>
   );
 }
@@ -591,18 +602,21 @@ function Select({
   onChange,
   options,
   extra,
+  invalid = false,
 }: {
   label: string;
   value: string | null;
   onChange: (v: string) => void;
   options: { value: string; text: string }[];
   extra?: string | null;
+  invalid?: boolean;
 }) {
   const known = options.some((o) => o.value === value);
   return (
     <label className="block">
       <span className="label">{label}</span>
-      <select value={value ?? ""} onChange={(e) => onChange(e.target.value)} className={`field py-2! ${value && !known ? "border-warn!" : ""}`}>
+      <select value={value ?? ""} onChange={(e) => onChange(e.target.value)} aria-invalid={invalid}
+        className={`field py-2! ${invalid ? "border-danger! ring-2 ring-danger/20" : value && !known ? "border-warn!" : ""}`}>
         <option value="">—</option>
         {value && !known && <option value={value}>{extra ?? value} (не е от списъка на mobile.bg)</option>}
         {options.map((o) => (

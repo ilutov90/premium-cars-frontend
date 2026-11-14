@@ -17,6 +17,7 @@
   --color-accent-dark: #a5431f;
   --color-ok: #2f7d4f;
   --color-warn: #b7791f;
+  --color-danger: #c53030;
 }
 
 html {
@@ -28,6 +29,22 @@ body {
   color: var(--color-ink);
   /* tnum: aligned digits for prices; locl off: keep standard Cyrillic letterforms with lang="bg" */
   font-feature-settings: "tnum" 1, "locl" 0;
+  font-size: var(--text-base);
+  /*
+   * The public site reads one step larger than Tailwind's scale (the small texts were too small on a phone):
+   * the text-xs … text-lg utilities take these. The admin panel keeps Tailwind's sizes (below).
+   */
+  --text-xs: 0.8125rem;
+  --text-sm: 0.9375rem;
+  --text-base: 1.0625rem;
+  --text-lg: 1.1875rem;
+}
+/* also covers the admin dialogs, which are rendered into <body> */
+body:has(.admin-root) {
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-base: 1rem;
+  --text-lg: 1.125rem;
 }
 
 /* Shared form controls and buttons (catalog filters, inquiry form, admin). */
