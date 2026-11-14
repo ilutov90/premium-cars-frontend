@@ -38,7 +38,7 @@ export function SiteNav({ contact }: { contact: Contact }) {
 
   return (
     <>
-      <nav className="flex items-center gap-1 text-sm font-semibold">
+      <nav className="flex items-center gap-1 text-[14px] font-semibold">
         <div className="hidden items-center xl:flex">
           <Suspense fallback={<DesktopLinks active={null} />}>
             <DesktopLinksActive />
@@ -65,7 +65,7 @@ export function SiteNav({ contact }: { contact: Contact }) {
         >
           <ViberIcon />
         </a>
-        <Link href="/#contact" className="btn-accent ml-1 hidden px-4! py-2! sm:inline-flex">
+        <Link href="/#contact" className="btn-accent ml-1 hidden px-4! py-2! text-[14px]! sm:inline-flex">
           Запитване
         </Link>
         <button

@@ -116,7 +116,12 @@ Run `npm run lint` and `npm run build` before finishing a change.
   the inquiry form). `/kak-raboti-vnosat` is the six-step guide (`import-steps.tsx`; its compact cards are the home
   page's "Как работи вносът"). The owner writes the marketing texts of these pages: keep them verbatim.
 - Docs (README, CLAUDE.md) and code comments are English.
-- Design tokens are in `src/app/globals.css` (`@theme`: paper, card, ink, muted, line, accent). Use them
+- Text sizes: the public site reads one step larger than Tailwind's scale (`--text-xs` … `--text-lg` set on `body` in
+  `globals.css`); the admin panel keeps Tailwind's sizes through `.admin-root` (`admin/layout.tsx`). The header's menu is
+  fixed at 14px so it fits.
+- The mobile.bg dialog (`mobile-bg-panel.tsx`) marks every field that keeps it from being sent in red (`danger`), lists
+  them left of its button and keeps the button off until they are filled; a make or model outside mobile.bg's list counts.
+- Design tokens are in `src/app/globals.css` (`@theme`: paper, card, ink, muted, line, accent, danger). Use them
   (`bg-card`, `text-muted`, `bg-accent`, ...) instead of raw colours. Shared utilities: `field`, `label`,
   `btn-primary`, `btn-accent`, `btn-ghost`.
 - No new dependencies without a clear need.
