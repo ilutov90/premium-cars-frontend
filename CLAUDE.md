@@ -108,7 +108,7 @@ Run `npm run lint` and `npm run build` before finishing a change.
   id is saved under "Шаблони → Общи данни" (backend `post_setting`); `cookie-consent.tsx` (in the layout) shows the
   cookie banner only when a pixel id is set and loads the pixel only after "Приемам" (PageView per page, Lead on a sent
   inquiry). Keep the privacy policy (`/privacy#cookies`) in line with it. `/admin/reports` shows inquiries per channel,
-  campaign, car and week; `/admin/delivered` edits "Доставени коли" (shown on `/delivered` and the home page); a new one is added in one go: the photo is chosen in the same form and uploaded right after the record is created).
+  campaign, car and week; `/admin/delivered` edits "Доставени коли" (shown on `/delivered` and the home page; a new one is added in one go: the photo is chosen in the same form and uploaded right after the record is created).
   A scheduled post the backend skipped (the car was posted to that network by hand after the scheduling) is CANCELLED with a
   reason, shown in Bulgarian by `scheduledPostNote` (`format.ts`).
   Landing pages: `/koli-ot-koreya` (all cars from Korea; the old `/koli-na-gaz-ot-koreya` redirects there, `next.config.ts`) and
