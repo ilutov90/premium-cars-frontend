@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { useAdmin } from "@/components/admin/admin-context";
-import { formatDate, scheduledStatusLabels } from "@/lib/format";
+import { formatDate, scheduledPostNote, scheduledStatusLabels } from "@/lib/format";
 import { networkLabels } from "@/lib/post-template";
 import type { ScheduledPost, ScheduledPostStatus } from "@/lib/types";
 
@@ -118,7 +118,9 @@ function Row({
               · {post.imageIds.length || "първите"} снимки{post.createdBy ? ` · ${post.createdBy}` : ""}
             </span>
           </p>
-          {post.error && <p className="mt-1 text-xs break-words text-warn">{post.error}</p>}
+          {scheduledPostNote(post.error) && (
+            <p className="mt-1 text-xs break-words text-warn">{scheduledPostNote(post.error)}</p>
+          )}
         </div>
         <div className="flex gap-2">
           <button type="button" onClick={onToggle} className="btn-ghost px-3! py-1.5! text-xs!">

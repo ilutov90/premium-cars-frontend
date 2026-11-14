@@ -146,7 +146,7 @@ export default function AdminReportsPage() {
                 title="По коли (до 20)"
                 wide
                 rows={report.byCar.map((c) => ({
-                  label: c.carId ? (c.carTitle ?? `#${c.carId}`) : "Общо запитване („Намери ми кола“) или изтрита кола",
+                  label: c.carId ? (c.carTitle ?? `#${c.carId}`) : "Общо запитване („Изпрати ни запитване“) или изтрита кола",
                   href: c.carId ? `/admin/cars/${c.carId}` : undefined,
                   count: c.count,
                   muted: !c.carId,

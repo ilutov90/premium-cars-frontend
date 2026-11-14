@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useAdmin } from "@/components/admin/admin-context";
 import { CarImage } from "@/components/car-image";
 import { formatDay } from "@/lib/format";
@@ -50,6 +50,7 @@ export default function AdminDeliveredPage() {
   const [cars, setCars] = useState<AdminCarSummary[]>([]);
   const [editing, setEditing] = useState<number | "new" | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<{ ok: boolean; text: string } | null>(null);
 
   useEffect(() => {
     adminFetch<AdminDeliveredCar[]>("/api/admin/delivered-cars")
@@ -70,6 +71,7 @@ export default function AdminDeliveredPage() {
   }
 
   async function remove(d: AdminDeliveredCar) {
+    setNotice(null);
     if (!window.confirm(`Да изтрия „${d.carTitle} — ${d.customerName}“? Снимката също се изтрива.`)) return;
     try {
       await adminFetch<void>(`/api/admin/delivered-cars/${d.id}`, { method: "DELETE" });
@@ -91,7 +93,8 @@ export default function AdminDeliveredPage() {
               /delivered
             </Link>{" "}
             и на началната страница). Публикувайте само с изричното съгласие на клиента (стига писмено съобщение във
-            Viber, запазете го) и само истински отзиви.
+            Viber, запазете го) и само истински отзиви. Новата кола се добавя наведнъж: попълнете полетата, изберете
+            снимка и натиснете „Добави“.
           </p>
         </div>
         {editing !== "new" && (
@@ -102,12 +105,16 @@ export default function AdminDeliveredPage() {
       </div>
 
       {error && <p className="mb-3 text-sm text-accent-dark">{error}</p>}
+      {notice && (
+        <p className={`mb-3 text-sm font-semibold ${notice.ok ? "text-ok" : "text-warn"}`}>{notice.text}</p>
+      )}
 
       {editing === "new" && (
         <Editor
           cars={cars}
-          onSaved={(d) => {
+          onSaved={(d, note) => {
             replace(d);
+            setNotice(note ?? null);
             setEditing(d.id);
           }}
           onCancel={() => setEditing(null)}
@@ -125,7 +132,10 @@ export default function AdminDeliveredPage() {
               <Editor
                 cars={cars}
                 existing={d}
-                onSaved={replace}
+                onSaved={(saved) => {
+                  setNotice(null);
+                  replace(saved);
+                }}
                 onCancel={() => setEditing(null)}
                 onDelete={() => remove(d)}
               />
@@ -166,32 +176,72 @@ function Editor({
 }: {
   cars: AdminCarSummary[];
   existing?: AdminDeliveredCar;
-  onSaved: (d: AdminDeliveredCar) => void;
+  onSaved: (d: AdminDeliveredCar, note?: { ok: boolean; text: string }) => void;
   onCancel: () => void;
   onDelete?: () => void;
 }) {
   const { adminFetch } = useAdmin();
   const [form, setForm] = useState<DeliveredCarRequest>(existing ? toForm(existing) : empty);
   const [photoUrl, setPhotoUrl] = useState(existing?.photoUrl ?? null);
+  const [pending, setPending] = useState<{ file: File; url: string } | null>(null);
+  const pendingUrl = useRef<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null);
   const set = <K extends keyof DeliveredCarRequest>(key: K, value: DeliveredCarRequest[K]) =>
     setForm((f) => ({ ...f, [key]: value, ...(key === "consent" && !value ? { published: false } : {}) }));
 
+  useEffect(
+    () => () => {
+      if (pendingUrl.current) URL.revokeObjectURL(pendingUrl.current);
+    },
+    [],
+  );
+
+  function choose(file: File | null) {
+    if (pendingUrl.current) URL.revokeObjectURL(pendingUrl.current);
+    pendingUrl.current = file ? URL.createObjectURL(file) : null;
+    setPending(file && pendingUrl.current ? { file, url: pendingUrl.current } : null);
+  }
+
+  function uploadPhoto(id: number, file: File) {
+    return shrink(file).then((body) =>
+      adminFetch<AdminDeliveredCar>(`/api/admin/delivered-cars/${id}/photo`, {
+        method: "PUT",
+        body,
+        headers: { "Content-Type": "image/jpeg" },
+      }),
+    );
+  }
+
   async function save(e: React.FormEvent) {
     e.preventDefault();
     setBusy(true);
     setMessage(null);
+    let created: AdminDeliveredCar | null = null;
     try {
       const saved = await adminFetch<AdminDeliveredCar>(
         existing ? `/api/admin/delivered-cars/${existing.id}` : "/api/admin/delivered-cars",
         { method: existing ? "PUT" : "POST", body: JSON.stringify(form) },
       );
-      onSaved(saved);
-      setForm(toForm(saved));
-      setMessage({ ok: true, text: existing ? "Записано ✓" : "Добавено ✓ Сега може да качите снимка." });
+      if (existing) {
+        onSaved(saved);
+        setForm(toForm(saved));
+        setMessage({ ok: true, text: "Записано ✓" });
+        return;
+      }
+      created = saved;
+      const withPhoto = pending ? await uploadPhoto(saved.id, pending.file) : saved;
+      onSaved(withPhoto, { ok: true, text: "Добавено ✓" });
     } catch (err) {
-      setMessage({ ok: false, text: err instanceof Error ? err.message : "Грешка" });
+      const text = err instanceof Error ? err.message : "Грешка";
+      if (created) {
+        onSaved(created, {
+          ok: false,
+          text: `Колата е добавена, но снимката не се качи: ${text}. Опитайте пак с „Качи снимка“.`,
+        });
+      } else {
+        setMessage({ ok: false, text });
+      }
     } finally {
       setBusy(false);
     }
@@ -202,12 +252,7 @@ function Editor({
     setBusy(true);
     setMessage(null);
     try {
-      const body = await shrink(file);
-      const saved = await adminFetch<AdminDeliveredCar>(`/api/admin/delivered-cars/${existing.id}/photo`, {
-        method: "PUT",
-        body,
-        headers: { "Content-Type": "image/jpeg" },
-      });
+      const saved = await uploadPhoto(existing.id, file);
       setPhotoUrl(saved.photoUrl);
       onSaved(saved);
       setMessage({ ok: true, text: "Снимката е качена ✓" });
@@ -348,32 +393,42 @@ function Editor({
         </label>
       </div>
 
-      {existing && (
-        <div className="mt-4 flex flex-wrap items-center gap-3">
-          <div className="h-24 w-36 overflow-hidden rounded-xl bg-paper">
-            {photoUrl && <CarImage src={photoUrl} alt="" className="h-full w-full object-cover" />}
-          </div>
-          <label className="btn-ghost cursor-pointer px-4! py-2! text-sm!">
-            {photoUrl ? "Смени снимката" : "Качи снимка"}
-            <input
-              type="file"
-              accept="image/jpeg,image/png,image/webp"
-              className="hidden"
-              disabled={busy}
-              onChange={(e) => {
-                const f = e.target.files?.[0];
-                e.target.value = "";
-                if (f) void upload(f);
-              }}
-            />
-          </label>
-          {photoUrl && (
-            <button type="button" className="text-sm font-semibold text-muted hover:text-ink" disabled={busy} onClick={removePhoto}>
-              Махни снимката
-            </button>
-          )}
+      <div className="mt-4 flex flex-wrap items-center gap-3">
+        <div className="h-24 w-36 overflow-hidden rounded-xl bg-paper">
+          {existing
+            ? photoUrl && <CarImage src={photoUrl} alt="" className="h-full w-full object-cover" />
+            : pending && (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={pending.url} alt="" className="h-full w-full object-cover" />
+              )}
         </div>
-      )}
+        <label className="btn-ghost cursor-pointer px-4! py-2! text-sm!">
+          {(existing ? photoUrl : pending) ? "Смени снимката" : "Качи снимка"}
+          <input
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            className="hidden"
+            disabled={busy}
+            onChange={(e) => {
+              const f = e.target.files?.[0];
+              e.target.value = "";
+              if (!f) return;
+              if (existing) void upload(f);
+              else choose(f);
+            }}
+          />
+        </label>
+        {(existing ? photoUrl : pending) && (
+          <button
+            type="button"
+            className="text-sm font-semibold text-muted hover:text-ink"
+            disabled={busy}
+            onClick={existing ? removePhoto : () => choose(null)}
+          >
+            Махни снимката
+          </button>
+        )}
+      </div>
 
       <div className="mt-4 flex flex-wrap items-center gap-2">
         <button type="submit" className="btn-primary px-4! py-2! text-sm!" disabled={busy}>

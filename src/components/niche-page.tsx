@@ -31,7 +31,7 @@ export function NichePage({
   intro: string[];
   points: [string, string][];
   highlight: string;
-  closing: string;
+  closing?: string;
   origin: "KR" | "CN";
   searches: CarSearch[];
   catalogHref: string;
@@ -63,7 +63,7 @@ export function NichePage({
           ))}
         </ul>
         <p className="mt-8 text-xl font-extrabold tracking-tight text-accent sm:text-2xl">{highlight}</p>
-        <p className="mt-4 max-w-3xl text-lg leading-relaxed">{closing}</p>
+        {closing && <p className="mt-4 max-w-3xl text-lg leading-relaxed">{closing}</p>}
       </section>
 
       <section className="mx-auto max-w-xl px-4 pt-14 sm:px-6">
