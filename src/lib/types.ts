@@ -570,6 +570,9 @@ export interface PostSettings {
   metaPixelId: string | null;
 }
 
+/** The site's logo uploaded in the admin panel (backend SiteLogo); null url = the built-in one. */
+export type SiteLogo = { url: string | null };
+
 export interface ViberConnectResponse {
   callbackUrl: string;
 }

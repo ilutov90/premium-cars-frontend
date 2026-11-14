@@ -134,6 +134,8 @@ export default function AdminTemplatesPage() {
 
       <SharedDetails saved={settings} onSaved={setSettings} />
 
+      <LogoSettings />
+
       <div className="mt-6 flex flex-wrap gap-1.5">
         {templateKinds.map((n) => (
           <button
@@ -244,6 +246,148 @@ export default function AdminTemplatesPage() {
         </section>
       </div>
     </div>
+  );
+}
+
+const LOGO_TYPES = ["image/png", "image/jpeg", "image/webp"];
+const LOGO_MAX_BYTES = 10 * 1024 * 1024;
+
+/** The site's logo: replaced from a file (raw request body), or reset to the built-in one. */
+const LOGO_MAX_HEIGHT = 240; // the header shows it 40 px high: enough for any screen
+
+/**
+ * The logo no larger than the header needs, as PNG (keeps a transparent background); a file that is already small
+ * goes as it is. The site must not load a photo-sized file on every page.
+ */
+async function shrinkLogo(file: File): Promise<Blob> {
+  let bitmap: ImageBitmap;
+  try {
+    bitmap = await createImageBitmap(file);
+  } catch {
+    throw new Error("Файлът не се отваря като изображение.");
+  }
+  try {
+    if (bitmap.height <= LOGO_MAX_HEIGHT && file.size <= 300 * 1024) return file;
+    const scale = Math.min(1, LOGO_MAX_HEIGHT / bitmap.height);
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.max(1, Math.round(bitmap.width * scale));
+    canvas.height = Math.max(1, Math.round(bitmap.height * scale));
+    const ctx = canvas.getContext("2d");
+    if (!ctx) throw new Error("Браузърът не успя да смали изображението.");
+    ctx.imageSmoothingQuality = "high";
+    ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+    const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/png"));
+    if (!blob) throw new Error("Браузърът не успя да смали изображението.");
+    return blob;
+  } finally {
+    bitmap.close();
+  }
+}
+
+function LogoSettings() {
+  const { adminFetch } = useAdmin();
+  const [url, setUrl] = useState<string | null>(null);
+  const [file, setFile] = useState<File | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null);
+  const input = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    adminFetch<{ url: string | null }>("/api/admin/logo")
+      .then((r) => setUrl(r.url))
+      .catch(() => setUrl(null));
+  }, [adminFetch]);
+
+  function choose(f: File | null) {
+    setMessage(null);
+    if (f && !LOGO_TYPES.includes(f.type)) {
+      setFile(null);
+      if (input.current) input.current.value = "";
+      setMessage({ ok: false, text: "Файлът трябва да е PNG, JPG или WebP." });
+      return;
+    }
+    if (f && f.size > LOGO_MAX_BYTES) {
+      setFile(null);
+      if (input.current) input.current.value = "";
+      setMessage({ ok: false, text: "Файлът е над 10 MB." });
+      return;
+    }
+    setFile(f);
+  }
+
+  async function upload() {
+    if (!file) return;
+    setBusy(true);
+    setMessage(null);
+    try {
+      const image = await shrinkLogo(file);
+      const r = await adminFetch<{ url: string | null }>("/api/admin/logo", {
+        method: "PUT",
+        body: image,
+        headers: { "Content-Type": image.type },
+      });
+      setUrl(r.url);
+      setFile(null);
+      if (input.current) input.current.value = "";
+      setMessage({ ok: true, text: "Логото е сменено ✓ (на сайта се вижда до минута)." });
+    } catch (e) {
+      setMessage({ ok: false, text: e instanceof Error ? e.message : "Грешка" });
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function reset() {
+    if (!window.confirm("Да върна стандартното лого?")) return;
+    setBusy(true);
+    setMessage(null);
+    try {
+      const r = await adminFetch<{ url: string | null }>("/api/admin/logo", { method: "DELETE" });
+      setUrl(r?.url ?? null);
+      setMessage({ ok: true, text: "Върнато е стандартното лого ✓ (на сайта се вижда до минута)." });
+    } catch (e) {
+      setMessage({ ok: false, text: e instanceof Error ? e.message : "Грешка" });
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <section className="mt-5 rounded-2xl border border-line bg-card p-4">
+      <h2 className="font-bold">Лого на сайта</h2>
+      <div className="mt-3 flex min-h-16 items-center rounded-xl bg-paper px-4 py-2 ring-1 ring-line">
+        {url ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={url} alt="Текущо лого" className="max-h-12 w-auto" />
+        ) : (
+          <span className="text-sm text-muted">Използва се стандартното лого.</span>
+        )}
+      </div>
+      <div className="mt-3 flex flex-wrap items-center gap-3">
+        <input
+          ref={input}
+          type="file"
+          accept="image/png,image/jpeg,image/webp"
+          aria-label="Файл с лого"
+          className="text-sm"
+          disabled={busy}
+          onChange={(e) => choose(e.target.files?.[0] ?? null)}
+        />
+        <button type="button" className="btn-primary px-4! py-2! text-sm!" disabled={busy || !file} onClick={upload}>
+          {busy ? "Качване…" : "Качи логото"}
+        </button>
+        {url && (
+          <button type="button" className="btn-ghost px-4! py-2! text-sm!" disabled={busy} onClick={reset}>
+            Върни стандартното лого
+          </button>
+        )}
+      </div>
+      <p className="mt-2 text-xs text-muted">
+        PNG, JPG или WebP до 10 MB (смалява се сам преди качването). Логото заменя целия знак и надписа „Premium Cars Import“ горе вляво; най-добре с
+        прозрачен фон и височина поне 80 px.
+      </p>
+      {message && <p className={`mt-2 text-sm font-semibold ${message.ok ? "text-ok" : "text-warn"}`}>{message.text}</p>}
+    </section>
   );
 }
 

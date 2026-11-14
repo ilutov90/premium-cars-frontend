@@ -116,6 +116,9 @@ Run `npm run lint` and `npm run build` before finishing a change.
   the inquiry form). `/kak-raboti-vnosat` is the six-step guide (`import-steps.tsx`; its compact cards are the home
   page's "Как работи вносът"). The owner writes the marketing texts of these pages: keep them verbatim.
 - Docs (README, CLAUDE.md) and code comments are English.
+- The site's logo: the header (`site-header.tsx`) shows the image uploaded under "Шаблони → Лого на сайта"
+  (`GET /api/public/logo`, `getLogo()`) in place of the whole built-in mark and name; none, or no answer, shows the
+  built-in one. The admin page reduces the chosen file (up to 10 MB) to 240 px high PNG in the browser before sending.
 - Text sizes: the public site reads one step larger than Tailwind's scale (`--text-xs` … `--text-lg` set on `body` in
   `globals.css`); the admin panel keeps Tailwind's sizes through `.admin-root` (`admin/layout.tsx`). The header's menu is
   fixed at 14px so it fits.
