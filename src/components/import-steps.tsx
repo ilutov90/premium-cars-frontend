@@ -88,17 +88,19 @@ export function ImportStepsCompact() {
     <ol className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
       {importSteps.map((step, i) => (
         <li key={step.title} className="rounded-2xl border border-line bg-card p-5">
-          <span
-            aria-hidden
-            className="flex size-10 items-center justify-center rounded-full bg-accent text-lg font-extrabold text-white"
-          >
-            {i + 1}
-          </span>
-          <h3 className="mt-3 font-bold">
-            <span className="sr-only">Стъпка {i + 1}: </span>
-            {step.title}
-          </h3>
-          <p className="mt-1.5 text-sm leading-relaxed text-muted">{step.text[0]}</p>
+          <div className="flex items-center gap-3">
+            <span
+              aria-hidden
+              className="flex size-10 shrink-0 items-center justify-center rounded-full bg-accent text-lg font-extrabold text-white"
+            >
+              {i + 1}
+            </span>
+            <h3 className="leading-snug font-bold">
+              <span className="sr-only">Стъпка {i + 1}: </span>
+              {step.title}
+            </h3>
+          </div>
+          <p className="mt-3 text-sm leading-relaxed text-muted">{step.text[0]}</p>
         </li>
       ))}
     </ol>
