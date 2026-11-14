@@ -31,13 +31,13 @@ body {
   font-feature-settings: "tnum" 1, "locl" 0;
   font-size: var(--text-base);
   /*
-   * The public site reads one step larger than Tailwind's scale (the small texts were too small on a phone):
+   * The public site reads two steps larger than Tailwind's scale (the small texts were too small on a phone):
    * the text-xs … text-lg utilities take these. The admin panel keeps Tailwind's sizes (below).
    */
-  --text-xs: 0.8125rem;
-  --text-sm: 0.9375rem;
-  --text-base: 1.0625rem;
-  --text-lg: 1.1875rem;
+  --text-xs: 0.875rem;
+  --text-sm: 1rem;
+  --text-base: 1.125rem;
+  --text-lg: 1.25rem;
 }
 /* also covers the admin dialogs, which are rendered into <body> */
 body:has(.admin-root) {
