@@ -968,3 +968,27 @@ export interface AutoImportPreview {
   leftOut: number;
   error: string | null;
 }
+
+/** Statistics of cars that disappeared from the source sites (backend removed report). */
+export type RemovedSource = "AUTOWINI" | "GUAZI";
+export type RemovedGroupBy = "make" | "model" | "year" | "make_year" | "model_year";
+
+export interface RemovedRow {
+  make: string | null;
+  model: string | null;
+  year: number | null;
+  count: number;
+  sharePct: number;
+  avgPriceEur: number | null;
+  avgDaysListed: number | null;
+}
+
+export interface RemovedReport {
+  total: number;
+  unrecognized: number;
+  firstRemovedAt: string | null;
+  rows: RemovedRow[];
+  weeks: { weekStart: string; count: number }[];
+  makes: string[];
+  models: string[];
+}
