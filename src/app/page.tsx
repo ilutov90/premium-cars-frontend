@@ -126,7 +126,7 @@ async function SavedContactButtons() {
 
 function ContactButtons({ contact }: { contact: Contact }) {
   return (
-    <div className="mt-6 flex flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:justify-between">
+    <div className="mt-6 flex flex-col items-center gap-3">
       <a href={phoneHref(contact.phone)} className="btn-accent justify-center gap-2 px-6! py-3! text-base!">
         <PhoneIcon /> Свържи се с нас: {contact.phone}
       </a>
