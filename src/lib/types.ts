@@ -568,6 +568,14 @@ export interface PostSettings {
   office: string | null;
   /** The Meta Pixel the site loads after the visitor accepts marketing cookies; null = none. */
   metaPixelId: string | null;
+  /** Google Ads tag id ("AW-1234567890"), loaded after consent like the pixel; null = none. */
+  googleAdsId: string | null;
+  /** Google Analytics 4 measurement id ("G-XXXXXXXXXX"); null = none. */
+  googleAnalyticsId: string | null;
+  /** Google Ads conversion labels (the part after "/" in send_to): sent inquiry, phone click, Viber click. */
+  googleLeadLabel: string | null;
+  googlePhoneLabel: string | null;
+  googleViberLabel: string | null;
 }
 
 /** The site's logo uploaded in the admin panel (backend SiteLogo); null url = the built-in one. */
@@ -987,6 +995,8 @@ export interface RemovedReport {
   total: number;
   unrecognized: number;
   firstRemovedAt: string | null;
+  /** Only cars removed after this instant are counted; null/absent = everything. */
+  statsFrom?: string | null;
   rows: RemovedRow[];
   weeks: { weekStart: string; count: number }[];
   makes: string[];

@@ -7,7 +7,7 @@ import { SiteFooter } from "@/components/site-footer";
 import { CookieConsentAndPixel } from "@/components/cookie-consent";
 import { getContact } from "@/lib/api";
 import { SITE_URL } from "@/lib/seo";
-import { site } from "@/lib/site";
+import { contactDetails, site } from "@/lib/site";
 
 const description =
   "Внос на автомобили от Южна Корея и Китай с ясна крайна цена в България: транспорт, мито, ДДС и регистрация.";
@@ -47,8 +47,18 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   );
 }
 
-/** The Meta Pixel id saved in the admin panel ("Шаблони → Общи данни"); streams in after the shell. */
+/** The Meta Pixel and Google tag ids saved in the admin panel ("Шаблони → Общи данни"); streams in after the shell. */
 async function SitePixel() {
   const contact = await getContact();
-  return <CookieConsentAndPixel pixelId={contact?.metaPixelId ?? null} />;
+  return (
+    <CookieConsentAndPixel
+      pixelId={contact?.metaPixelId ?? null}
+      googleAdsId={contact?.googleAdsId ?? null}
+      googleAnalyticsId={contact?.googleAnalyticsId ?? null}
+      googleLeadLabel={contact?.googleLeadLabel ?? null}
+      googlePhoneLabel={contact?.googlePhoneLabel ?? null}
+      googleViberLabel={contact?.googleViberLabel ?? null}
+      viberLink={contactDetails(contact).viberLink}
+    />
+  );
 }

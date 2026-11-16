@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useId, useState } from "react";
 import { PUBLIC_API_URL } from "@/lib/config";
 import { heardFromLabels } from "@/lib/format";
-import { trackEvent, visitAttribution } from "@/lib/marketing";
+import { trackEvent, trackGoogleConversion, visitAttribution } from "@/lib/marketing";
 import { site, viberChatHref } from "@/lib/site";
 import { ViberIcon } from "./icons";
 import type { FilterOptions, HeardFrom, PostSettings } from "@/lib/types";
@@ -76,6 +76,7 @@ export function InquiryForm({ carId, carTitle }: { carId?: number; carTitle?: st
         throw new Error(problem?.detail ?? `Грешка ${res.status}`);
       }
       trackEvent("Lead", { content_name: carTitle ?? "Намери ми кола" });
+      trackGoogleConversion("lead");
       setState({ kind: "sent" });
     } catch (err) {
       setState({ kind: "error", message: err instanceof Error ? err.message : "Неуспешно изпращане" });

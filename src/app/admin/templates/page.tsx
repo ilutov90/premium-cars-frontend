@@ -136,6 +136,8 @@ export default function AdminTemplatesPage() {
 
       <LogoSettings />
 
+      <ShareImageSettings />
+
       <div className="mt-6 flex flex-wrap gap-1.5">
         {templateKinds.map((n) => (
           <button
@@ -252,14 +254,22 @@ export default function AdminTemplatesPage() {
 const LOGO_TYPES = ["image/png", "image/jpeg", "image/webp"];
 const LOGO_MAX_BYTES = 10 * 1024 * 1024;
 
-/** The site's logo: replaced from a file (raw request body), or reset to the built-in one. */
-const LOGO_MAX_HEIGHT = 240; // the header shows it 40 px high: enough for any screen
+type Shrink = {
+  /** Largest size kept: the picture is scaled down (never up) to fit, keeping its proportions. */
+  maxWidth?: number;
+  maxHeight?: number;
+  /** A file already within the size and at most this big goes as it is. */
+  keepBytes: number;
+  mime: "image/png" | "image/jpeg";
+  quality?: number;
+};
 
-/**
- * The logo no larger than the header needs, as PNG (keeps a transparent background); a file that is already small
- * goes as it is. The site must not load a photo-sized file on every page.
- */
-async function shrinkLogo(file: File): Promise<Blob> {
+/** The site's logo: 240 px high PNG (keeps a transparent background), the header shows it 40 px high. */
+const LOGO_SHRINK: Shrink = { maxHeight: 240, keepBytes: 300 * 1024, mime: "image/png" };
+/** The share picture: at most 1200 px wide JPEG; the site must not serve a photo-sized file to every crawler. */
+const SHARE_SHRINK: Shrink = { maxWidth: 1200, keepBytes: 500 * 1024, mime: "image/jpeg", quality: 0.9 };
+
+async function shrinkImage(file: File, o: Shrink): Promise<Blob> {
   let bitmap: ImageBitmap;
   try {
     bitmap = await createImageBitmap(file);
@@ -267,16 +277,20 @@ async function shrinkLogo(file: File): Promise<Blob> {
     throw new Error("Файлът не се отваря като изображение.");
   }
   try {
-    if (bitmap.height <= LOGO_MAX_HEIGHT && file.size <= 300 * 1024) return file;
-    const scale = Math.min(1, LOGO_MAX_HEIGHT / bitmap.height);
+    const scale = Math.min(1, (o.maxWidth ?? Infinity) / bitmap.width, (o.maxHeight ?? Infinity) / bitmap.height);
+    if (scale === 1 && file.size <= o.keepBytes) return file;
     const canvas = document.createElement("canvas");
     canvas.width = Math.max(1, Math.round(bitmap.width * scale));
     canvas.height = Math.max(1, Math.round(bitmap.height * scale));
     const ctx = canvas.getContext("2d");
     if (!ctx) throw new Error("Браузърът не успя да смали изображението.");
+    if (o.mime === "image/jpeg") {
+      ctx.fillStyle = "#fff"; // JPEG has no transparency
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+    }
     ctx.imageSmoothingQuality = "high";
     ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
-    const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/png"));
+    const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, o.mime, o.quality));
     if (!blob) throw new Error("Браузърът не успя да смали изображението.");
     return blob;
   } finally {
@@ -284,7 +298,36 @@ async function shrinkLogo(file: File): Promise<Blob> {
   }
 }
 
-function LogoSettings() {
+/** One uploaded site picture (the logo, the share picture): replaced from a file (raw request body) or reset. */
+function ImageSettings({
+  title,
+  endpoint,
+  shrink,
+  emptyText,
+  alt,
+  previewClass,
+  inputLabel,
+  uploadLabel,
+  resetLabel,
+  resetConfirm,
+  doneText,
+  resetDoneText,
+  hint,
+}: {
+  title: string;
+  endpoint: string;
+  shrink: Shrink;
+  emptyText: string;
+  alt: string;
+  previewClass: string;
+  inputLabel: string;
+  uploadLabel: string;
+  resetLabel: string;
+  resetConfirm: string;
+  doneText: string;
+  resetDoneText: string;
+  hint: string;
+}) {
   const { adminFetch } = useAdmin();
   const [url, setUrl] = useState<string | null>(null);
   const [file, setFile] = useState<File | null>(null);
@@ -293,10 +336,10 @@ function LogoSettings() {
   const input = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    adminFetch<{ url: string | null }>("/api/admin/logo")
+    adminFetch<{ url: string | null }>(endpoint)
       .then((r) => setUrl(r.url))
       .catch(() => setUrl(null));
-  }, [adminFetch]);
+  }, [adminFetch, endpoint]);
 
   function choose(f: File | null) {
     setMessage(null);
@@ -320,8 +363,8 @@ function LogoSettings() {
     setBusy(true);
     setMessage(null);
     try {
-      const image = await shrinkLogo(file);
-      const r = await adminFetch<{ url: string | null }>("/api/admin/logo", {
+      const image = await shrinkImage(file, shrink);
+      const r = await adminFetch<{ url: string | null }>(endpoint, {
         method: "PUT",
         body: image,
         headers: { "Content-Type": image.type },
@@ -329,7 +372,7 @@ function LogoSettings() {
       setUrl(r.url);
       setFile(null);
       if (input.current) input.current.value = "";
-      setMessage({ ok: true, text: "Логото е сменено ✓ (на сайта се вижда до минута)." });
+      setMessage({ ok: true, text: doneText });
     } catch (e) {
       setMessage({ ok: false, text: e instanceof Error ? e.message : "Грешка" });
     } finally {
@@ -338,13 +381,13 @@ function LogoSettings() {
   }
 
   async function reset() {
-    if (!window.confirm("Да върна стандартното лого?")) return;
+    if (!window.confirm(resetConfirm)) return;
     setBusy(true);
     setMessage(null);
     try {
-      const r = await adminFetch<{ url: string | null }>("/api/admin/logo", { method: "DELETE" });
+      const r = await adminFetch<{ url: string | null }>(endpoint, { method: "DELETE" });
       setUrl(r?.url ?? null);
-      setMessage({ ok: true, text: "Върнато е стандартното лого ✓ (на сайта се вижда до минута)." });
+      setMessage({ ok: true, text: resetDoneText });
     } catch (e) {
       setMessage({ ok: false, text: e instanceof Error ? e.message : "Грешка" });
     } finally {
@@ -354,13 +397,13 @@ function LogoSettings() {
 
   return (
     <section className="mt-5 rounded-2xl border border-line bg-card p-4">
-      <h2 className="font-bold">Лого на сайта</h2>
+      <h2 className="font-bold">{title}</h2>
       <div className="mt-3 flex min-h-16 items-center rounded-xl bg-paper px-4 py-2 ring-1 ring-line">
         {url ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={url} alt="Текущо лого" className="max-h-12 w-auto" />
+          <img src={url} alt={alt} className={`${previewClass} w-auto`} />
         ) : (
-          <span className="text-sm text-muted">Използва се стандартното лого.</span>
+          <span className="text-sm text-muted">{emptyText}</span>
         )}
       </div>
       <div className="mt-3 flex flex-wrap items-center gap-3">
@@ -368,33 +411,119 @@ function LogoSettings() {
           ref={input}
           type="file"
           accept="image/png,image/jpeg,image/webp"
-          aria-label="Файл с лого"
+          aria-label={inputLabel}
           className="text-sm"
           disabled={busy}
           onChange={(e) => choose(e.target.files?.[0] ?? null)}
         />
         <button type="button" className="btn-primary px-4! py-2! text-sm!" disabled={busy || !file} onClick={upload}>
-          {busy ? "Качване…" : "Качи логото"}
+          {busy ? "Качване…" : uploadLabel}
         </button>
         {url && (
           <button type="button" className="btn-ghost px-4! py-2! text-sm!" disabled={busy} onClick={reset}>
-            Върни стандартното лого
+            {resetLabel}
           </button>
         )}
       </div>
-      <p className="mt-2 text-xs text-muted">
-        PNG, JPG или WebP до 10 MB (смалява се сам преди качването). Логото заменя целия знак и надписа „Premium Cars Import“ горе вляво; най-добре с
-        прозрачен фон и височина поне 80 px.
-      </p>
+      <p className="mt-2 text-xs text-muted">{hint}</p>
       {message && <p className={`mt-2 text-sm font-semibold ${message.ok ? "text-ok" : "text-warn"}`}>{message.text}</p>}
     </section>
   );
 }
 
+function LogoSettings() {
+  return (
+    <ImageSettings
+      title="Лого на сайта"
+      endpoint="/api/admin/logo"
+      shrink={LOGO_SHRINK}
+      emptyText="Използва се стандартното лого."
+      alt="Текущо лого"
+      previewClass="max-h-12"
+      inputLabel="Файл с лого"
+      uploadLabel="Качи логото"
+      resetLabel="Върни стандартното лого"
+      resetConfirm="Да върна стандартното лого?"
+      doneText="Логото е сменено ✓ (на сайта се вижда до минута)."
+      resetDoneText="Върнато е стандартното лого ✓ (на сайта се вижда до минута)."
+      hint="PNG, JPG или WebP до 10 MB (смалява се сам преди качването). Логото заменя целия знак и надписа „Premium Cars Import“ горе вляво; най-добре с прозрачен фон и височина поне 80 px."
+    />
+  );
+}
+
+function ShareImageSettings() {
+  return (
+    <ImageSettings
+      title="Картинка при споделяне"
+      endpoint="/api/admin/share-image"
+      shrink={SHARE_SHRINK}
+      emptyText="Използва се стандартната картинка."
+      alt="Текуща картинка при споделяне"
+      previewClass="max-h-40"
+      inputLabel="Файл с картинка при споделяне"
+      uploadLabel="Качи картинката"
+      resetLabel="Върни стандартната картинка"
+      resetConfirm="Да върна стандартната картинка?"
+      doneText="Картинката е сменена ✓"
+      resetDoneText="Върната е стандартната картинка ✓"
+      hint="Това е картинката, която се вижда, когато някой сподели линк към сайта във Facebook, Viber и др. Най-добре 1200 × 630 пиксела (JPG или PNG), с важното в средата. Страниците на колите показват снимката на самата кола. Вече споделени линкове може да пазят старата картинка."
+    />
+  );
+}
+
+type GoogleKey = "googleAdsId" | "googleLeadLabel" | "googlePhoneLabel" | "googleViberLabel" | "googleAnalyticsId";
+
+/** The Google tag's fields in "Общи данни", in this order, each with where the owner finds the value. */
+const GOOGLE_FIELDS: { key: GoogleKey; label: string; hint: string; placeholder: string }[] = [
+  {
+    key: "googleAdsId",
+    label: "Google Ads ID",
+    hint: "От Google Ads → Goals → Conversions → Summary → избирате конверсията → „Tag setup“ → „Install the tag yourself“. Изглежда като AW-1234567890.",
+    placeholder: "напр. AW-1234567890",
+  },
+  {
+    key: "googleLeadLabel",
+    label: "Label за запитване",
+    hint: "От същото място: в реда „send_to“ е записано AW-1234567890/XXXXXXXX. Label е частта след наклонената черта. Това е основната конверсия: изпратено запитване.",
+    placeholder: "напр. AbCdEfGh123",
+  },
+  {
+    key: "googlePhoneLabel",
+    label: "Label за обаждане (по желание)",
+    hint: "Отделна конверсия в Google Ads за натискане на бутон с телефона. Оставете празно, ако не я ползвате.",
+    placeholder: "",
+  },
+  {
+    key: "googleViberLabel",
+    label: "Label за Viber (по желание)",
+    hint: "Отделна конверсия за натискане на бутон за Viber. Оставете празно, ако не я ползвате.",
+    placeholder: "",
+  },
+  {
+    key: "googleAnalyticsId",
+    label: "Google Analytics ID (по желание)",
+    hint: "Ако ползвате и Google Analytics 4: Admin → Data streams → вашият сайт → Measurement ID. Изглежда като G-XXXXXXXXXX.",
+    placeholder: "напр. G-XXXXXXXXXX",
+  },
+];
+
+/** The "Общи данни" form's values: the effective contact details plus the tracking ids ("" = none). */
+function sharedForm(saved: PostSettings | null) {
+  return {
+    ...effectiveSettings(saved),
+    metaPixelId: saved?.metaPixelId ?? "",
+    googleAdsId: saved?.googleAdsId ?? "",
+    googleAnalyticsId: saved?.googleAnalyticsId ?? "",
+    googleLeadLabel: saved?.googleLeadLabel ?? "",
+    googlePhoneLabel: saved?.googlePhoneLabel ?? "",
+    googleViberLabel: saved?.googleViberLabel ?? "",
+  };
+}
+
 /** Phone, Viber channel link and office: the same for every car ({{phone}}, {{viber_link}}, {{office}}). */
 function SharedDetails({ saved, onSaved }: { saved: PostSettings | null; onSaved: (s: PostSettings) => void }) {
   const { adminFetch } = useAdmin();
-  const current = { ...effectiveSettings(saved), metaPixelId: saved?.metaPixelId ?? "" };
+  const current = sharedForm(saved);
   const [form, setForm] = useState(current);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null);
@@ -403,14 +532,15 @@ function SharedDetails({ saved, onSaved }: { saved: PostSettings | null; onSaved
   const [loadedFrom, setLoadedFrom] = useState<PostSettings | null>(null);
   if (saved !== loadedFrom) {
     setLoadedFrom(saved);
-    setForm({ ...effectiveSettings(saved), metaPixelId: saved?.metaPixelId ?? "" });
+    setForm(sharedForm(saved));
   }
 
   const dirty =
     form.phone !== current.phone ||
     form.viberLink !== current.viberLink ||
     form.office !== current.office ||
-    form.metaPixelId.trim() !== current.metaPixelId;
+    form.metaPixelId.trim() !== current.metaPixelId ||
+    GOOGLE_FIELDS.some(({ key }) => form[key].trim() !== current[key]);
 
   async function save(e: React.FormEvent) {
     e.preventDefault();
@@ -423,6 +553,11 @@ function SharedDetails({ saved, onSaved }: { saved: PostSettings | null; onSaved
         viberLink: form.viberLink.trim() === site.viberLink ? null : form.viberLink,
         office: form.office.trim() === site.office ? null : form.office,
         metaPixelId: form.metaPixelId.trim() || null,
+        googleAdsId: form.googleAdsId.trim().toUpperCase() || null,
+        googleAnalyticsId: form.googleAnalyticsId.trim().toUpperCase() || null,
+        googleLeadLabel: form.googleLeadLabel.trim() || null,
+        googlePhoneLabel: form.googlePhoneLabel.trim() || null,
+        googleViberLabel: form.googleViberLabel.trim() || null,
       };
       const next = await adminFetch<PostSettings>("/api/admin/post-settings", {
         method: "PUT",
@@ -506,6 +641,33 @@ function SharedDetails({ saved, onSaved }: { saved: PostSettings | null; onSaved
           бисквитки и зарежда пиксела само при „Приемам“; формата за запитване отчита „Lead“. Празно = без пиксел и
           без банер.
         </p>
+      </div>
+      <div className="mt-4 border-t border-line pt-3">
+        <h3 className="text-sm font-bold">Google реклами и анализи</h3>
+        <p className="mt-1 text-xs text-muted">
+          Зареждат се като пиксела: само след „Приемам“ в банера за бисквитки. Отчитат се изпратено запитване и, ако са
+          попълнени, натискането на телефона и на Viber.
+        </p>
+        <div className="mt-2 grid gap-3 sm:grid-cols-2">
+          {GOOGLE_FIELDS.map(({ key, label, hint, placeholder }) => (
+            <div key={key}>
+              <label className="label" htmlFor={`set-${key}`}>
+                {label}
+              </label>
+              <input
+                id={`set-${key}`}
+                value={form[key]}
+                onChange={(e) => setForm({ ...form, [key]: e.target.value })}
+                placeholder={placeholder}
+                maxLength={60}
+                autoComplete="off"
+                spellCheck={false}
+                className="field"
+              />
+              <p className="mt-1 text-xs text-muted">{hint}</p>
+            </div>
+          ))}
+        </div>
       </div>
       <div className="mt-3 flex items-center gap-3">
         <button type="submit" className="btn-primary px-4! py-2! text-sm!" disabled={busy || !dirty}>

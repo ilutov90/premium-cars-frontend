@@ -101,6 +101,20 @@ export async function getLogo(): Promise<string | null> {
   }
 }
 
+/** The picture shown when a link to the site is shared, uploaded in the admin panel; null = the generated default. */
+export async function getShareImage(): Promise<string | null> {
+  try {
+    return (await get<SiteLogo>("/api/public/share-image")).url ?? null;
+  } catch {
+    return null;
+  }
+}
+
+/** A backend-relative URL (e.g. /media/site/x.jpg) made absolute for a server-side fetch; absolute ones stay. */
+export function resolveBackendUrl(url: string): string {
+  return /^https?:\/\//i.test(url) ? url : `${SERVER_API_URL}${url.startsWith("/") ? "" : "/"}${url}`;
+}
+
 /** "Доставени коли" the admins published, newest first; empty when the backend cannot be reached. */
 export async function getDeliveredCars(limit = 12): Promise<PublicDeliveredCar[]> {
   try {
