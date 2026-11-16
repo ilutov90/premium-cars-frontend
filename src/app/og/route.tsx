@@ -1,9 +1,35 @@
 import { ImageResponse } from "next/og";
+import { connection } from "next/server";
+import { getShareImage, resolveBackendUrl } from "@/lib/api";
 import { SITE_URL } from "@/lib/seo";
 
-// The default preview image when a page without its own photo is shared (Facebook, Viber, Messenger).
-// Prerendered at build time. Latin text only: the built-in font has no Cyrillic.
-export function GET() {
+// The preview image when a page without its own photo is shared (Facebook, Viber, Messenger): the picture uploaded in
+// the admin panel, else the generated default. It reads the backend per request (`connection()` keeps the route out of
+// the build-time prerender), so a new picture shows within the cache time below.
+export async function GET() {
+  await connection();
+  const uploaded = await uploadedImage();
+  if (uploaded) return uploaded;
+  return defaultImage();
+}
+
+async function uploadedImage(): Promise<Response | null> {
+  try {
+    const url = await getShareImage();
+    if (!url) return null;
+    const res = await fetch(resolveBackendUrl(url), { cache: "no-store" });
+    const type = res.headers.get("content-type")?.split(";")[0].trim() ?? "";
+    if (!res.ok || !type.startsWith("image/")) return null;
+    return new Response(await res.arrayBuffer(), {
+      headers: { "Content-Type": type, "Cache-Control": "public, max-age=300" },
+    });
+  } catch {
+    return null;
+  }
+}
+
+// Latin text only: the built-in font has no Cyrillic.
+function defaultImage() {
   return new ImageResponse(
     (
       <div

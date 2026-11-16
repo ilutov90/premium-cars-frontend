@@ -12,7 +12,7 @@ export const metadata: Metadata = {
 
 // The text follows the GDPR (Regulation (EU) 2016/679) information duties (Art. 13). Keep it in line with what the
 // site really does: the inquiry form (with "Откъде научихте" and where the visit came from), "Доставени коли", the
-// admin session cookies, the Meta Pixel after consent (cookie-consent.tsx), the processors below.
+// admin session cookies, the Meta Pixel and the Google tag after consent (cookie-consent.tsx), the processors below.
 export default function PrivacyPage() {
   const mail = <a href={`mailto:${company.email}`}>{company.email}</a>;
   return (
@@ -83,6 +83,19 @@ export default function PrivacyPage() {
         . Без съгласие пикселът не се зарежда. Може да промените избора си по всяко време:{" "}
         <CookieSettingsLink className="font-semibold underline underline-offset-2" />.
       </p>
+      <p>
+        <strong>Маркетингови (Google) — само с ваше съгласие.</strong> Ако натиснете „Приемам“, сайтът зарежда и
+        етикета на Google (gtag.js) за измерване на рекламите ни в Google Ads и, ако го ползваме, Google Analytics. Той
+        поставя бисквитки (напр. <code>_gcl_au</code> и <code>_ga</code>, до 2 години) и изпраща на Google кои страници
+        от сайта отваряте, дали сте изпратили запитване (без съдържанието му) и дали сте натиснали бутона за обаждане
+        или за Viber, заедно с IP адреса и данни за браузъра ви. Използваме това, за да знаем кои реклами в Google
+        водят до запитвания и как се ползва сайтът. Данните се обработват от Google Ireland Ltd.; по-нататъшното им
+        използване от Google е по{" "}
+        <a href="https://policies.google.com/privacy" target="_blank" rel="noreferrer">
+          политиката на Google
+        </a>
+        . Без съгласие етикетът на Google не се зарежда и нищо не се изпраща към Google.
+      </p>
 
       <h2>4. За какво използваме данните и на какво основание</h2>
       <ul>
@@ -103,13 +116,13 @@ export default function PrivacyPage() {
           дошли) — наш легитимен интерес да преценяваме рекламата си (чл. 6, ал. 1, буква „е“).
         </li>
         <li>
-          <strong>Meta Pixel и „Доставени коли“</strong> — вашето съгласие (чл. 6, ал. 1, буква „а“), което можете да
-          оттеглите по всяко време, без това да засяга законността на обработването дотогава.
+          <strong>Meta Pixel, етикетът на Google и „Доставени коли“</strong> — вашето съгласие (чл. 6, ал. 1, буква
+          „а“), което можете да оттеглите по всяко време, без това да засяга законността на обработването дотогава.
         </li>
       </ul>
       <p>
-        Не изпращаме рекламни съобщения и не продаваме лични данни. Данни към Meta се предават само ако сте приели
-        маркетинговите бисквитки (т. 3).
+        Не изпращаме рекламни съобщения и не продаваме лични данни. Данни към Meta и Google се предават само ако сте
+        приели маркетинговите бисквитки (т. 3).
       </p>
 
       <h2>5. Колко дълго ги пазим</h2>
@@ -140,7 +153,8 @@ export default function PrivacyPage() {
           <strong>Resend</strong> — изпраща ни известие по имейл за всяко ново запитване.
         </li>
         <li>
-          <strong>Google (Gmail)</strong> — пощенската кутия, в която получаваме известията и имейлите ви.
+          <strong>Google (Gmail)</strong> — пощенската кутия, в която получаваме известията и имейлите ви; Google Ads
+          и Google Analytics — само ако сте приели маркетинговите бисквитки (т. 3).
         </li>
         <li>
           <strong>Meta Platforms Ireland Ltd.</strong> — само ако сте приели маркетинговите бисквитки (т. 3).

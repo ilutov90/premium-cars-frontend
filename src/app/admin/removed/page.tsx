@@ -92,6 +92,8 @@ function AdminRemoved() {
   const [error, setError] = useState<string | null>(null);
   const [doneKey, setDoneKey] = useState<string | null>(null);
   const [shown, setShown] = useState(PAGE);
+  const [resetting, setResetting] = useState(false);
+  const [reloads, setReloads] = useState(0);
 
   const change = (c: Partial<View>) => {
     setShown(PAGE);
@@ -121,7 +123,26 @@ function AdminRemoved() {
     return () => {
       cancelled = true;
     };
-  }, [adminFetch, view]);
+  }, [adminFetch, view, reloads]);
+
+  const resetStats = async () => {
+    if (
+      !window.confirm(
+        "Статистиката ще започне да брои отначало, от този момент. Старите записи остават в отчетите на пусканията, но няма да се броят тук. Да нулирам ли?",
+      )
+    )
+      return;
+    setResetting(true);
+    try {
+      await adminFetch("/api/admin/reports/removed/reset", { method: "POST" });
+      setError(null);
+      setReloads((n) => n + 1);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Грешка");
+    } finally {
+      setResetting(false);
+    }
+  };
 
   const drill = (r: RemovedRow) => {
     if (view.groupBy === "make" && r.make) change({ make: r.make, model: "", groupBy: "model" });
@@ -144,7 +165,8 @@ function AdminRemoved() {
         <p className="mt-1 max-w-3xl text-sm text-muted">
           Обява, която изчезне от сайта-източник, най-често е продадена, но не винаги: guazi понякога сваля обява и я
           пуска отново под нов номер, затова бройките за Китай са завишени. Броят се само колите, които сме имали в
-          каталога, от марките в нашите филтри.
+          каталога, от марките в нашите филтри. Коли, изтрити защото моделът или марката им са махнати от филтрите, не се
+          броят.
         </p>
       </div>
 
@@ -222,6 +244,14 @@ function AdminRemoved() {
             ← Назад
           </button>
         )}
+        <button
+          type="button"
+          onClick={resetStats}
+          disabled={resetting}
+          className="btn-ghost ml-auto px-3! py-1.5! text-xs!"
+        >
+          Нулирай статистиката
+        </button>
       </div>
 
       {(view.make || view.model) && (
@@ -253,8 +283,12 @@ function AdminRemoved() {
           <p className="mb-4 text-sm">
             <span className="font-semibold">Изчезнали обяви: {report.total}</span>
             {report.unrecognized > 0 && <span className="text-muted"> · Неразпознати: {report.unrecognized}</span>}
-            {report.firstRemovedAt && (
-              <span className="text-muted"> · Данните са от {formatDate(report.firstRemovedAt)}</span>
+            {report.statsFrom ? (
+              <span className="text-muted"> · Брои се от {formatDate(report.statsFrom)}</span>
+            ) : (
+              report.firstRemovedAt && (
+                <span className="text-muted"> · Данните са от {formatDate(report.firstRemovedAt)}</span>
+              )
             )}
           </p>
 
