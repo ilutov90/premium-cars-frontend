@@ -579,7 +579,13 @@ export interface PostSettings {
 }
 
 /** The site's logo uploaded in the admin panel (backend SiteLogo); null url = the built-in one. */
-export type SiteLogo = { url: string | null };
+export type SiteLogo = {
+  url: string | null;
+  /** Style set in the admin panel (px / px / percent); missing or null = the default look (an older backend sends only url). */
+  height?: number | null;
+  radius?: number | null;
+  feather?: number | null;
+};
 
 export interface ViberConnectResponse {
   callbackUrl: string;
@@ -1001,4 +1007,10 @@ export interface RemovedReport {
   weeks: { weekStart: string; count: number }[];
   makes: string[];
   models: string[];
+}
+
+/** A page of the public cars for the sitemap (backend sitemap endpoint). */
+export interface SitemapCars {
+  total: number;
+  items: { slug: string; updatedAt: string; imageUrl: string | null }[];
 }

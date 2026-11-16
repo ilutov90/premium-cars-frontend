@@ -1,16 +1,32 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
-import { getFilterOptions, searchCars, toQuery, type CarSearch } from "@/lib/api";
+import { getFilterOptions, SEARCH_KEYS, searchCars, toQuery, type CarSearch } from "@/lib/api";
 import { CarCard } from "@/components/car-card";
 import { ScrollToResults } from "@/components/scroll-to-results";
 import { CatalogFilters } from "@/components/catalog-filters";
 import { CardGridSkeleton, Notice } from "@/components/notice";
 
-export const metadata: Metadata = {
-  title: "Каталог",
-  description: "Налични автомобили от Южна Корея и Китай с крайна цена в България.",
-};
+/**
+ * Plain catalog: canonical /cars. Pagination of the unfiltered list keeps its own canonical (/cars?page=N, indexable).
+ * Any filter or sort parameter: canonical /cars, noindex but links still followed, so filtered pages do not compete.
+ */
+export async function generateMetadata({ searchParams }: PageProps<"/cars">): Promise<Metadata> {
+  const raw = await searchParams;
+  const value = (key: string) => {
+    const v = raw[key];
+    return (Array.isArray(v) ? v[0] : v) ?? "";
+  };
+  const filtered = SEARCH_KEYS.some((key) => key !== "page" && value(key) !== "");
+  const page = /^\d{1,4}$/.test(value("page")) ? Number(value("page")) : 0;
+  const canonical = !filtered && page > 0 ? `/cars?page=${page}` : "/cars";
+  return {
+    title: "Каталог",
+    description: "Налични автомобили от Южна Корея и Китай с крайна цена в България.",
+    alternates: { canonical },
+    robots: filtered ? { index: false, follow: true } : undefined,
+  };
+}
 
 /** "" = the default: the cheapest first */
 const sorts: [string, string][] = [

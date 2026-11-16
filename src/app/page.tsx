@@ -1,6 +1,8 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
-import { getContact, getDeliveredCars, getFilterOptions, searchCars } from "@/lib/api";
+import { getContact, getDeliveredCars, getFilterOptions, getLogo, searchCars } from "@/lib/api";
+import { homeJsonLd, jsonLdScript } from "@/lib/seo";
 import { contactDetails, phoneHref, viberChatHref, type Contact } from "@/lib/site";
 import { PhoneIcon, ViberIcon } from "@/components/icons";
 import { DeliveredCarCards } from "@/components/delivered-cars";
@@ -9,6 +11,10 @@ import { CardGridSkeleton, Notice } from "@/components/notice";
 import { ImportStepsCompact } from "@/components/import-steps";
 import { InquiryForm } from "@/components/inquiry-form";
 import { QuickSearch, QuickSearchSkeleton } from "@/components/quick-search";
+
+export const metadata: Metadata = {
+  alternates: { canonical: "/" },
+};
 
 const promises = [
   ["Крайна цена", "Виждате цената в България с транспорт, мито и ДДС — не само цената на място."],
@@ -19,6 +25,9 @@ const promises = [
 export default function HomePage() {
   return (
     <>
+      <Suspense fallback={null}>
+        <HomeJsonLd />
+      </Suspense>
       {/* Hero */}
       <section className="relative overflow-hidden bg-ink text-paper">
         <div className="pointer-events-none absolute -top-40 -right-40 h-[520px] w-[520px] rounded-full bg-accent/25 blur-3xl" />
@@ -119,6 +128,13 @@ export default function HomePage() {
   );
 }
 
+async function HomeJsonLd() {
+  const [saved, logo] = await Promise.all([getContact(), getLogo()]);
+  return homeJsonLd(contactDetails(saved), logo?.url ?? null).map((data, i) => (
+    <script key={i} type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdScript(data) }} />
+  ));
+}
+
 async function SavedContactButtons() {
   const saved = await getContact();
   return <ContactButtons contact={contactDetails(saved)} />;
@@ -126,13 +142,14 @@ async function SavedContactButtons() {
 
 function ContactButtons({ contact }: { contact: Contact }) {
   return (
+    // one line on every phone: the text shrinks with a narrow screen instead of wrapping
     <div className="mt-6 flex flex-col items-center gap-3">
-      <a href={phoneHref(contact.phone)} className="btn-accent justify-center gap-2 px-6! py-3! text-base!">
+      <a href={phoneHref(contact.phone)} className="btn-accent justify-center gap-2 px-5! py-3! text-[clamp(0.8125rem,4.4vw,1.125rem)]! whitespace-nowrap sm:px-6!">
         <PhoneIcon /> Свържи се с нас: {contact.phone}
       </a>
       <a
         href={viberChatHref(contact.phone)}
-        className="btn justify-center gap-2 bg-[#7360f2] px-6! py-3! text-base! text-white hover:bg-[#5e4bd8]"
+        className="btn justify-center gap-2 bg-[#7360f2] px-5! py-3! text-[clamp(0.8125rem,4.4vw,1.125rem)]! whitespace-nowrap sm:px-6! text-white hover:bg-[#5e4bd8]"
       >
         <ViberIcon /> Пиши ни във Viber
       </a>

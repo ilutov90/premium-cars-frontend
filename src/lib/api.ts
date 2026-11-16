@@ -8,6 +8,7 @@ import type {
   PostSettings,
   PublicDeliveredCar,
   SiteLogo,
+  SitemapCars,
 } from "./types";
 /** URL the Next.js server uses; differs from the public one inside Docker/Kubernetes. */
 /** Server components call the backend directly (not through the /api rewrite). */
@@ -93,12 +94,18 @@ export async function getContact(): Promise<PostSettings | null> {
 }
 
 /** The site's logo uploaded in the admin panel; null = the built-in one (also when the backend cannot be reached or is older). */
-export async function getLogo(): Promise<string | null> {
+export async function getLogo(): Promise<SiteLogo | null> {
   try {
-    return (await get<SiteLogo>("/api/public/logo")).url ?? null;
+    const logo = await get<SiteLogo>("/api/public/logo");
+    return logo.url ? logo : null;
   } catch {
     return null;
   }
+}
+
+/** One page of the public cars for the sitemap (backend `GET /api/public/sitemap/cars`); throws when the backend cannot answer. */
+export function getSitemapCars(page: number, size: number) {
+  return get<SitemapCars>(`/api/public/sitemap/cars?page=${page}&size=${size}`);
 }
 
 /** The picture shown when a link to the site is shared, uploaded in the admin panel; null = the generated default. */

@@ -3,7 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { getCar } from "@/lib/api";
-import { carJsonLd, jsonLdScript } from "@/lib/seo";
+import { carBreadcrumbJsonLd, carJsonLd, jsonLdScript } from "@/lib/seo";
 import { site } from "@/lib/site";
 import { translatedSheet } from "@/lib/spec-sheet";
 import {
@@ -166,6 +166,7 @@ async function CarDetailView({ params }: { params: PageProps<"/cars/[slug]">["pa
   return (
     <div className="mt-4 grid gap-10 lg:grid-cols-[1fr_380px]">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdScript(carJsonLd(car)) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdScript(carBreadcrumbJsonLd(car)) }} />
       <div className="min-w-0">
         <CarGallery images={car.imageUrls} title={s.title} />
 

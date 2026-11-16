@@ -6,7 +6,8 @@ import { createPortal } from "react-dom";
 import { useAdmin } from "./admin-context";
 import { CarImage } from "@/components/car-image";
 import { formatDate, scheduledPostNote, scheduledStatusLabels } from "@/lib/format";
-import { fromSofiaInput, toSofiaInput } from "@/lib/sofia-time";
+import { defaultScheduleInput, fromSofiaInput, toSofiaInput } from "@/lib/sofia-time";
+import { SchedulePicker } from "./schedule-picker";
 import {
   defaultTemplates,
   networkLabels,
@@ -563,16 +564,13 @@ function PublishDialog({
               <input type="radio" name="when" checked={when === "later"} onChange={() => setWhen("later")} className="accent-accent" />
               Насрочи за
             </label>
-            <input
-              type="datetime-local"
+            <SchedulePicker
               value={publishAt}
-              min={toSofiaInput(new Date(openedAt + 2 * 60_000))}
-              onChange={(e) => {
-                setPublishAt(e.target.value);
+              minDate={toSofiaInput(new Date(openedAt)).slice(0, 10)}
+              onChange={(v) => {
+                setPublishAt(v);
                 setWhen("later");
               }}
-              className="field w-auto! py-1.5!"
-              aria-label="Дата и час на публикуване"
             />
           </div>
           {when === "later" && (
@@ -711,9 +709,9 @@ function ViberConnect({ onMessage }: { onMessage: (m: Message) => void }) {
   );
 }
 
-/** Suggested time: an hour from now, Bulgarian time. */
+/** Suggested time: an hour from now rounded up to the next quarter hour, Bulgarian time. */
 function defaultScheduleTime(): string {
-  return toSofiaInput(new Date(Date.now() + 60 * 60_000));
+  return defaultScheduleInput(new Date());
 }
 
 /** The car's first photos as files, in gallery order (for sharing and downloading). */
