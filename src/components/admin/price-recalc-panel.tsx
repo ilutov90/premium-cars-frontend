@@ -198,7 +198,7 @@ function RunRow({
 
 function RunReport({ run }: { run: PriceRecalcRun }) {
   const { adminFetch } = useAdmin();
-  const [kind, setKind] = useState<"" | "CHANGED" | "FAILED">("CHANGED");
+  const [kind, setKind] = useState<"" | "CHANGED" | "FAILED" | "FIXED">("CHANGED");
   const [onlyPosted, setOnlyPosted] = useState(false);
   const [page, setPage] = useState(0);
   const [items, setItems] = useState<PageResponse<PriceRecalcItem> | null>(null);
@@ -230,6 +230,7 @@ function RunReport({ run }: { run: PriceRecalcRun }) {
         >
           <option value="CHANGED">С нова цена</option>
           {run.mode === "SOURCE" && <option value="FAILED">Непрочетени обяви</option>}
+          <option value="FIXED">С ръчна цена (непроменени)</option>
           <option value="">Всички</option>
         </select>
         <label className="flex items-center gap-2">
@@ -245,6 +246,12 @@ function RunReport({ run }: { run: PriceRecalcRun }) {
         </label>
         {items && <span className="text-muted">{items.totalItems} коли</span>}
       </div>
+      {kind === "FIXED" && (
+        <p className="mb-3 text-xs text-muted">
+          Колите на сайта с крайна цена, сложена на ръка: преизчисляването не я пипа. „По формулата“ е цената, която
+          днешната формула би дала; за да я ползвате, махнете ръчната цена в колата.
+        </p>
+      )}
       {error && <p className="text-sm text-warn">{error}</p>}
       {items && items.items.length === 0 && <p className="text-sm text-muted">Няма коли.</p>}
       {items && items.items.length > 0 && (
@@ -253,8 +260,8 @@ function RunReport({ run }: { run: PriceRecalcRun }) {
             <thead className="text-left text-xs text-muted">
               <tr>
                 <th className="py-1 pr-3 font-semibold">Кола</th>
-                <th className="py-1 pr-3 font-semibold">Стара цена</th>
-                <th className="py-1 pr-3 font-semibold">Нова цена</th>
+                <th className="py-1 pr-3 font-semibold">{kind === "FIXED" ? "По формулата" : "Стара цена"}</th>
+                <th className="py-1 pr-3 font-semibold">{kind === "FIXED" ? "Ръчна цена" : "Нова цена"}</th>
                 <th className="py-1 pr-3 font-semibold">Публикувана</th>
               </tr>
             </thead>
@@ -262,7 +269,7 @@ function RunReport({ run }: { run: PriceRecalcRun }) {
               {items.items.map((i) => {
                 const diff = i.oldPriceEur != null && i.newPriceEur != null ? i.newPriceEur - i.oldPriceEur : null;
                 return (
-                  <tr key={i.id} className="border-t border-line align-top">
+                  <tr key={i.kind === "FIXED" ? `f${i.carId}` : i.id} className="border-t border-line align-top">
                     <td className="py-2 pr-3">
                       {i.carId ? (
                         <Link href={`/admin/cars/${i.carId}`} className="font-semibold hover:underline">
@@ -326,6 +333,7 @@ function RunReport({ run }: { run: PriceRecalcRun }) {
 /** The backend's notes in Bulgarian. */
 function noteLabel(note: string): string {
   if (note.startsWith("The source's price changed")) return "Продавачът е сменил цената.";
+  if (note.startsWith("The final price is set by hand")) return "Ръчна цена: преизчисляването я запазва.";
   if (note.startsWith("The listing shows no price now"))
     return "Обявата вече няма цена (продадена или търг?) — преизчислена от записаната ФОБ.";
   if (note.startsWith("The listing could not be read"))

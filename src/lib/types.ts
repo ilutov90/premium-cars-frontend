@@ -917,7 +917,7 @@ export interface PriceRecalcRun {
 export interface PriceRecalcItem {
   id: number;
   carId: number | null;
-  kind: "CHANGED" | "FAILED";
+  kind: "CHANGED" | "FAILED" | "FIXED";
   title: string | null;
   slug: string | null;
   carStatus: CarStatus | null;
