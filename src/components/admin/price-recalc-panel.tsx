@@ -163,7 +163,9 @@ function RunRow({
   onToggle: () => void;
   onDelete: () => void;
 }) {
-  const pct = run.total > 0 ? Math.round((run.processed / run.total) * 100) : 100;
+  // a run resumed after a restart may do a few cars twice: the count never shows more than the run's cars
+  const done = Math.min(run.processed, run.total);
+  const pct = run.total > 0 ? Math.min(100, Math.round((done / run.total) * 100)) : 100;
   return (
     <div className="rounded-xl bg-paper ring-1 ring-line">
       <div className="flex flex-wrap items-center gap-x-4 gap-y-1 p-3 text-sm">
@@ -172,7 +174,7 @@ function RunRow({
         </button>
         {run.status === "RUNNING" ? (
           <span className="font-semibold text-accent">
-            Върви: {run.processed} от {run.total} ({pct}%)
+            Върви: {done} от {run.total} ({pct}%)
           </span>
         ) : (
           <span className={run.status === "DONE" ? "text-ok" : "text-warn"}>
