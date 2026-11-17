@@ -1,5 +1,6 @@
 // Server-only helpers for search engines and link previews (Facebook, Viber, Google).
 import { fuelLabels, transmissionLabels } from "./format";
+import { seoPathOf } from "./seo-pages";
 import { company, phoneHref, site, type Contact } from "./site";
 import type { CarDetail } from "./types";
 
@@ -72,19 +73,48 @@ export function homeJsonLd(contact: Contact, logoUrl: string | null): Record<str
   ];
 }
 
-/** Car page breadcrumbs: Начало -> Каталог автомобили -> make (a catalog filter) -> the car. */
+/** Car page breadcrumbs: Начало -> Марки автомобили -> make -> model (their landing pages) -> the car. */
 export function carBreadcrumbJsonLd(car: CarDetail): Record<string, unknown> {
   const s = car.specs;
   const trail: [string, string][] = [
-    ["Начало", absoluteUrl("/")],
-    ["Каталог автомобили", absoluteUrl("/cars")],
+    ["Начало", "/"],
+    ["Марки автомобили", "/koli"],
   ];
-  if (s.make) trail.push([s.make, absoluteUrl(`/cars?make=${encodeURIComponent(s.make)}`)]);
-  trail.push([s.title, absoluteUrl(`/cars/${car.slug}`)]);
+  const makePath = seoPathOf(s.make);
+  if (s.make && makePath) {
+    trail.push([s.make, makePath]);
+    const modelPath = seoPathOf(s.make, s.model ?? null);
+    if (s.model && modelPath) trail.push([s.model, modelPath]);
+  }
+  trail.push([s.title, `/cars/${car.slug}`]);
+  return breadcrumbJsonLd(trail);
+}
+
+/** schema.org BreadcrumbList from [name, path] pairs (paths made absolute). */
+export function breadcrumbJsonLd(trail: [name: string, path: string][]): Record<string, unknown> {
   return {
     "@context": "https://schema.org",
     "@type": "BreadcrumbList",
-    itemListElement: trail.map(([name, item], i) => ({ "@type": "ListItem", position: i + 1, name, item })),
+    itemListElement: trail.map(([name, path], i) => ({
+      "@type": "ListItem",
+      position: i + 1,
+      name,
+      item: absoluteUrl(path),
+    })),
+  };
+}
+
+/** schema.org ItemList of the links a list page shows, in order (`first` = the position of the first one). */
+export function itemListJsonLd(items: { name: string; path: string }[], first = 1): Record<string, unknown> {
+  return {
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    itemListElement: items.map((item, i) => ({
+      "@type": "ListItem",
+      position: first + i,
+      url: absoluteUrl(item.path),
+      name: item.name,
+    })),
   };
 }
 

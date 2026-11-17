@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { getCar } from "@/lib/api";
 import { carBreadcrumbJsonLd, carJsonLd, jsonLdScript } from "@/lib/seo";
+import { seoPathOf } from "@/lib/seo-pages";
 import { site } from "@/lib/site";
 import { translatedSheet } from "@/lib/spec-sheet";
 import {
@@ -174,6 +175,7 @@ async function CarDetailView({ params }: { params: PageProps<"/cars/[slug]">["pa
           {car.status === "RESERVED" && (
             <span className="rounded-full bg-warn px-3 py-1 text-xs font-bold text-white uppercase">Резервирана</span>
           )}
+          <MakeModelLinks make={s.make} model={s.model} />
           <h1 className="mt-2 text-3xl font-extrabold tracking-tight sm:text-4xl">{s.title}</h1>
           {/* the number a customer names on the phone or in Viber; the admin panel finds the car by it */}
           <p className="mt-1.5 text-sm text-muted">Обява № {car.id}</p>
@@ -323,6 +325,30 @@ async function CarDetailView({ params }: { params: PageProps<"/cars/[slug]">["pa
         </div>
       </aside>
     </div>
+  );
+}
+
+/** "Hyundai › Tucson": the make's and model's landing pages, small above the title. */
+function MakeModelLinks({ make, model }: { make: string | null; model: string | null }) {
+  const makePath = seoPathOf(make);
+  if (!make || !makePath) return null;
+  const modelPath = model ? seoPathOf(make, model) : null;
+  return (
+    <nav aria-label="Марка и модел" className="mt-2 text-sm text-muted">
+      <Link href={makePath} className="hover:text-ink">
+        {make}
+      </Link>
+      {model && modelPath && (
+        <>
+          <span aria-hidden className="px-1.5">
+            ›
+          </span>
+          <Link href={modelPath} className="hover:text-ink">
+            {model}
+          </Link>
+        </>
+      )}
+    </nav>
   );
 }
 

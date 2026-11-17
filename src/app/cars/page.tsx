@@ -6,10 +6,13 @@ import { CarCard } from "@/components/car-card";
 import { ScrollToResults } from "@/components/scroll-to-results";
 import { CatalogFilters } from "@/components/catalog-filters";
 import { CardGridSkeleton, Notice } from "@/components/notice";
+import { PageLinks } from "@/components/page-links";
+import { seoPathOf } from "@/lib/seo-pages";
 
 /**
  * Plain catalog: canonical /cars. Pagination of the unfiltered list keeps its own canonical (/cars?page=N, indexable).
  * Any filter or sort parameter: canonical /cars, noindex but links still followed, so filtered pages do not compete.
+ * Only a make (and model): noindex too, canonical its landing page /koli/{make}[/{model}].
  */
 export async function generateMetadata({ searchParams }: PageProps<"/cars">): Promise<Metadata> {
   const raw = await searchParams;
@@ -19,7 +22,11 @@ export async function generateMetadata({ searchParams }: PageProps<"/cars">): Pr
   };
   const filtered = SEARCH_KEYS.some((key) => key !== "page" && value(key) !== "");
   const page = /^\d{1,4}$/.test(value("page")) ? Number(value("page")) : 0;
-  const canonical = !filtered && page > 0 ? `/cars?page=${page}` : "/cars";
+  // only a make (and model) and nothing else: the make's / model's landing page is the page to index
+  const onlyMake =
+    value("make") !== "" && SEARCH_KEYS.every((key) => key === "make" || key === "model" || value(key) === "");
+  const landing = onlyMake ? seoPathOf(value("make"), value("model") || undefined) : null;
+  const canonical = landing ?? (!filtered && page > 0 ? `/cars?page=${page}` : "/cars");
   return {
     title: "Каталог",
     description: "Налични автомобили от Южна Корея и Китай с крайна цена в България.",
@@ -41,7 +48,12 @@ export default function CatalogPage({ searchParams }: PageProps<"/cars">) {
   return (
     <div className="mx-auto max-w-6xl px-4 pt-10 sm:px-6">
       <h1 className="text-3xl font-extrabold tracking-tight sm:text-4xl">Каталог автомобили</h1>
-      <p className="mt-2 text-muted">Всички цени са крайни за България — с транспорт, мито и ДДС.</p>
+      <p className="mt-2 text-muted">
+        Всички цени са крайни за България — с транспорт, мито и ДДС.{" "}
+        <Link href="/koli" className="font-semibold text-accent hover:text-accent-dark">
+          Всички марки
+        </Link>
+      </p>
       {/* searchParams is request data: everything that reads it streams in at request time */}
       <Suspense fallback={<CatalogSkeleton />}>
         <Catalog searchParams={searchParams} />
@@ -135,25 +147,8 @@ function ResultsBar({ total, current }: { total: number; current: CarSearch }) {
 }
 
 function Pagination({ page, totalPages, current }: { page: number; totalPages: number; current: CarSearch }) {
-  if (totalPages <= 1) return null;
   const href = (p: number) => `/cars${toQuery({ ...current, page: p === 0 ? undefined : String(p) })}`;
-  return (
-    <nav className="mt-10 flex items-center justify-center gap-2" aria-label="Страници">
-      {page > 0 && (
-        <Link href={href(page - 1)} className="btn-ghost">
-          ← Назад
-        </Link>
-      )}
-      <span className="px-3 text-sm text-muted">
-        Страница {page + 1} от {totalPages}
-      </span>
-      {page + 1 < totalPages && (
-        <Link href={href(page + 1)} className="btn-ghost">
-          Напред →
-        </Link>
-      )}
-    </nav>
-  );
+  return <PageLinks page={page} totalPages={totalPages} href={href} />;
 }
 
 function CatalogSkeleton() {

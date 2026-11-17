@@ -1,6 +1,7 @@
 // Sitemap XML (sitemaps.org + Google image extension). Built by hand: the car sitemaps have more than 50 000 URLs in
 // total, so they are split into parts, listed by an index at /sitemap.xml.
-import { getSitemapCars } from "./api";
+import { fetchSeoMakes, getSitemapCars } from "./api";
+import { seoMakePath, seoModelPath } from "./seo-pages";
 import { absoluteUrl, SITE_URL } from "./seo";
 
 /** Cars per part (the limit of one file is 50 000 URLs). */
@@ -57,9 +58,28 @@ export async function carsSitemapXml(index: number): Promise<string> {
   );
 }
 
-/** The index: the static pages' file always, the cars' parts when the backend answers (N = ceil(total / 5000)). */
+/** /sitemaps/makes.xml: /koli, every make's and every model's landing page; throws when the backend cannot answer. */
+export async function makesSitemapXml(): Promise<string> {
+  const makes = await fetchSeoMakes();
+  const url = (path: string, priority: number) =>
+    `<url><loc>${escapeXml(`${SITE_URL}${path}`)}</loc><changefreq>daily</changefreq><priority>${priority}</priority></url>`;
+  const urls = [url("/koli", 0.8)];
+  for (const make of makes) {
+    urls.push(url(seoMakePath(make.slug), 0.8));
+    for (const model of make.models) urls.push(url(seoModelPath(make.slug, model.slug), 0.7));
+  }
+  return `${header}<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls.join("\n")}\n</urlset>\n`;
+}
+
+/** The index: the static pages' file always, the landing pages' file and the cars' parts when the backend answers (N = ceil(total / 5000)). */
 export async function sitemapIndexXml(): Promise<string> {
   const locs = [`${SITE_URL}/sitemaps/pages.xml`];
+  try {
+    await fetchSeoMakes();
+    locs.push(`${SITE_URL}/sitemaps/makes.xml`);
+  } catch {
+    // backend down or older: no landing pages to list
+  }
   try {
     const { total } = await getSitemapCars(0, 1);
     const parts = Math.ceil((Number.isFinite(total) ? total : 0) / CARS_PER_SITEMAP);

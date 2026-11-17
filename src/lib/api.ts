@@ -7,6 +7,8 @@ import type {
   PageResponse,
   PostSettings,
   PublicDeliveredCar,
+  SeoMakeEntry,
+  SeoPage,
   SiteLogo,
   SitemapCars,
 } from "./types";
@@ -65,10 +67,18 @@ export function toQuery(params: CarSearch): string {
   return s ? `?${s}` : "";
 }
 
-export function searchCars(params: CarSearch, size = 12) {
-  const query = toQuery(params);
-  const sep = query ? "&" : "?";
-  return get<PageResponse<CarSummary>>(`/api/public/cars${query}${sep}size=${size}`);
+/**
+ * One page of the public cars. `repeated` sends a key once per value (the backend selects the cars of any of them,
+ * e.g. the spellings of one make on its landing page) in place of that key's single value in `params`.
+ */
+export function searchCars(params: CarSearch, size = 12, repeated?: Record<string, string[]>) {
+  const qs = new URLSearchParams(toQuery(params));
+  for (const [key, values] of Object.entries(repeated ?? {})) {
+    qs.delete(key);
+    for (const value of values) qs.append(key, value);
+  }
+  qs.set("size", String(size));
+  return get<PageResponse<CarSummary>>(`/api/public/cars?${qs.toString()}`);
 }
 
 export async function getCar(slug: string): Promise<CarDetail | null> {
@@ -128,5 +138,33 @@ export async function getDeliveredCars(limit = 12): Promise<PublicDeliveredCar[]
     return await get<PublicDeliveredCar[]>(`/api/public/delivered-cars?limit=${limit}`);
   } catch {
     return [];
+  }
+}
+
+/** The makes (and their models) with public cars, the most cars first; throws when the backend cannot answer. */
+export function fetchSeoMakes() {
+  return get<SeoMakeEntry[]>("/api/public/seo/makes");
+}
+
+/** The makes with public cars for the landing pages; empty when the backend cannot be reached. */
+export async function getSeoMakes(): Promise<SeoMakeEntry[]> {
+  try {
+    return await fetchSeoMakes();
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * A make's (or, with modelSlug, a model's) landing page data; null when there is no such page (404). Other failures
+ * throw, so a backend that is down shows a notice instead of "not found".
+ */
+export async function getSeoPage(makeSlug: string, modelSlug?: string | null): Promise<SeoPage | null> {
+  const path = `/api/public/seo/pages/${encodeURIComponent(makeSlug)}${modelSlug ? `/${encodeURIComponent(modelSlug)}` : ""}`;
+  try {
+    return await get<SeoPage>(path);
+  } catch (e) {
+    if (e instanceof ApiError && e.status === 404) return null;
+    throw e;
   }
 }
