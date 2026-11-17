@@ -579,7 +579,13 @@ export interface PostSettings {
 }
 
 /** The site's logo uploaded in the admin panel (backend SiteLogo); null url = the built-in one. */
-export type SiteLogo = { url: string | null };
+export type SiteLogo = {
+  url: string | null;
+  /** Style set in the admin panel (px / px / percent); missing or null = the default look (an older backend sends only url). */
+  height?: number | null;
+  radius?: number | null;
+  feather?: number | null;
+};
 
 export interface ViberConnectResponse {
   callbackUrl: string;
@@ -1001,4 +1007,82 @@ export interface RemovedReport {
   weeks: { weekStart: string; count: number }[];
   makes: string[];
   models: string[];
+}
+
+/** A page of the public cars for the sitemap (backend sitemap endpoint). */
+export interface SitemapCars {
+  total: number;
+  items: { slug: string; updatedAt: string; imageUrl: string | null }[];
+}
+
+/** A model of a make with public cars (backend SeoDtos.ModelEntry); prices are final customer prices in EUR. */
+export interface SeoModelEntry {
+  model: string;
+  slug: string;
+  count: number;
+  minPriceEur: number | null;
+  maxPriceEur: number | null;
+  yearFrom: number | null;
+  yearTo: number | null;
+}
+
+/** A make with public cars (backend SeoDtos.MakeEntry), the most cars first. */
+export interface SeoMakeEntry {
+  make: string;
+  slug: string;
+  count: number;
+  minPriceEur: number | null;
+  maxPriceEur: number | null;
+  yearFrom: number | null;
+  yearTo: number | null;
+  origins: Origin[];
+  models: SeoModelEntry[];
+}
+
+/**
+ * The data of a landing page /koli/{make} or /koli/{make}/{model} (backend SeoDtos.SeoPage). `makeNames` /
+ * `modelNames` are the catalog's spellings that make up the page (the public search's repeated make / model).
+ * title / description / text are the admins' overrides: null = the automatic text.
+ */
+export interface SeoPage {
+  make: string;
+  makeSlug: string;
+  model: string | null;
+  modelSlug: string | null;
+  makeNames: string[];
+  modelNames: string[];
+  count: number;
+  minPriceEur: number | null;
+  maxPriceEur: number | null;
+  yearFrom: number | null;
+  yearTo: number | null;
+  origins: Origin[];
+  fuels: FuelType[];
+  /** the make's models (make page only; empty on a model page) */
+  models: SeoModelEntry[];
+  title: string | null;
+  description: string | null;
+  text: string | null;
+}
+
+/** A row of the admin's SEO pages (backend SeoDtos.AdminSeoPage); modelSlug null = the make page. */
+export interface AdminSeoPage {
+  make: string;
+  makeSlug: string;
+  model: string | null;
+  modelSlug: string | null;
+  count: number;
+  title: string | null;
+  description: string | null;
+  text: string | null;
+  updatedAt: string | null;
+}
+
+/** PUT /api/admin/seo/pages: blank/null clears a text; all three empty deletes the override. */
+export interface SaveSeoPageRequest {
+  makeSlug: string;
+  modelSlug: string | null;
+  title: string | null;
+  description: string | null;
+  text: string | null;
 }

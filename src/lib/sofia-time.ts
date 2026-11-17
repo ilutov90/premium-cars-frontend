@@ -36,3 +36,16 @@ export function fromSofiaInput(value: string): Date | null {
   }
   return new Date(t);
 }
+
+const QUARTER_MS = 15 * 60_000;
+
+/** The first quarter hour (:00, :15, :30, :45) at or after the moment: 11:07 -> 11:15, 11:15 -> 11:15, 23:50 -> 00:00. */
+export function ceilToQuarterHour(d: Date): Date {
+  // Sofia's offset is whole hours, so quarters of the epoch are quarters of the wall clock too
+  return new Date(Math.ceil(d.getTime() / QUARTER_MS) * QUARTER_MS);
+}
+
+/** Default time for a scheduled post: an hour after `now`, rounded up to the next quarter hour, as a Sofia input value. */
+export function defaultScheduleInput(now: Date): string {
+  return toSofiaInput(ceilToQuarterHour(new Date(now.getTime() + 60 * 60_000)));
+}

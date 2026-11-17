@@ -84,19 +84,26 @@ export function NichePage({
         </Suspense>
       </section>
 
-      <section id="niche-contact" className="mx-auto max-w-6xl scroll-mt-20 px-4 pt-20 sm:px-6">
-        <div className="grid gap-10 rounded-3xl bg-card p-6 ring-1 ring-line sm:p-10 md:grid-cols-2">
-          <div>
-            <h2 className="text-2xl font-extrabold tracking-tight sm:text-3xl">{formTitle}</h2>
-            <p className="mt-3 leading-relaxed text-muted">
-              Изберете марка, модел и година и оставете телефон — ще ви се обадим с подходящи коли с крайна цена в
-              България. Или ни пишете направо във Viber.
-            </p>
-          </div>
-          <InquiryForm />
-        </div>
-      </section>
+      <NicheContact title={formTitle} />
     </>
+  );
+}
+
+/** The "find me a car" block of the landing pages: a short pitch and the general inquiry form (make / model prefilled). */
+export function NicheContact({ title, make, model }: { title: string; make?: string; model?: string }) {
+  return (
+    <section id="niche-contact" className="mx-auto max-w-6xl scroll-mt-20 px-4 pt-20 sm:px-6">
+      <div className="grid gap-10 rounded-3xl bg-card p-6 ring-1 ring-line sm:p-10 md:grid-cols-2">
+        <div>
+          <h2 className="text-2xl font-extrabold tracking-tight sm:text-3xl">{title}</h2>
+          <p className="mt-3 leading-relaxed text-muted">
+            Изберете марка, модел и година и оставете телефон — ще ви се обадим с подходящи коли с крайна цена в
+            България. Или ни пишете направо във Viber.
+          </p>
+        </div>
+        <InquiryForm make={make} model={model} />
+      </div>
+    </section>
   );
 }
 

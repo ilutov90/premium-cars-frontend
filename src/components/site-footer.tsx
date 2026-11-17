@@ -25,6 +25,11 @@ export function SiteFooter() {
               </Link>
             </li>
             <li>
+              <Link href="/koli" className="hover:text-paper">
+                Марки автомобили
+              </Link>
+            </li>
+            <li>
               <Link href="/kak-raboti-vnosat" className="hover:text-paper">
                 Как работи вносът
               </Link>

@@ -14,8 +14,9 @@ import {
   unknownPlaceholders,
   type TemplateKind,
 } from "@/lib/post-template";
+import { LOGO_DEFAULT_HEIGHT, LOGO_RANGES, logoImageStyle } from "@/lib/logo-style";
 import { site } from "@/lib/site";
-import type { AdminCar, AdminCarSummary, PageResponse, PostSettings, PostTemplate } from "@/lib/types";
+import type { AdminCar, AdminCarSummary, PageResponse, PostSettings, PostTemplate, SiteLogo } from "@/lib/types";
 
 /** The post text templates (Facebook and Instagram share one, Viber has its own), filled in from a car when publishing. */
 export default function AdminTemplatesPage() {
@@ -313,6 +314,7 @@ function ImageSettings({
   doneText,
   resetDoneText,
   hint,
+  styled = false,
 }: {
   title: string;
   endpoint: string;
@@ -327,19 +329,42 @@ function ImageSettings({
   doneText: string;
   resetDoneText: string;
   hint: string;
+  /** The logo only: height, corner and edge sliders with a header-like preview. */
+  styled?: boolean;
 }) {
   const { adminFetch } = useAdmin();
   const [url, setUrl] = useState<string | null>(null);
+  const [look, setLook] = useState({ height: LOGO_DEFAULT_HEIGHT, radius: 0, feather: 0 });
+  const [styleBusy, setStyleBusy] = useState(false);
+  const [styleMessage, setStyleMessage] = useState<{ ok: boolean; text: string } | null>(null);
   const [file, setFile] = useState<File | null>(null);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null);
   const input = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    adminFetch<{ url: string | null }>(endpoint)
-      .then((r) => setUrl(r.url))
+    adminFetch<SiteLogo>(endpoint)
+      .then((r) => {
+        setUrl(r.url);
+        setLook(lookOf(r));
+      })
       .catch(() => setUrl(null));
   }, [adminFetch, endpoint]);
+
+  async function saveStyle(values: { height: number | null; radius: number | null; feather: number | null }, doneText: string) {
+    setStyleBusy(true);
+    setStyleMessage(null);
+    try {
+      const r = await adminFetch<SiteLogo>(`${endpoint}/style`, { method: "PUT", body: JSON.stringify(values) });
+      if (r) setLook(lookOf(r));
+      else if (values.height === null) setLook(lookOf({ url }));
+      setStyleMessage({ ok: true, text: doneText });
+    } catch (e) {
+      setStyleMessage({ ok: false, text: e instanceof Error ? e.message : "Грешка" });
+    } finally {
+      setStyleBusy(false);
+    }
+  }
 
   function choose(f: File | null) {
     setMessage(null);
@@ -364,12 +389,13 @@ function ImageSettings({
     setMessage(null);
     try {
       const image = await shrinkImage(file, shrink);
-      const r = await adminFetch<{ url: string | null }>(endpoint, {
+      const r = await adminFetch<SiteLogo>(endpoint, {
         method: "PUT",
         body: image,
         headers: { "Content-Type": image.type },
       });
       setUrl(r.url);
+      if (styled) setLook(lookOf(r));
       setFile(null);
       if (input.current) input.current.value = "";
       setMessage({ ok: true, text: doneText });
@@ -385,8 +411,9 @@ function ImageSettings({
     setBusy(true);
     setMessage(null);
     try {
-      const r = await adminFetch<{ url: string | null }>(endpoint, { method: "DELETE" });
+      const r = await adminFetch<SiteLogo>(endpoint, { method: "DELETE" });
       setUrl(r?.url ?? null);
+      if (styled) setLook(lookOf(r ?? { url: null }));
       setMessage({ ok: true, text: resetDoneText });
     } catch (e) {
       setMessage({ ok: false, text: e instanceof Error ? e.message : "Грешка" });
@@ -398,10 +425,15 @@ function ImageSettings({
   return (
     <section className="mt-5 rounded-2xl border border-line bg-card p-4">
       <h2 className="font-bold">{title}</h2>
-      <div className="mt-3 flex min-h-16 items-center rounded-xl bg-paper px-4 py-2 ring-1 ring-line">
+      <div className={`mt-3 flex items-center rounded-xl bg-paper px-4 ring-1 ring-line ${styled ? "h-16" : "min-h-16 py-2"}`}>
         {url ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={url} alt={alt} className={`${previewClass} w-auto`} />
+          styled ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={url} alt={alt} style={logoImageStyle(look)} className="w-auto max-w-[11rem] object-contain sm:max-w-[14rem]" />
+          ) : (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={url} alt={alt} className={`${previewClass} w-auto`} />
+          )
         ) : (
           <span className="text-sm text-muted">{emptyText}</span>
         )}
@@ -425,9 +457,104 @@ function ImageSettings({
           </button>
         )}
       </div>
+      {styled && url && (
+        <div className="mt-4 space-y-3 border-t border-line pt-3">
+          <LookSlider
+            label="Размер"
+            unit="px"
+            range={LOGO_RANGES.height}
+            value={look.height}
+            disabled={styleBusy}
+            onChange={(v) => setLook((l) => ({ ...l, height: v }))}
+          />
+          <LookSlider
+            label="Заобляне на ъглите"
+            unit="px"
+            range={LOGO_RANGES.radius}
+            value={look.radius}
+            disabled={styleBusy}
+            onChange={(v) => setLook((l) => ({ ...l, radius: v }))}
+          />
+          <LookSlider
+            label="Омекотяване на ръба"
+            unit="%"
+            range={LOGO_RANGES.feather}
+            value={look.feather}
+            disabled={styleBusy}
+            onChange={(v) => setLook((l) => ({ ...l, feather: v }))}
+          />
+          <p className="text-xs text-muted">
+            Ако логото е правоъгълник с плътен фон, най-добър резултат дава файл с прозрачен фон (PNG). Заоблянето и омекотяването само смекчават ръба.
+          </p>
+          <div className="flex flex-wrap items-center gap-3">
+            <button
+              type="button"
+              className="btn-primary px-4! py-2! text-sm!"
+              disabled={styleBusy || busy}
+              onClick={() => saveStyle(look, "Видът на логото е запазен ✓ (на сайта се вижда до минута).")}
+            >
+              {styleBusy ? "Запис…" : "Запиши вида"}
+            </button>
+            <button
+              type="button"
+              className="btn-ghost px-4! py-2! text-sm!"
+              disabled={styleBusy || busy}
+              onClick={() =>
+                saveStyle({ height: null, radius: null, feather: null }, "Върнат е стандартният вид ✓ (на сайта се вижда до минута).")
+              }
+            >
+              Върни стандартния вид
+            </button>
+          </div>
+          {styleMessage && (
+            <p className={`text-sm font-semibold ${styleMessage.ok ? "text-ok" : "text-warn"}`}>{styleMessage.text}</p>
+          )}
+        </div>
+      )}
       <p className="mt-2 text-xs text-muted">{hint}</p>
       {message && <p className={`mt-2 text-sm font-semibold ${message.ok ? "text-ok" : "text-warn"}`}>{message.text}</p>}
     </section>
+  );
+}
+
+function lookOf(r: SiteLogo): { height: number; radius: number; feather: number } {
+  return { height: r.height ?? LOGO_DEFAULT_HEIGHT, radius: r.radius ?? 0, feather: r.feather ?? 0 };
+}
+
+function LookSlider({
+  label,
+  unit,
+  range,
+  value,
+  disabled,
+  onChange,
+}: {
+  label: string;
+  unit: string;
+  range: { min: number; max: number };
+  value: number;
+  disabled: boolean;
+  onChange: (value: number) => void;
+}) {
+  return (
+    <label className="block text-sm">
+      <span className="flex justify-between font-semibold">
+        {label}
+        <span className="font-normal text-muted">
+          {value} {unit}
+        </span>
+      </span>
+      <input
+        type="range"
+        min={range.min}
+        max={range.max}
+        step={1}
+        value={value}
+        disabled={disabled}
+        onChange={(e) => onChange(Number(e.target.value))}
+        className="mt-1 w-full accent-accent"
+      />
+    </label>
   );
 }
 
@@ -436,6 +563,7 @@ function LogoSettings() {
     <ImageSettings
       title="Лого на сайта"
       endpoint="/api/admin/logo"
+      styled
       shrink={LOGO_SHRINK}
       emptyText="Използва се стандартното лого."
       alt="Текущо лого"

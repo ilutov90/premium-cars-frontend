@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Suspense } from "react";
 import { getContact, getLogo } from "@/lib/api";
+import { logoImageStyle } from "@/lib/logo-style";
 import { contactDetails } from "@/lib/site";
 import { SiteNav } from "./site-nav";
 
@@ -41,8 +42,13 @@ function BuiltInLogo() {
 }
 
 async function SavedLogo() {
-  const url = await getLogo();
-  if (!url) return <BuiltInLogo />;
+  const logo = await getLogo();
+  if (!logo?.url) return <BuiltInLogo />;
   // eslint-disable-next-line @next/next/no-img-element -- the logo is served by our backend (/media)
-  return <img src={url} alt="Premium Cars Import" className="h-10 w-auto max-w-[11rem] object-contain sm:max-w-[14rem]" />;
+  return <img
+      src={logo.url}
+      alt="Premium Cars Import"
+      style={logoImageStyle(logo)}
+      className="w-auto max-w-[11rem] object-contain sm:max-w-[14rem]"
+    />;
 }

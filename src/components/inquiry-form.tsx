@@ -20,11 +20,22 @@ const years = Array.from({ length: thisYear - 2009 }, (_, i) => thisYear - i);
  * Inquiry about a specific car (carId) or a short "find me a car" request: make, model, year and a phone, plus a
  * button that opens a Viber chat with us. The make and model suggest the catalog's own, but any text goes.
  */
-export function InquiryForm({ carId, carTitle }: { carId?: number; carTitle?: string }) {
+export function InquiryForm({
+  carId,
+  carTitle,
+  make: initialMake,
+  model: initialModel,
+}: {
+  carId?: number;
+  carTitle?: string;
+  /** the general form's make / model filled in beforehand (a make's or model's landing page) */
+  make?: string;
+  model?: string;
+}) {
   const [state, setState] = useState<State>({ kind: "idle" });
   const [phone, setPhone] = useState(site.phone);
   const [options, setOptions] = useState<FilterOptions | null>(null);
-  const [make, setMake] = useState("");
+  const [make, setMake] = useState(initialMake ?? "");
   // two forms can be on one page (home page), so the ids must differ
   const id = useId();
   const general = carId == null;
@@ -140,6 +151,7 @@ export function InquiryForm({ carId, carTitle }: { carId?: number; carTitle?: st
                 id={`${id}-model`}
                 name="model"
                 list={`${id}-models`}
+                defaultValue={initialModel}
                 maxLength={60}
                 placeholder="напр. Sportage"
                 autoComplete="off"

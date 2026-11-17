@@ -15,22 +15,17 @@ const API_URL = process.env.API_URL ?? "http://localhost:8080";
  * not know the question (an older version) lets the page through as before.
  */
 export async function proxy(request: NextRequest) {
-  const slug = request.nextUrl.pathname.slice("/cars/".length);
+  const path = request.nextUrl.pathname;
+  if (path.startsWith("/koli/")) return landingPage(request, path.slice("/koli/".length));
+  const slug = path.slice("/cars/".length);
   if (!slug || slug.includes("/")) {
     return NextResponse.next();
   }
   try {
-    const res = await fetch(`${API_URL}/api/public/cars/${encodeURIComponent(slug)}/exists`, {
-      headers: { Accept: "application/json" },
-      cache: "no-store",
-      signal: AbortSignal.timeout(3000),
-    });
+    const res = await ask(`/api/public/cars/${encodeURIComponent(slug)}/exists`);
     if (res.ok) {
       const body = (await res.json()) as { exists?: boolean };
-      if (body.exists === false) {
-        // an address no route answers: Next.js renders src/app/not-found.tsx with the status 404
-        return NextResponse.rewrite(new URL("/404", request.url), { status: 404 });
-      }
+      if (body.exists === false) return notFound(request);
     }
   } catch {
     // no answer: the page decides, as before
@@ -38,6 +33,35 @@ export async function proxy(request: NextRequest) {
   return NextResponse.next();
 }
 
+/**
+ * The landing pages /koli/{make} and /koli/{make}/{model} the same way: the backend's page endpoint answers 404 for
+ * a make or model without public cars. Any other answer, or none, lets the page through.
+ */
+async function landingPage(request: NextRequest, rest: string) {
+  const parts = rest.split("/");
+  if (parts.length > 2 || parts.some((p) => !p)) return NextResponse.next();
+  try {
+    const res = await ask(`/api/public/seo/pages/${parts.map((p) => encodeURIComponent(decodeURIComponent(p))).join("/")}`);
+    if (res.status === 404) return notFound(request);
+  } catch {
+    // no answer (or an address that cannot be decoded): the page decides
+  }
+  return NextResponse.next();
+}
+
+function ask(path: string) {
+  return fetch(`${API_URL}${path}`, {
+    headers: { Accept: "application/json" },
+    cache: "no-store",
+    signal: AbortSignal.timeout(3000),
+  });
+}
+
+/** An address no route answers: Next.js renders src/app/not-found.tsx with the status 404. */
+function notFound(request: NextRequest) {
+  return NextResponse.rewrite(new URL("/404", request.url), { status: 404 });
+}
+
 export const config = {
-  matcher: "/cars/:slug",
+  matcher: ["/cars/:slug", "/koli/:make", "/koli/:make/:model"],
 };

@@ -14,6 +14,7 @@ const links: [string, string][] = [
   ["/admin/inquiries", "Запитвания"],
   ["/admin/reports", "Отчет"],
   ["/admin/removed", "Изчезнали обяви"],
+  ["/admin/seo", "SEO страници"],
   ["/admin/delivered", "Доставени"],
   ["/admin/users", "Потребители"],
   ["/admin/account", "Профил"],
