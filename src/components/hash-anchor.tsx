@@ -67,7 +67,8 @@ export function HashAnchor() {
     if (initial) hold(initial, window.location.pathname, false);
 
     const onClick = (e: MouseEvent) => {
-      if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+      // Not e.defaultPrevented: next/link prevents the default to navigate in the page
+      if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
       const a = (e.target as Element | null)?.closest?.("a[href]");
       if (!(a instanceof HTMLAnchorElement) || (a.target && a.target !== "_self")) return;
       const url = new URL(a.href, window.location.href);
