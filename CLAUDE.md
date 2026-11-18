@@ -141,6 +141,9 @@ Run `npm run lint` and `npm run build` before finishing a change.
   The picture shown when a link to the site is shared (og:image, `/og`) is uploaded the same way under "Шаблони → Картинка при споделяне"
   (`getShareImage()`, `GET /api/public/share-image`; reduced to at most 1200 px wide JPEG): `src/app/og/route.tsx` serves it (fetched per request,
   `connection()`, `Cache-Control: max-age=300`), else the generated default.
+- Links to a section ("/#contact", "#niche-contact"): `hash-anchor.tsx` (in the root layout) keeps the section in view while
+  the page above it still streams in (the home page's delivered cars come later and would push "#contact" down), for a
+  page opened with a hash and for in-site links, until the page has not grown for 2 s or the visitor scrolls, touches or types.
 - Text sizes: the public site reads two steps larger than Tailwind's scale (14 / 16 / 18 / 20 px) (`--text-xs` … `--text-lg` set on `body` in
   `globals.css`); the admin panel keeps Tailwind's sizes through `.admin-root` (`admin/layout.tsx`). The header's menu is
   fixed at 14px so it fits.
