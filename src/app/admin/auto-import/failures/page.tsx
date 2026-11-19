@@ -8,7 +8,7 @@ import type { AutoImportFailure, AutoImportFailures, AutoImportSource } from "@/
 
 const PAGE_SIZE = 50;
 
-const sourceNames: Record<AutoImportSource, string> = { GUAZI: "guazi", AUTOWINI: "autowini" };
+const sourceNames: Record<AutoImportSource, string> = { GUAZI: "guazi", AUTOWINI: "autowini", AUTOTRADER_CA: "autotrader.ca" };
 
 const key = (f: AutoImportFailure) => `${f.source}|${f.listingId}`;
 
@@ -159,9 +159,10 @@ export default function AutoImportFailuresPage() {
             className="field w-auto py-2!"
             aria-label="Сайт"
           >
-            <option value="">Двата сайта</option>
+            <option value="">Всички сайтове</option>
             <option value="GUAZI">guazi</option>
             <option value="AUTOWINI">autowini</option>
+            <option value="AUTOTRADER_CA">autotrader.ca</option>
           </select>
           <input
             value={qInput}
@@ -234,7 +235,7 @@ export default function AutoImportFailuresPage() {
                       </a>
                       <span className="block text-xs text-muted">
                         {f.listingId}
-                        {f.price != null && ` · $${f.price.toLocaleString("bg-BG")} FOB`}
+                        {f.price != null && ` · ${f.price.toLocaleString("bg-BG")} ${f.source === "AUTOTRADER_CA" ? "CAD" : "USD"} FOB`}
                       </span>
                     </td>
                     <td className="p-3 text-muted">{f.error}</td>

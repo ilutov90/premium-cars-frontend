@@ -787,13 +787,26 @@ export interface MarketplaceOverview {
 
 // ---------------------------------------------------------------- automatic import (backend AutoImportDtos)
 
-export type AutoImportSource = "AUTOWINI" | "GUAZI";
+export type AutoImportSource = "AUTOWINI" | "GUAZI" | "AUTOTRADER_CA";
 
-/** autowini: inspected + actual mileage; guazi: condition grades. Each site ignores the other's. */
+/** autotrader.ca's search filters (backend AutotraderFilters); the other sources never have them. */
+export interface AutotraderFilters {
+  postalCode: string;
+  radiusKm: number;
+  latitude: number | null;
+  longitude: number | null;
+  excludePrivate: boolean;
+  excludeDamaged: boolean;
+  excludeNoPrice: boolean;
+  usedOnly: boolean;
+}
+
+/** autowini: inspected + actual mileage; guazi: condition grades; autotrader.ca: `autotrader`. Each site ignores the others'. */
 export interface AutoImportFilters {
   inspected: boolean;
   actualMileage: boolean;
   grades: string[];
+  autotrader?: AutotraderFilters;
 }
 
 export interface AutoImportModel {
@@ -991,7 +1004,7 @@ export interface AutoImportPreview {
 }
 
 /** Statistics of cars that disappeared from the source sites (backend removed report). */
-export type RemovedSource = "AUTOWINI" | "GUAZI";
+export type RemovedSource = "AUTOWINI" | "GUAZI" | "AUTOTRADER_CA";
 export type RemovedGroupBy = "make" | "model" | "year" | "make_year" | "model_year";
 
 export interface RemovedRow {

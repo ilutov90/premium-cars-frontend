@@ -21,12 +21,26 @@ import type {
   AutoImportRunStatus,
   AutoImportSource,
   AutoImportSourceView,
+  AutotraderFilters,
   PageResponse,
 } from "@/lib/types";
 
 const sourceNames: Record<AutoImportSource, string> = {
   GUAZI: "guazi (Китай)",
   AUTOWINI: "autowini (Корея)",
+  AUTOTRADER_CA: "autotrader.ca (Канада)",
+};
+
+const RADIUS_OPTIONS = [10, 20, 50, 100, 150, 200, 250, 300, 400];
+const DEFAULT_AUTOTRADER: AutotraderFilters = {
+  postalCode: "N5P1C5",
+  radiusKm: 400,
+  latitude: 42.779213,
+  longitude: -81.192156,
+  excludePrivate: true,
+  excludeDamaged: true,
+  excludeNoPrice: true,
+  usedOnly: true,
 };
 
 const runStatusLabels: Record<AutoImportRunStatus, string> = {
@@ -39,7 +53,7 @@ const runStatusLabels: Record<AutoImportRunStatus, string> = {
 
 const GRADES = ["S", "A", "B", "C", "D"];
 
-/** Settings, checks and the report of the automatic import from autowini and guazi. */
+/** Settings, checks and the report of the automatic import from autowini, guazi and autotrader.ca. */
 export default function AdminAutoImportPage() {
   const { adminFetch } = useAdmin();
   const [overview, setOverview] = useState<AutoImportOverview | null>(null);
@@ -234,7 +248,7 @@ function MileageLimit({
         Максимален пробег
       </label>
       <p className="mt-1 max-w-3xl text-sm text-muted">
-        Обяви с повече километри не се импортират (за двата сайта). Пробегът се чете още от търсенето (при autowini,
+        Обяви с повече километри не се импортират (за всички сайтове). Пробегът се чете още от търсенето (при autowini,
         ако търсенето не го покаже, при импорта, преди да се запише нещо). Пропуснатите се пазят и не се отварят
         отново, броят се в отчета и се импортират, ако вдигнеш ограничението. Празно поле = без ограничение. Вече
         качените коли не се пипат.
@@ -300,7 +314,7 @@ function PriceLimit({
         Максимална FOB цена
       </label>
       <p className="mt-1 max-w-3xl text-sm text-muted">
-        Обяви с по-висока FOB цена не се импортират (за двата сайта; цената в търсенето е в USD и се сравнява в EUR
+        Обяви с по-висока FOB цена не се импортират (за всички сайтове; цената в търсенето е във валутата на сайта — USD, при autotrader.ca CAD — и се сравнява в EUR
         по днешния курс). Пропуснатите се пазят и се импортират, ако вдигнеш ограничението или цената им падне.
         Празно поле = без ограничение. Вече качените коли не се пипат.
       </p>
@@ -452,7 +466,7 @@ function SourceCard({
   function addBrand(code: string) {
     const entry = catalog?.find((c) => c.code === code);
     if (!entry || brands.some((b) => b.code === code)) return;
-    const year = view.source === "GUAZI" ? 2022 : 2018;
+    const year = view.source === "GUAZI" ? 2022 : view.source === "AUTOTRADER_CA" ? 2020 : 2018;
     setBrands((all) => [...all, { code, name: entry.name, enabled: true, yearFrom: year, models: [], excludedFuels: [] }]);
   }
 
@@ -490,7 +504,12 @@ function SourceCard({
       )}
 
       <div className="mt-4 flex flex-wrap gap-4 text-sm">
-        {view.source === "AUTOWINI" ? (
+        {view.source === "AUTOTRADER_CA" ? (
+          <AutotraderFilterFields
+            value={filters.autotrader ?? DEFAULT_AUTOTRADER}
+            onChange={(autotrader) => setFilters({ ...filters, autotrader })}
+          />
+        ) : view.source === "AUTOWINI" ? (
           <>
             <label className="flex items-center gap-2">
               <input
@@ -542,8 +561,8 @@ function SourceCard({
               <th className="py-2 pr-3">Марка</th>
               <th className="py-2 pr-3">От година{view.source === "GUAZI" ? " (производство)" : ""}</th>
               <th className="py-2 pr-3">Модели</th>
-              {view.source === "AUTOWINI" && (
-                <th className="py-2 pr-3" title="Горивата (Fuel Type в autowini), които да НЕ се внасят">
+              {view.source !== "GUAZI" && (
+                <th className="py-2 pr-3" title={`Горивата (Fuel Type в ${view.source === "AUTOWINI" ? "autowini" : "autotrader.ca"}), които да НЕ се внасят`}>
                   Двигател (без)
                 </th>
               )}
@@ -826,7 +845,7 @@ function BrandRow({
           </div>
         )}
       </td>
-      {source === "AUTOWINI" && (
+      {source !== "GUAZI" && (
         <td className="py-2 pr-3">
           {brand.models.length === 0 ? (
             <FuelPicker
@@ -902,8 +921,108 @@ function withFuels(m: AutoImportModel, excludedFuels: string[]): AutoImportModel
   return { code: m.code, name: m.name, ...(excludedFuels.length ? { excludedFuels } : {}) };
 }
 
+const checkRows: [keyof AutotraderFilters, string][] = [
+  ["excludePrivate", "Без частни продавачи (само дилъри)"],
+  ["excludeDamaged", "Без катастрофирали"],
+  ["excludeNoPrice", "Без „цена при запитване“"],
+  ["usedOnly", "Само употребявани (без демо, служебни и др.)"],
+];
+
+/** autotrader.ca's search filters: the centre (postal code + optional coordinates), the radius and four switches. */
+function AutotraderFilterFields({
+  value,
+  onChange,
+}: {
+  value: AutotraderFilters;
+  onChange: (v: AutotraderFilters) => void;
+}) {
+  const num = (v: string) => (v.trim() === "" || Number.isNaN(Number(v)) ? null : Number(v));
+  const radii = RADIUS_OPTIONS.includes(value.radiusKm)
+    ? RADIUS_OPTIONS
+    : [...RADIUS_OPTIONS, value.radiusKm].sort((x, y) => x - y);
+  return (
+    <div className="w-full space-y-3">
+      <div className="flex flex-wrap items-end gap-3">
+        <div>
+          <label className="label" htmlFor="at-postal">
+            Пощенски код
+          </label>
+          <input
+            id="at-postal"
+            className="field w-32"
+            placeholder="N5P1C5"
+            maxLength={7}
+            value={value.postalCode}
+            onChange={(e) =>
+              onChange({ ...value, postalCode: e.target.value.toUpperCase(), latitude: null, longitude: null })
+            }
+          />
+        </div>
+        <div>
+          <label className="label" htmlFor="at-radius">
+            Радиус
+          </label>
+          <select
+            id="at-radius"
+            className="field w-auto"
+            value={value.radiusKm}
+            onChange={(e) => onChange({ ...value, radiusKm: Number(e.target.value) })}
+          >
+            {radii.map((r) => (
+              <option key={r} value={r}>
+                {r} км
+              </option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label className="label" htmlFor="at-lat">
+            Географска ширина
+          </label>
+          <input
+            id="at-lat"
+            type="number"
+            step="any"
+            className="field w-36"
+            value={value.latitude ?? ""}
+            onChange={(e) => onChange({ ...value, latitude: num(e.target.value) })}
+          />
+        </div>
+        <div>
+          <label className="label" htmlFor="at-lon">
+            Географска дължина
+          </label>
+          <input
+            id="at-lon"
+            type="number"
+            step="any"
+            className="field w-36"
+            value={value.longitude ?? ""}
+            onChange={(e) => onChange({ ...value, longitude: num(e.target.value) })}
+          />
+        </div>
+      </div>
+      <p className="text-xs text-muted">
+        Координатите са по желание; ако смените пощенския код, сменете ги или ги изтрийте.
+      </p>
+      <div className="flex flex-wrap gap-x-5 gap-y-2">
+        {checkRows.map(([key, label]) => (
+          <label key={key} className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              checked={value[key] as boolean}
+              onChange={(e) => onChange({ ...value, [key]: e.target.checked })}
+            />
+            {label}
+          </label>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 /**
- * The "Двигател" cell of a make or one of its models: the fuel types autowini has for it now (with listings), the
+ * The "Двигател" cell of a make or one of its models: the fuel types the source has for it now (with listings), the
  * ticked ones left out of the automatic import. Nothing ticked = every fuel type.
  */
 function FuelPicker({
@@ -970,7 +1089,7 @@ function FuelPicker({
           {fuels === null ? (
             <p className="text-muted">Зареждане…</p>
           ) : options.length === 0 ? (
-            <p className="text-muted">autowini не показва горива за това.</p>
+            <p className="text-muted">{sourceNames[source].split(" ")[0]} не показва горива за това.</p>
           ) : (
             <>
               <p className="mb-1 text-muted">Отметнатите НЕ се внасят:</p>
@@ -991,7 +1110,7 @@ function FuelPicker({
                 );
               })}
               {allOut && <p className="mt-1 font-semibold text-warn">Всички горива са изключени: нищо от това няма да се внася.</p>}
-              <p className="mt-1 text-muted">Броят е с филтрите на autowini, както са записани.</p>
+              <p className="mt-1 text-muted">Броят е с филтрите на {sourceNames[source].split(" ")[0]}, както са записани.</p>
             </>
           )}
         </div>
