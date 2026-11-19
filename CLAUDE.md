@@ -86,7 +86,7 @@ Run `npm run lint` and `npm run build` before finishing a change.
   saved ones in the backend `post_template`, edited under `/admin/templates`). Rendering drops a line whose
   placeholder is empty for the car. Publishing is one action for all networks: the confirmation dialog in
   `social-post-panel.tsx` (networks ticked, the Facebook/Instagram text and the Viber text editable, 1-10 photos
-  picked for all, now or scheduled for a date and time in Bulgarian time, `src/lib/sofia-time.ts`, whatever the computer's zone: picked in quarter hours (`schedule-picker.tsx`: date, hour, minute 00/15/30/45), by default an hour after the dialog opens rounded up to the next quarter hour; the backend refuses a time less than a minute ahead) sends one `POST /api/admin/cars/{id}/publications`; the panel
+  picked for all, now or scheduled for a date and time in Bulgarian time, `src/lib/sofia-time.ts`, whatever the computer's zone: picked in quarter hours (`schedule-picker.tsx`: date, hour, minute 00/15/30/45), by default an hour after the dialog opens rounded up to the next quarter hour; the backend refuses a time less than a minute ahead) sends one `POST /api/admin/cars/{id}/publications` (Viber can be posted as the car's link only, the default: Viber shows the preview, no photos needed, `linkOnly`; or as photos + text); the panel
   follows each network's post (`/scheduled-posts`) until it is published or failed.
   The car page shows every known spec and hides empty ones.
 - mobile.bg: the car editor's `mobile-bg-panel.tsx` ("Качи в mobile.bg") shows mobile.bg's "Добави обява" form filled
