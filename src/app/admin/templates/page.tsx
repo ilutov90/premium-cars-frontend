@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useAdmin } from "@/components/admin/admin-context";
+import { defaultLocationLines } from "@/lib/description";
 import { formatDate } from "@/lib/format";
 import {
   defaultTemplates,
@@ -635,6 +636,13 @@ const GOOGLE_FIELDS: { key: GoogleKey; label: string; hint: string; placeholder:
   },
 ];
 
+/** The location line per origin ({{location}}); empty = the default line. */
+const LOCATION_FIELDS = [
+  { key: "locationKr", label: "Ред за местоположение: Корея", origin: "KR" },
+  { key: "locationCn", label: "Ред за местоположение: Китай", origin: "CN" },
+  { key: "locationCa", label: "Ред за местоположение: Канада", origin: "CA" },
+] as const;
+
 /** The "Общи данни" form's values: the effective contact details plus the tracking ids ("" = none). */
 function sharedForm(saved: PostSettings | null) {
   return {
@@ -645,6 +653,9 @@ function sharedForm(saved: PostSettings | null) {
     googleLeadLabel: saved?.googleLeadLabel ?? "",
     googlePhoneLabel: saved?.googlePhoneLabel ?? "",
     googleViberLabel: saved?.googleViberLabel ?? "",
+    locationKr: saved?.locationKr ?? "",
+    locationCn: saved?.locationCn ?? "",
+    locationCa: saved?.locationCa ?? "",
   };
 }
 
@@ -668,6 +679,7 @@ function SharedDetails({ saved, onSaved }: { saved: PostSettings | null; onSaved
     form.viberLink !== current.viberLink ||
     form.office !== current.office ||
     form.metaPixelId.trim() !== current.metaPixelId ||
+    LOCATION_FIELDS.some(({ key }) => form[key].trim() !== current[key]) ||
     GOOGLE_FIELDS.some(({ key }) => form[key].trim() !== current[key]);
 
   async function save(e: React.FormEvent) {
@@ -686,6 +698,9 @@ function SharedDetails({ saved, onSaved }: { saved: PostSettings | null; onSaved
         googleLeadLabel: form.googleLeadLabel.trim() || null,
         googlePhoneLabel: form.googlePhoneLabel.trim() || null,
         googleViberLabel: form.googleViberLabel.trim() || null,
+        locationKr: form.locationKr.trim() || null,
+        locationCn: form.locationCn.trim() || null,
+        locationCa: form.locationCa.trim() || null,
       };
       const next = await adminFetch<PostSettings>("/api/admin/post-settings", {
         method: "PUT",
@@ -747,6 +762,29 @@ function SharedDetails({ saved, onSaved }: { saved: PostSettings | null; onSaved
             maxLength={100}
             className="field"
           />
+        </div>
+      </div>
+      <div className="mt-4 border-t border-line pt-3">
+        <p className="text-xs text-muted">
+          Редът <code>{"{{location}}"}</code> в публикациите, според произхода на колата. Празно поле = редът по
+          подразбиране.
+        </p>
+        <div className="mt-2 grid gap-3">
+          {LOCATION_FIELDS.map(({ key, label, origin }) => (
+            <div key={key}>
+              <label className="label" htmlFor={`set-${key}`}>
+                {label}
+              </label>
+              <input
+                id={`set-${key}`}
+                value={form[key]}
+                onChange={(e) => setForm({ ...form, [key]: e.target.value })}
+                placeholder={defaultLocationLines[origin]}
+                maxLength={300}
+                className="field"
+              />
+            </div>
+          ))}
         </div>
       </div>
       <div className="mt-4 border-t border-line pt-3">

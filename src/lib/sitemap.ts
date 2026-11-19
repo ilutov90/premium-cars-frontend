@@ -20,6 +20,7 @@ const pages: { path: string; changefreq: string; priority: number }[] = [
   { path: "/cars", changefreq: "daily", priority: 0.9 },
   { path: "/koli-ot-koreya", changefreq: "weekly", priority: 0.8 },
   { path: "/elektromobili-ot-kitay", changefreq: "weekly", priority: 0.8 },
+  { path: "/koli-ot-kanada-i-amerika", changefreq: "weekly", priority: 0.8 },
   { path: "/kak-raboti-vnosat", changefreq: "monthly", priority: 0.6 },
   { path: "/delivered", changefreq: "weekly", priority: 0.6 },
   { path: "/about", changefreq: "yearly", priority: 0.3 },

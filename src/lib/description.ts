@@ -47,10 +47,20 @@ export function powertrainLines(specs: CarSpecs, numbers: (n: number) => string 
   return lines;
 }
 
-export function locationLine(origin: Origin | null): string | null {
-  if (origin === "CN") return "🇨🇳Автомобилът се намира в Китай. 🚢 Доставка до 3 месеца";
-  if (origin === "KR") return "🇰🇷Автомобилът се намира в Южна Корея. 🚢 Доставка до 3 месеца";
-  return null;
+export const defaultLocationLines: Record<Origin, string> = {
+  CN: "🇨🇳Автомобилът се намира в Китай. 🚢 Доставка до 3 месеца",
+  KR: "🇰🇷Автомобилът се намира в Южна Корея. 🚢 Доставка до 3 месеца",
+  CA: "🇨🇦Автомобилът се намира в Канада. 🚢 Доставка до 3 месеца",
+};
+
+/** The location line of a car's origin: the saved one (admin "Общи данни") when set, else the default. */
+export function locationLine(
+  origin: Origin | null,
+  saved?: { locationKr?: string | null; locationCn?: string | null; locationCa?: string | null } | null,
+): string | null {
+  if (!origin) return null;
+  const own = origin === "KR" ? saved?.locationKr : origin === "CN" ? saved?.locationCn : saved?.locationCa;
+  return own?.trim() || defaultLocationLines[origin];
 }
 
 /**

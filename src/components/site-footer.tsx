@@ -55,6 +55,11 @@ export function SiteFooter() {
               </Link>
             </li>
             <li>
+              <Link href="/koli-ot-kanada-i-amerika" className="hover:text-paper">
+                Коли от Канада и Америка
+              </Link>
+            </li>
+            <li>
               <Link href="/about" className="hover:text-paper">
                 За нас
               </Link>

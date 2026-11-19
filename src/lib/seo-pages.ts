@@ -52,18 +52,26 @@ export function seoName(make: string, model: string | null): string {
   return model.toLowerCase().startsWith(`${make.toLowerCase()} `) ? model : `${make} ${model}`;
 }
 
-/** " от Корея", " от Китай", " от Корея и Китай" (short, for titles); "" when unknown. */
+/** " от Корея", " от Китай", " от Корея, Китай и Канада" (short, for titles); "" when unknown. */
 function fromShort(origins: Origin[]): string {
-  const kr = origins.includes("KR");
-  const cn = origins.includes("CN");
-  return kr && cn ? " от Корея и Китай" : kr ? " от Корея" : cn ? " от Китай" : "";
+  const names = originNames(origins, "Корея");
+  return names ? ` от ${names}` : "";
 }
 
-/** "от Южна Корея", "от Китай", "от Южна Корея и Китай" (the full name, for the text); "" when unknown. */
+/** "от Южна Корея", "от Китай", "от Южна Корея и Канада" (the full name, for the text); "" when unknown. */
 function fromLong(origins: Origin[]): string {
-  const kr = origins.includes("KR");
-  const cn = origins.includes("CN");
-  return kr && cn ? "от Южна Корея и Китай" : kr ? "от Южна Корея" : cn ? "от Китай" : "";
+  const names = originNames(origins, "Южна Корея");
+  return names ? `от ${names}` : "";
+}
+
+/** The origins' names in a fixed order (Korea, China, Canada) joined with commas and a last "и". */
+function originNames(origins: Origin[], korea: string): string {
+  const names = [
+    origins.includes("KR") ? korea : "",
+    origins.includes("CN") ? "Китай" : "",
+    origins.includes("CA") ? "Канада" : "",
+  ].filter(Boolean);
+  return names.length > 1 ? `${names.slice(0, -1).join(", ")} и ${names[names.length - 1]}` : (names[0] ?? "");
 }
 
 const cars = (n: number) => (n === 1 ? "1 кола" : `${n} коли`);
