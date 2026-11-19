@@ -29,6 +29,7 @@ import { InspectionReport } from "@/components/inspection-report";
 import { ShareButtons } from "@/components/share-buttons";
 import { InquiryForm } from "@/components/inquiry-form";
 import { PriceCard } from "@/components/price-card";
+import { AdminCarBar } from "@/components/admin-car-bar";
 import type { CarSpecs, Origin } from "@/lib/types";
 
 export async function generateMetadata({ params }: PageProps<"/cars/[slug]">): Promise<Metadata> {
@@ -179,6 +180,8 @@ async function CarDetailView({ params }: { params: PageProps<"/cars/[slug]">["pa
           <h1 className="mt-2 text-3xl font-extrabold tracking-tight sm:text-4xl">{s.title}</h1>
           {/* the number a customer names on the phone or in Viber; the admin panel finds the car by it */}
           <p className="mt-1.5 text-sm text-muted">Обява № {car.id}</p>
+          {/* the source listing, for a logged-in admin only: renders nothing for customers */}
+          <AdminCarBar carId={car.id} />
           <div className="mt-5">
             <PriceCard priceEur={car.priceEur} />
           </div>

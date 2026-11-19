@@ -9,6 +9,7 @@ import { formatDate, scheduledPostNote, scheduledStatusLabels } from "@/lib/form
 import { defaultScheduleInput, fromSofiaInput, toSofiaInput } from "@/lib/sofia-time";
 import { SchedulePicker } from "./schedule-picker";
 import {
+  carLink,
   defaultTemplates,
   networkLabels,
   renderTemplate,
@@ -235,7 +236,9 @@ export function SocialPostPanel({ car }: { car: AdminCar }) {
         <ul className="mt-1 space-y-1 text-sm" aria-live="polite">
           {batchPosts.map((p) => (
             <li key={p.id} className="break-words">
-              <span className="font-semibold">{networkLabels[p.network]}:</span>{" "}
+              <span className="font-semibold">{networkLabels[p.network]}</span>
+              {p.linkOnly && <span className="text-muted"> (само линк)</span>}
+              <span className="font-semibold">:</span>{" "}
               {p.status === "PUBLISHED" ? (
                 <span className="font-semibold text-ok">публикувано ✓</span>
               ) : p.status === "FAILED" ? (
@@ -264,7 +267,8 @@ export function SocialPostPanel({ car }: { car: AdminCar }) {
                 <span className={p.status === "FAILED" ? "font-semibold text-warn" : "font-semibold"}>
                   {scheduledStatusLabels[p.status]}
                 </span>{" "}
-                · {networkLabels[p.network]} · {formatDate(p.publishAt)}
+                · {networkLabels[p.network]}
+                {p.linkOnly && <span className="text-muted"> (само линк)</span>} · {formatDate(p.publishAt)}
                 {scheduledPostNote(p.error) && <span className="block break-words text-warn">{scheduledPostNote(p.error)}</span>}
               </span>
               {p.status === "SCHEDULED" && (
@@ -299,6 +303,7 @@ export function SocialPostPanel({ car }: { car: AdminCar }) {
           car={car}
           configured={configured}
           initialTexts={{ FACEBOOK: textFor("FACEBOOK"), VIBER: textFor("VIBER") }}
+          initialLink={origin ? carLink(origin, car.slug, "VIBER") : ""}
           earlier={posts}
           onClose={() => setDialog(false)}
           onPublishing={(list) => {
@@ -336,6 +341,7 @@ function PublishDialog({
   car,
   configured,
   initialTexts,
+  initialLink,
   earlier,
   onClose,
   onPublishing,
@@ -344,6 +350,8 @@ function PublishDialog({
   car: AdminCar;
   configured: SocialNetwork[];
   initialTexts: Record<"FACEBOOK" | "VIBER", string>;
+  /** the car's link with Viber's UTM, the text of a link-only Viber post */
+  initialLink: string;
   earlier: SocialPost[];
   onClose: () => void;
   onPublishing: (posts: ScheduledPost[]) => void;
@@ -352,6 +360,9 @@ function PublishDialog({
   const { adminFetch } = useAdmin();
   const [chosen, setChosen] = useState<Set<SocialNetwork>>(() => new Set(initialNetworks(configured, earlier)));
   const [texts, setTexts] = useState(initialTexts);
+  // Viber: only the car's link (default; Viber shows the preview) or photos + text; both texts are kept
+  const [viberMode, setViberMode] = useState<"link" | "full">("link");
+  const [link, setLink] = useState(initialLink);
   const [selected, setSelected] = useState<Set<number>>(
     () => new Set(car.images.slice(0, MAX_PHOTOS).map((i) => i.id)),
   );
@@ -373,7 +384,10 @@ function PublishDialog({
   const viber = chosen.has("VIBER");
   const metaMax = chosen.has("INSTAGRAM") ? TEXT_MAX.INSTAGRAM : TEXT_MAX.FACEBOOK;
   const metaInvalid = meta && (!texts.FACEBOOK.trim() || texts.FACEBOOK.length > metaMax);
-  const viberInvalid = viber && (!texts.VIBER.trim() || texts.VIBER.length > TEXT_MAX.VIBER);
+  const viberLink = viber && viberMode === "link";
+  const viberInvalid = viber && (viberLink ? !link.trim() || link.length > TEXT_MAX.VIBER : !texts.VIBER.trim() || texts.VIBER.length > TEXT_MAX.VIBER);
+  // photos are needed unless the only network is Viber as a link
+  const needsPhotos = meta || (viber && !viberLink);
   const postedBefore = earlier.filter((p, i) => chosen.has(p.network) && earlier.findIndex((q) => q.network === p.network) === i);
 
   const ordered = car.images.filter((i) => selected.has(i.id));
@@ -405,8 +419,14 @@ function PublishDialog({
     setError(null);
     try {
       const body: PublishRequest = {
-        posts: picked.map((network) => ({ network, text: network === "VIBER" ? texts.VIBER : texts.FACEBOOK })),
-        imageIds: ordered.map((i) => i.id),
+        posts: picked.map((network) =>
+          network === "VIBER"
+            ? viberLink
+              ? { network, text: link.trim(), linkOnly: true }
+              : { network, text: texts.VIBER }
+            : { network, text: texts.FACEBOOK },
+        ),
+        imageIds: needsPhotos ? ordered.map((i) => i.id) : [],
       };
       if (when === "later" && scheduleDate) body.publishAt = scheduleDate.toISOString();
       // answered at once: the server publishes in the background (or at the chosen time)
@@ -487,15 +507,50 @@ function PublishDialog({
               />
             )}
             {viber && (
-              <PostText
-                id="text-viber"
-                label="Текст за Viber"
-                value={texts.VIBER}
-                initial={initialTexts.VIBER}
-                max={TEXT_MAX.VIBER}
-                rows={meta ? 9 : 20}
-                onChange={(v) => setTexts((t) => ({ ...t, VIBER: v }))}
-              />
+              <div className="space-y-3">
+                <fieldset className="flex flex-wrap items-center gap-x-5 gap-y-1 text-sm">
+                  <legend className="mb-1 font-bold">Viber</legend>
+                  <label className="flex items-center gap-2">
+                    <input type="radio" name="viber-mode" checked={viberLink} onChange={() => setViberMode("link")} className="accent-accent" />
+                    Само линк към колата
+                  </label>
+                  <label className="flex items-center gap-2">
+                    <input type="radio" name="viber-mode" checked={!viberLink} onChange={() => setViberMode("full")} className="accent-accent" />
+                    Снимки и текст
+                  </label>
+                </fieldset>
+                {viberLink ? (
+                  <div>
+                    <label className="mb-1 block text-sm font-bold" htmlFor="link-viber">
+                      Линк за Viber
+                    </label>
+                    <input
+                      id="link-viber"
+                      type="text"
+                      value={link}
+                      onChange={(e) => setLink(e.target.value)}
+                      className="field font-mono text-xs!"
+                    />
+                    <p className={`mt-1 text-xs ${!link.trim() || link.length > TEXT_MAX.VIBER ? "font-semibold text-warn" : "text-muted"}`}>
+                      {!link.trim()
+                        ? "Линкът е празен."
+                        : link.length > TEXT_MAX.VIBER
+                          ? "Линкът е твърде дълъг."
+                          : "Viber показва снимката и заглавието от сайта; снимките по-долу са само за Facebook и Instagram."}
+                    </p>
+                  </div>
+                ) : (
+                  <PostText
+                    id="text-viber"
+                    label="Текст за Viber"
+                    value={texts.VIBER}
+                    initial={initialTexts.VIBER}
+                    max={TEXT_MAX.VIBER}
+                    rows={meta ? 9 : 20}
+                    onChange={(v) => setTexts((t) => ({ ...t, VIBER: v }))}
+                  />
+                )}
+              </div>
             )}
             {!meta && !viber && <p className="text-sm text-muted">Изберете поне една мрежа.</p>}
           </div>
@@ -548,7 +603,7 @@ function PublishDialog({
             </ul>
             <p className="mt-1 text-xs text-muted">
               Клик избира или маха снимка. Едни и същи снимки отиват във всички мрежи, в реда от галерията
-              {viber ? "; във Viber всяка снимка е отделно съобщение, а след тях текстът" : ""}.
+              {viber && !viberLink ? "; във Viber всяка снимка е отделно съобщение, а след тях текстът" : ""}.
             </p>
           </div>
         </div>
@@ -592,14 +647,14 @@ function PublishDialog({
           <button
             type="button"
             onClick={publish}
-            disabled={busy || picked.length === 0 || selected.size < 1 || metaInvalid || viberInvalid || scheduleInvalid}
+            disabled={busy || picked.length === 0 || (needsPhotos && selected.size < 1) || metaInvalid || viberInvalid || scheduleInvalid}
             className="btn-primary"
           >
             {busy
               ? when === "later"
                 ? "Насрочване…"
                 : "Изпращане…"
-              : `${when === "later" ? "Насрочи" : "Публикувай"} (${selected.size} ${photoWord})`}
+              : `${when === "later" ? "Насрочи" : "Публикувай"}${needsPhotos ? ` (${selected.size} ${photoWord})` : ""}`}
           </button>
         </div>
       </div>

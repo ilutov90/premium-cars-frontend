@@ -71,6 +71,10 @@ Run `npm run lint` and `npm run build` before finishing a change.
   canonical. Not in the header menu (full): linked from the footer, the catalog ("Всички марки") and the car pages.
 - The car page shows "Обява № {id}" under the title and the Viber draft / inquiry text carries it; the admin list
   finds a car by that number or by its pasted site link.
+  Under it, a logged-in admin sees the source listing and "Редактирай" (`admin-car-bar.tsx`): fetched in the browser
+  from `GET /api/admin/cars/{id}` with the admin's session, so the page's HTML never has the source link; asked only
+  when the admin panel has marked the browser (`localStorage` "pc-admin", set while logged in, cleared on logout or
+  a 401), and it renders nothing otherwise, so customers' layout is unchanged.
 - Import sources (`CarSource`): AUTOHOME and GUAZI (China, priced with the AUTOHOME formula), AUTOWINI (Korea).
   `specs.batteryHealthPct` (battery SOH, from guazi) shows with the EV figures on the car page. `specs.wltpRangeKm` (backend `WltpRange`: CLTC × 0.82 rounded to 5 km, WLTP as it is; read-only, never sent) shows as "Пробег на ток по WLTP" next to a CLTC range, in the editor, and is what the mobile.bg panel (and so the extension) fills in. `specs.inspection`
   (guazi's inspection report: grade, accident/water/fire checks, areas, remarks with the inspector's note and video)
@@ -86,7 +90,7 @@ Run `npm run lint` and `npm run build` before finishing a change.
   saved ones in the backend `post_template`, edited under `/admin/templates`). Rendering drops a line whose
   placeholder is empty for the car. Publishing is one action for all networks: the confirmation dialog in
   `social-post-panel.tsx` (networks ticked, the Facebook/Instagram text and the Viber text editable, 1-10 photos
-  picked for all, now or scheduled for a date and time in Bulgarian time, `src/lib/sofia-time.ts`, whatever the computer's zone: picked in quarter hours (`schedule-picker.tsx`: date, hour, minute 00/15/30/45), by default an hour after the dialog opens rounded up to the next quarter hour; the backend refuses a time less than a minute ahead) sends one `POST /api/admin/cars/{id}/publications`; the panel
+  picked for all, now or scheduled for a date and time in Bulgarian time, `src/lib/sofia-time.ts`, whatever the computer's zone: picked in quarter hours (`schedule-picker.tsx`: date, hour, minute 00/15/30/45), by default an hour after the dialog opens rounded up to the next quarter hour; the backend refuses a time less than a minute ahead) sends one `POST /api/admin/cars/{id}/publications` (Viber can be posted as the car's link only, the default: Viber shows the preview, no photos needed, `linkOnly`; or as photos + text); the panel
   follows each network's post (`/scheduled-posts`) until it is published or failed.
   The car page shows every known spec and hides empty ones.
 - mobile.bg: the car editor's `mobile-bg-panel.tsx` ("Качи в mobile.bg") shows mobile.bg's "Добави обява" form filled

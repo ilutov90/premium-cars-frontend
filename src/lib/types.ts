@@ -508,6 +508,8 @@ export interface ScheduledPost {
   carTitle: string;
   network: SocialNetwork;
   body: string;
+  /** Viber post that is only the car's link */
+  linkOnly: boolean;
   /** photos in posting order; empty = the first ones of the gallery */
   imageIds: number[];
   publishAt: string;
@@ -593,7 +595,8 @@ export interface ViberConnectResponse {
 
 /** One publication to several networks with the same photos (backend AdminSocialController.PublishRequest). */
 export interface PublishRequest {
-  posts: { network: SocialNetwork; text: string }[];
+  /** linkOnly: Viber only, the post is just the car's link (Viber shows the preview), no photos */
+  posts: { network: SocialNetwork; text: string; linkOnly?: boolean }[];
   imageIds: number[];
   /** ISO instant; absent = now */
   publishAt?: string;
