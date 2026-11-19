@@ -3,6 +3,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import type { AdminMe } from "@/lib/types";
 import { PasswordForm } from "./password-form";
+import { setAdminHint } from "@/components/admin-car-bar";
 
 /*
  * Admin login with a server session: the backend sets an HttpOnly session cookie (the password is never stored in
@@ -86,6 +87,11 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
       .then(setMe)
       .catch(() => setMe(null));
   }, []);
+
+  // Tells the public car pages to ask for the admin bar (AdminCarBar); not a permission, only saves customers a request
+  useEffect(() => {
+    if (me !== undefined) setAdminHint(me !== null);
+  }, [me]);
 
   const logout = useCallback(async () => {
     await call("/api/admin/logout", { method: "POST" }).catch(() => undefined);

@@ -71,6 +71,10 @@ Run `npm run lint` and `npm run build` before finishing a change.
   canonical. Not in the header menu (full): linked from the footer, the catalog ("Всички марки") and the car pages.
 - The car page shows "Обява № {id}" under the title and the Viber draft / inquiry text carries it; the admin list
   finds a car by that number or by its pasted site link.
+  Under it, a logged-in admin sees the source listing and "Редактирай" (`admin-car-bar.tsx`): fetched in the browser
+  from `GET /api/admin/cars/{id}` with the admin's session, so the page's HTML never has the source link; asked only
+  when the admin panel has marked the browser (`localStorage` "pc-admin", set while logged in, cleared on logout or
+  a 401), and it renders nothing otherwise, so customers' layout is unchanged.
 - Import sources (`CarSource`): AUTOHOME and GUAZI (China, priced with the AUTOHOME formula), AUTOWINI (Korea).
   `specs.batteryHealthPct` (battery SOH, from guazi) shows with the EV figures on the car page. `specs.wltpRangeKm` (backend `WltpRange`: CLTC × 0.82 rounded to 5 km, WLTP as it is; read-only, never sent) shows as "Пробег на ток по WLTP" next to a CLTC range, in the editor, and is what the mobile.bg panel (and so the extension) fills in. `specs.inspection`
   (guazi's inspection report: grade, accident/water/fire checks, areas, remarks with the inspector's note and video)
