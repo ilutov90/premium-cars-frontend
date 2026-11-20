@@ -8,8 +8,8 @@ const STOP_EVENTS = ["wheel", "touchstart", "keydown", "pointerdown"] as const;
 
 /**
  * Brings the results into view after a search, a sort or a page change: on a phone the filters stand above them.
- * Nothing moves when the results already start in the upper half of the screen (a wide screen: they are beside the
- * filters). Remount it per search (`key`) so each new search scrolls once.
+ * Nothing moves when the results start in the upper half of the page (a wide screen: they are beside the filters).
+ * Remount it per search (`key`) so each new search scrolls once.
  *
  * One scroll is not enough on every phone: the router's own scroll to the top of the new page and the results
  * streaming in can come after it (seen on a Samsung S23 Ultra), so the results are kept at the top until
@@ -21,8 +21,10 @@ export function ScrollToResults({ active }: { active: boolean }) {
   useEffect(() => {
     const el = ref.current;
     if (!active || !el) return;
-    const first = el.getBoundingClientRect().top;
-    if (first >= 0 && first <= window.innerHeight / 2) return; // already in view (beside the filters)
+    // Decided by where the results are in the page, not on the screen at this moment: right after a search the
+    // page may still be scrolled as before it, and the router scrolls it to the top afterwards
+    const pageTop = el.getBoundingClientRect().top + window.scrollY;
+    if (pageTop <= window.innerHeight / 2) return; // a wide screen: the results are beside the filters
 
     const margin = parseFloat(getComputedStyle(el).scrollMarginTop) || 0;
     const started = performance.now();
@@ -43,7 +45,14 @@ export function ScrollToResults({ active }: { active: boolean }) {
       cancelAnimationFrame(frame);
       for (const type of STOP_EVENTS) window.removeEventListener(type, stop, true);
     };
-    const align = () => el.scrollIntoView({ block: "start", behavior: "instant" });
+    const align = () => {
+      try {
+        el.scrollIntoView({ block: "start", behavior: "instant" });
+      } catch {
+        // a browser that does not know "instant" (older Samsung Internet) rejects the call: scroll by hand
+        window.scrollTo(0, el.getBoundingClientRect().top + window.scrollY - margin);
+      }
+    };
     const tick = () => {
       if (stopped) return;
       const now = performance.now();
