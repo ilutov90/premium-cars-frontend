@@ -62,7 +62,8 @@ async function call<T>(path: string, init?: RequestInit): Promise<T> {
       credentials: "same-origin",
       headers: {
         Accept: "application/json",
-        ...(init?.body ? { "Content-Type": "application/json" } : {}),
+        // a FormData body gets its multipart Content-Type (with the boundary) from the browser
+        ...(init?.body && !(init.body instanceof FormData) ? { "Content-Type": "application/json" } : {}),
         ...(token ? { "X-XSRF-TOKEN": token } : {}),
         ...init?.headers,
       },

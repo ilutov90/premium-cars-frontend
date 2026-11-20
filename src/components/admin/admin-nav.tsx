@@ -7,6 +7,7 @@ import { useAdmin } from "./admin-context";
 const links: [string, string][] = [
   ["/admin", "Коли и импорт"],
   ["/admin/auto-import", "Автоматичен импорт"],
+  ["/admin/orders", "Поръчки"],
   ["/admin/pricing", "Цени"],
   ["/admin/templates", "Шаблони"],
   ["/admin/marketplace", "Модели в обявите"],

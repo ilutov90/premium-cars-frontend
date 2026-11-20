@@ -6,6 +6,8 @@ import type {
   FuelType,
   HeardFrom,
   InquiryStatus,
+  OrderDocumentKind,
+  OrderStatus,
   Origin,
   PriceProfile,
   ScheduledPostStatus,
@@ -68,6 +70,26 @@ export const statusLabels: Record<CarStatus, string> = {
   SOLD: "Продадена",
   ARCHIVED: "Архив",
 };
+
+export const orderStatusLabels: Record<OrderStatus, string> = {
+  CONTRACT_SIGNED: "Подписан договор",
+  PAID: "Платена",
+  SHIPPED: "Натоварена",
+  ARRIVED: "Пристигнала",
+  DELIVERED: "Предадена",
+  CANCELLED: "Отказана",
+};
+
+/** Document blocks of an order, in the order they are shown. */
+export const orderDocumentKinds: { kind: OrderDocumentKind; label: string }[] = [
+  { kind: "INVOICE_KOREA", label: "Фактура Корея (автомобил)" },
+  { kind: "INVOICE_PORT", label: "Фактура пристанище (морски транспорт)" },
+  { kind: "INVOICE_ROTTERDAM", label: "Фактура Ротердам" },
+  { kind: "CONTRACT", label: "Договор с клиента" },
+  { kind: "BILL_OF_LADING", label: "Товарителница (B/L)" },
+  { kind: "CUSTOMS", label: "Митническа декларация" },
+  { kind: "OTHER", label: "Друг документ" },
+];
 
 export const inquiryStatusLabels: Record<InquiryStatus, string> = {
   NEW: "Ново",
@@ -449,3 +471,10 @@ export const featureLabels: Record<CarFeature, string> = {
 
 /** Euro emission classes for the editor and the car page. */
 export const euroStandards = [1, 2, 3, 4, 5, 6] as const;
+
+/** A file size for people ("1,2 МБ"). */
+export function formatBytes(bytes: number): string {
+  if (bytes < 1024) return `${bytes} Б`;
+  if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} КБ`;
+  return `${(bytes / 1024 / 1024).toLocaleString("bg-BG", { maximumFractionDigits: 1 })} МБ`;
+}

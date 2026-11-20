@@ -167,6 +167,18 @@ export function CarEditor({ params }: { params: Promise<{ id: string }> }) {
             )}
           </div>
           {car.sourceUrl && <SourceLink url={car.sourceUrl} />}
+          {car.orderId != null ? (
+            <p className="mt-2 rounded-xl bg-ink/5 px-3 py-2 text-sm">
+              Колата е продадена —{" "}
+              <Link href={`/admin/orders/${car.orderId}`} className="font-semibold underline underline-offset-2">
+                Поръчка № {car.orderId}
+              </Link>
+            </p>
+          ) : (
+            <Link href={`/admin/orders/new?carId=${car.id}`} className="mt-2 inline-block text-sm font-semibold text-accent hover:underline">
+              Създай поръчка
+            </Link>
+          )}
         </div>
         <div className="flex flex-wrap gap-1.5">
           {statusActions
