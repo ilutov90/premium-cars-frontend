@@ -31,7 +31,15 @@ const nextConfig: NextConfig = {
     return [{ source: "/koli-na-gaz-ot-koreya", destination: "/koli-ot-koreya", permanent: true }];
   },
   async headers() {
-    return [{ source: "/:path*", headers: securityHeaders }];
+    return [
+      { source: "/:path*", headers: securityHeaders },
+      // the admin panel's document scanner (orders) uses the camera; the public site keeps it off.
+      // A later rule with the same key overrides the earlier one.
+      {
+        source: "/admin/:path*",
+        headers: [{ key: "Permissions-Policy", value: "camera=(self), microphone=(), geolocation=(), payment=()" }],
+      },
+    ];
   },
   turbopack: {
     rules: {

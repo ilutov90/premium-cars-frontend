@@ -377,6 +377,8 @@ export interface AdminCar {
   createdAt: string;
   updatedAt: string;
   publishedAt: string | null;
+  /** the car's active order (backend `orders`), null = none */
+  orderId: number | null;
 }
 
 export interface ImportResult {
@@ -1105,4 +1107,111 @@ export interface SaveSeoPageRequest {
   title: string | null;
   description: string | null;
   text: string | null;
+}
+
+export type OrderStatus = "CONTRACT_SIGNED" | "PAID" | "SHIPPED" | "ARRIVED" | "DELIVERED" | "CANCELLED";
+
+export type OrderDocumentKind =
+  | "INVOICE_KOREA"
+  | "INVOICE_PORT"
+  | "INVOICE_ROTTERDAM"
+  | "CONTRACT"
+  | "BILL_OF_LADING"
+  | "CUSTOMS"
+  | "OTHER";
+
+/** The car as it was when the order was made (backend `OrderCarSnapshot`). */
+export interface OrderCarSnapshot {
+  title: string | null;
+  slug: string | null;
+  make: string | null;
+  model: string | null;
+  year: number | null;
+  mileageKm: number | null;
+  source: CarSource | null;
+  sourceUrl: string | null;
+  sourceRef: string | null;
+  priceEur: number | null;
+}
+
+export interface OrderCustomer {
+  name: string | null;
+  phone: string | null;
+  email: string | null;
+  address: string | null;
+  idNumber: string | null;
+  companyName: string | null;
+  companyEik: string | null;
+}
+
+export interface OrderSummary {
+  id: number;
+  carId: number | null;
+  car: OrderCarSnapshot;
+  carStatus: CarStatus | null;
+  coverUrl: string | null;
+  customer: OrderCustomer;
+  vin: string | null;
+  agreedPriceEur: number | null;
+  depositEur: number | null;
+  status: OrderStatus;
+  containerNumber: string | null;
+  contractDate: string | null;
+  documentCount: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface OrderDocument {
+  id: number;
+  kind: OrderDocumentKind;
+  title: string | null;
+  fileName: string;
+  contentType: string;
+  sizeBytes: number;
+  uploadedAt: string;
+  uploadedBy: string | null;
+}
+
+export interface AdminOrder {
+  id: number;
+  carId: number | null;
+  car: OrderCarSnapshot;
+  carStatus: CarStatus | null;
+  coverUrl: string | null;
+  customer: OrderCustomer;
+  vin: string | null;
+  agreedPriceEur: number | null;
+  depositEur: number | null;
+  status: OrderStatus;
+  containerNumber: string | null;
+  contractDate: string | null;
+  notes: string | null;
+  createdBy: string | null;
+  createdAt: string;
+  updatedAt: string;
+  carPhotos: string[];
+  documents: OrderDocument[];
+}
+
+export interface OrderRequest {
+  carId: number | null;
+  customer: OrderCustomer;
+  vin: string | null;
+  agreedPriceEur: number | null;
+  depositEur: number | null;
+  status: OrderStatus;
+  containerNumber: string | null;
+  contractDate: string | null;
+  notes: string | null;
+}
+
+export interface OrderCarLookup {
+  id: number;
+  title: string;
+  slug: string;
+  status: CarStatus;
+  coverUrl: string | null;
+  priceEur: number | null;
+  activeOrderId: number | null;
 }

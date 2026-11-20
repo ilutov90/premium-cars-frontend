@@ -158,6 +158,15 @@ Run `npm run lint` and `npm run build` before finishing a change.
 - Text sizes: the public site reads two steps larger than Tailwind's scale (14 / 16 / 18 / 20 px) (`--text-xs` … `--text-lg` set on `body` in
   `globals.css`); the admin panel keeps Tailwind's sizes through `.admin-root` (`admin/layout.tsx`). The header's menu is
   fixed at 14px so it fits.
+- "Поръчки" (`/admin/orders`, backend `order`): the list (search, status, pages), `orders/new` (`?carId=` from the car
+  editor's "Създай поръчка") and `orders/[id]` (`order-editor.tsx`: the car by "Обява №" or a pasted link, marked
+  "Продадена" and off the site on save; the customer's details, all optional; VIN, prices, status, container, dates,
+  notes; the car's snapshot and kept photos) with `order-documents.tsx` (a block per kind: upload PDF / Word / images,
+  several images = one PDF on the server; open, download, delete) and `document-scanner.tsx` (the camera in the page:
+  `getUserMedia`, pages with a "document" look done on the pixels, reorder, sent as JPEGs that the server makes one
+  PDF; without a camera `<input capture>`). The camera is allowed only under `/admin` (`Permissions-Policy`
+  `camera=(self)` in `next.config.ts`; the public site keeps `camera=()`). `adminFetch` leaves Content-Type to the
+  browser for a FormData body. The car editor links a sold car's order (`AdminCar.orderId`).
 - The mobile.bg dialog (`mobile-bg-panel.tsx`) marks every field that keeps it from being sent in red (`danger`), lists
   them left of its button and keeps the button off until they are filled; a make or model outside mobile.bg's list counts.
 - Design tokens are in `src/app/globals.css` (`@theme`: paper, card, ink, muted, line, accent, danger). Use them
