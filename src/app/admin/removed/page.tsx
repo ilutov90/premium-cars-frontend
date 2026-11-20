@@ -37,7 +37,7 @@ function readView(p: URLSearchParams): View {
   const groupBy = p.get("groupBy");
   return {
     days: days === "7" || days === "90" || days === "all" ? days : "30",
-    source: source === "AUTOWINI" || source === "GUAZI" ? source : "",
+    source: source === "AUTOWINI" || source === "GUAZI" || source === "AUTOTRADER_CA" ? source : "",
     groupBy: groupings.some(([g]) => g === groupBy) ? (groupBy as RemovedGroupBy) : "make",
     make: p.get("make") ?? "",
     model: p.get("model") ?? "",
@@ -194,6 +194,7 @@ function AdminRemoved() {
           <option value="">Всички сайтове</option>
           <option value="AUTOWINI">autowini (Корея)</option>
           <option value="GUAZI">guazi (Китай)</option>
+          <option value="AUTOTRADER_CA">autotrader.ca (Канада)</option>
         </select>
         <select
           className="field w-auto! py-1.5! text-xs!"

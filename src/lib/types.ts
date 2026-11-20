@@ -113,9 +113,9 @@ export type CarFeature =
   | "REFRIGERATED"
   | "N1_HOMOLOGATION";
 export type Transmission = "AUTOMATIC" | "MANUAL";
-export type Origin = "KR" | "CN";
+export type Origin = "KR" | "CN" | "CA";
 export type CarStatus = "DRAFT" | "PUBLISHED" | "RESERVED" | "SOLD" | "ARCHIVED";
-export type CarSource = "AUTOHOME" | "AUTOWINI" | "GUAZI" | "OTHER" | "MANUAL";
+export type CarSource = "AUTOHOME" | "AUTOWINI" | "GUAZI" | "AUTOTRADER_CA" | "OTHER" | "MANUAL";
 
 /** The admin list's counts (backend AdminCarCounts): cars matching the search and source, in all and per status. */
 export interface AdminCarCounts {
@@ -239,7 +239,7 @@ export interface SpecGroup {
 }
 
 /** Price formula of a source site (backend PriceProfile). */
-export type PriceProfile = "AUTOHOME" | "AUTOWINI";
+export type PriceProfile = "AUTOHOME" | "AUTOWINI" | "AUTOTRADER_CA";
 
 /** Admin-only price inputs (backend PricingInputs). */
 export interface PricingInputs {
@@ -578,6 +578,10 @@ export interface PostSettings {
   googleLeadLabel: string | null;
   googlePhoneLabel: string | null;
   googleViberLabel: string | null;
+  /** The post templates' location line per origin ({{location}}, max 300); null = the default line. */
+  locationKr: string | null;
+  locationCn: string | null;
+  locationCa: string | null;
 }
 
 /** The site's logo uploaded in the admin panel (backend SiteLogo); null url = the built-in one. */
@@ -783,13 +787,26 @@ export interface MarketplaceOverview {
 
 // ---------------------------------------------------------------- automatic import (backend AutoImportDtos)
 
-export type AutoImportSource = "AUTOWINI" | "GUAZI";
+export type AutoImportSource = "AUTOWINI" | "GUAZI" | "AUTOTRADER_CA";
 
-/** autowini: inspected + actual mileage; guazi: condition grades. Each site ignores the other's. */
+/** autotrader.ca's search filters (backend AutotraderFilters); the other sources never have them. */
+export interface AutotraderFilters {
+  postalCode: string;
+  radiusKm: number;
+  latitude: number | null;
+  longitude: number | null;
+  excludePrivate: boolean;
+  excludeDamaged: boolean;
+  excludeNoPrice: boolean;
+  usedOnly: boolean;
+}
+
+/** autowini: inspected + actual mileage; guazi: condition grades; autotrader.ca: `autotrader`. Each site ignores the others'. */
 export interface AutoImportFilters {
   inspected: boolean;
   actualMileage: boolean;
   grades: string[];
+  autotrader?: AutotraderFilters;
 }
 
 export interface AutoImportModel {
@@ -987,7 +1004,7 @@ export interface AutoImportPreview {
 }
 
 /** Statistics of cars that disappeared from the source sites (backend removed report). */
-export type RemovedSource = "AUTOWINI" | "GUAZI";
+export type RemovedSource = "AUTOWINI" | "GUAZI" | "AUTOTRADER_CA";
 export type RemovedGroupBy = "make" | "model" | "year" | "make_year" | "model_year";
 
 export interface RemovedRow {

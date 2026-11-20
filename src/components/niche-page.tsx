@@ -6,6 +6,7 @@ import { InquiryForm } from "@/components/inquiry-form";
 import { CardGridSkeleton, Notice } from "@/components/notice";
 import { BasicSearchFields } from "@/components/search-fields";
 import { getFilterOptions, searchCars, type CarSearch } from "@/lib/api";
+import type { Origin } from "@/lib/types";
 
 /**
  * A landing page for one kind of car (ads and Google lead here): the pitch, a car search restricted to the page's
@@ -32,7 +33,7 @@ export function NichePage({
   points: [string, string][];
   highlight: string;
   closing?: string;
-  origin: "KR" | "CN";
+  origin: Origin;
   searches: CarSearch[];
   catalogHref: string;
   emptyText: string;
@@ -108,7 +109,7 @@ export function NicheContact({ title, make, model }: { title: string; make?: str
 }
 
 /** The home page's quick search card, with the page's origin carried in the URL (QuickSearch itself has no such input). */
-async function NicheSearch({ origin }: { origin: "KR" | "CN" }) {
+async function NicheSearch({ origin }: { origin: Origin }) {
   const options = await getFilterOptions().catch(() => null);
   if (!options) return null;
   return (

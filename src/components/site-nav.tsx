@@ -14,6 +14,7 @@ const pages: { href: string; label: string; desktop?: boolean }[] = [
   { href: "/cars", label: "Каталог автомобили", desktop: true },
   { href: "/koli-ot-koreya", label: "Коли от Корея", desktop: true },
   { href: "/elektromobili-ot-kitay", label: "Коли от Китай", desktop: true },
+  { href: "/koli-ot-kanada-i-amerika", label: "Коли от Канада", desktop: true },
   { href: "/delivered", label: "Доставени коли", desktop: true },
   { href: "/kak-raboti-vnosat", label: "Как работи вносът", desktop: true },
   { href: "/about", label: "За нас", desktop: true },

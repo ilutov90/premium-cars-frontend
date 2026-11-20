@@ -14,7 +14,11 @@ const scopes: [CarSource | "", string][] = [
   ["AUTOWINI", "autowini"],
   ["GUAZI", "guazi"],
   ["AUTOHOME", "autohome"],
+  ["AUTOTRADER_CA", "autotrader.ca"],
 ];
+
+// The backend reads listings again (SOURCE mode) only for these sites.
+const rereadable = new Set<string>(["", "AUTOWINI", "GUAZI", "AUTOHOME", "AUTOTRADER_CA"]);
 
 const modeLabels: Record<PriceRecalcRun["mode"], string> = {
   STORED: "от записаната ФОБ",
@@ -120,7 +124,8 @@ export function PriceRecalcPanel() {
         </button>
         <button
           type="button"
-          disabled={busy || running}
+          disabled={busy || running || !rereadable.has(scope)}
+          title={rereadable.has(scope) ? undefined : "За autotrader.ca обявите още не се четат наново: само от записаната ФОБ"}
           onClick={() => start("SOURCE")}
           className="btn-ghost"
         >

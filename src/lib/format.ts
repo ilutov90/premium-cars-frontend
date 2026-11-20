@@ -42,6 +42,7 @@ export const drivetrainLabels: Record<Drivetrain, string> = {
 export const originLabels: Record<Origin, string> = {
   KR: "Южна Корея",
   CN: "Китай",
+  CA: "Канада",
 };
 
 /** Where a car was imported from (admin only). */
@@ -49,6 +50,7 @@ export const sourceLabels: Record<CarSource, string> = {
   AUTOHOME: "autohome",
   AUTOWINI: "autowini",
   GUAZI: "guazi",
+  AUTOTRADER_CA: "autotrader.ca",
   OTHER: "друг сайт",
   MANUAL: "ръчно",
 };
@@ -205,6 +207,7 @@ export const scheduledStatusLabels: Record<ScheduledPostStatus, string> = {
 export const priceProfileLabels: Record<PriceProfile, string> = {
   AUTOHOME: "Китай (autohome и guazi)",
   AUTOWINI: "Autowini (Южна Корея)",
+  AUTOTRADER_CA: "autotrader.ca (Канада)",
 };
 
 /**

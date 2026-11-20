@@ -131,7 +131,13 @@ export function templatesFrom(saved: PostTemplate[]): Record<TemplateKind, strin
 }
 
 const originOf = (car: AdminCar): Origin | null =>
-  car.source === "AUTOHOME" || car.source === "GUAZI" ? "CN" : car.source === "AUTOWINI" ? "KR" : null;
+  car.source === "AUTOHOME" || car.source === "GUAZI"
+    ? "CN"
+    : car.source === "AUTOWINI"
+      ? "KR"
+      : car.source === "AUTOTRADER_CA"
+        ? "CA"
+        : null;
 
 /**
  * The placeholder values of a car; "" = unknown (lines using it are left out).
@@ -178,7 +184,7 @@ export function templateValues(
     color: colorLabel(s.color) ?? "",
     seats: s.seats?.toString() ?? "",
     country: origin ? originLabels[origin] : "",
-    location: locationLine(origin) ?? "",
+    location: locationLine(origin, settings) ?? "",
     listing_id: id ?? "",
     hashtags: tags,
     link: publicCar && siteOrigin ? carLink(siteOrigin, car.slug, kind) : "",
