@@ -31,6 +31,8 @@ import type {
 
 /** Text limits of the networks (Facebook allows far more; 5000 keeps posts readable). */
 const TEXT_MAX: Record<SocialNetwork, number> = { FACEBOOK: 5000, INSTAGRAM: 2200, VIBER: 7000 };
+/** Viber's link message takes one address of up to 2000 characters */
+const LINK_MAX = 2000;
 const MAX_PHOTOS = 10;
 const networks: SocialNetwork[] = ["FACEBOOK", "INSTAGRAM", "VIBER"];
 const FINISHED: ScheduledPost["status"][] = ["PUBLISHED", "FAILED", "CANCELLED"];
@@ -237,7 +239,7 @@ export function SocialPostPanel({ car }: { car: AdminCar }) {
           {batchPosts.map((p) => (
             <li key={p.id} className="break-words">
               <span className="font-semibold">{networkLabels[p.network]}</span>
-              {p.linkOnly && <span className="text-muted"> (само линк)</span>}
+              {p.linkOnly && <span className="text-muted"> ({p.linkUrl ? "линк + описание" : "само линк"})</span>}
               <span className="font-semibold">:</span>{" "}
               {p.status === "PUBLISHED" ? (
                 <span className="font-semibold text-ok">публикувано ✓</span>
@@ -268,7 +270,7 @@ export function SocialPostPanel({ car }: { car: AdminCar }) {
                   {scheduledStatusLabels[p.status]}
                 </span>{" "}
                 · {networkLabels[p.network]}
-                {p.linkOnly && <span className="text-muted"> (само линк)</span>} · {formatDate(p.publishAt)}
+                {p.linkOnly && <span className="text-muted"> ({p.linkUrl ? "линк + описание" : "само линк"})</span>} · {formatDate(p.publishAt)}
                 {scheduledPostNote(p.error) && <span className="block break-words text-warn">{scheduledPostNote(p.error)}</span>}
               </span>
               {p.status === "SCHEDULED" && (
@@ -302,7 +304,7 @@ export function SocialPostPanel({ car }: { car: AdminCar }) {
         <PublishDialog
           car={car}
           configured={configured}
-          initialTexts={{ FACEBOOK: textFor("FACEBOOK"), VIBER: textFor("VIBER") }}
+          initialTexts={{ FACEBOOK: textFor("FACEBOOK"), VIBER: textFor("VIBER"), VIBER_SHORT: textFor("VIBER_SHORT") }}
           initialLink={origin ? carLink(origin, car.slug, "VIBER") : ""}
           earlier={posts}
           onClose={() => setDialog(false)}
@@ -349,8 +351,8 @@ function PublishDialog({
 }: {
   car: AdminCar;
   configured: SocialNetwork[];
-  initialTexts: Record<"FACEBOOK" | "VIBER", string>;
-  /** the car's link with Viber's UTM, the text of a link-only Viber post */
+  initialTexts: Record<"FACEBOOK" | "VIBER" | "VIBER_SHORT", string>;
+  /** the car's link with Viber's UTM: a link-only Viber post, or the link of a "link + description" one */
   initialLink: string;
   earlier: SocialPost[];
   onClose: () => void;
@@ -360,8 +362,9 @@ function PublishDialog({
   const { adminFetch } = useAdmin();
   const [chosen, setChosen] = useState<Set<SocialNetwork>>(() => new Set(initialNetworks(configured, earlier)));
   const [texts, setTexts] = useState(initialTexts);
-  // Viber: only the car's link (default; Viber shows the preview) or photos + text; both texts are kept
-  const [viberMode, setViberMode] = useState<"link" | "full">("link");
+  // Viber: the car's link with a short description under it (default; Viber shows the page's preview), the link
+  // alone, or photos + text; every text is kept when switching
+  const [viberMode, setViberMode] = useState<"short" | "link" | "full">("short");
   const [link, setLink] = useState(initialLink);
   const [selected, setSelected] = useState<Set<number>>(
     () => new Set(car.images.slice(0, MAX_PHOTOS).map((i) => i.id)),
@@ -384,9 +387,17 @@ function PublishDialog({
   const viber = chosen.has("VIBER");
   const metaMax = chosen.has("INSTAGRAM") ? TEXT_MAX.INSTAGRAM : TEXT_MAX.FACEBOOK;
   const metaInvalid = meta && (!texts.FACEBOOK.trim() || texts.FACEBOOK.length > metaMax);
-  const viberLink = viber && viberMode === "link";
-  const viberInvalid = viber && (viberLink ? !link.trim() || link.length > TEXT_MAX.VIBER : !texts.VIBER.trim() || texts.VIBER.length > TEXT_MAX.VIBER);
-  // photos are needed unless the only network is Viber as a link
+  // the link alone or with the description: no photos
+  const viberLink = viber && viberMode !== "full";
+  const linkInvalid = !link.trim() || link.length > LINK_MAX || /\s/.test(link.trim());
+  const viberInvalid =
+    viber &&
+    (viberMode === "link"
+      ? linkInvalid
+      : viberMode === "short"
+        ? linkInvalid || !texts.VIBER_SHORT.trim() || texts.VIBER_SHORT.length > TEXT_MAX.VIBER
+        : !texts.VIBER.trim() || texts.VIBER.length > TEXT_MAX.VIBER);
+  // photos are needed unless the only network is Viber without photos
   const needsPhotos = meta || (viber && !viberLink);
   const postedBefore = earlier.filter((p, i) => chosen.has(p.network) && earlier.findIndex((q) => q.network === p.network) === i);
 
@@ -421,9 +432,11 @@ function PublishDialog({
       const body: PublishRequest = {
         posts: picked.map((network) =>
           network === "VIBER"
-            ? viberLink
-              ? { network, text: link.trim(), linkOnly: true }
-              : { network, text: texts.VIBER }
+            ? viberMode === "short"
+              ? { network, text: texts.VIBER_SHORT, linkOnly: true, link: link.trim() }
+              : viberMode === "link"
+                ? { network, text: link.trim(), linkOnly: true }
+                : { network, text: texts.VIBER }
             : { network, text: texts.FACEBOOK },
         ),
         imageIds: needsPhotos ? ordered.map((i) => i.id) : [],
@@ -511,15 +524,19 @@ function PublishDialog({
                 <fieldset className="flex flex-wrap items-center gap-x-5 gap-y-1 text-sm">
                   <legend className="mb-1 font-bold">Viber</legend>
                   <label className="flex items-center gap-2">
-                    <input type="radio" name="viber-mode" checked={viberLink} onChange={() => setViberMode("link")} className="accent-accent" />
+                    <input type="radio" name="viber-mode" checked={viberMode === "short"} onChange={() => setViberMode("short")} className="accent-accent" />
+                    Линк + описание
+                  </label>
+                  <label className="flex items-center gap-2">
+                    <input type="radio" name="viber-mode" checked={viberMode === "link"} onChange={() => setViberMode("link")} className="accent-accent" />
                     Само линк към колата
                   </label>
                   <label className="flex items-center gap-2">
-                    <input type="radio" name="viber-mode" checked={!viberLink} onChange={() => setViberMode("full")} className="accent-accent" />
+                    <input type="radio" name="viber-mode" checked={viberMode === "full"} onChange={() => setViberMode("full")} className="accent-accent" />
                     Снимки и текст
                   </label>
                 </fieldset>
-                {viberLink ? (
+                {viberLink && (
                   <div>
                     <label className="mb-1 block text-sm font-bold" htmlFor="link-viber">
                       Линк за Viber
@@ -531,15 +548,29 @@ function PublishDialog({
                       onChange={(e) => setLink(e.target.value)}
                       className="field font-mono text-xs!"
                     />
-                    <p className={`mt-1 text-xs ${!link.trim() || link.length > TEXT_MAX.VIBER ? "font-semibold text-warn" : "text-muted"}`}>
+                    <p className={`mt-1 text-xs ${linkInvalid ? "font-semibold text-warn" : "text-muted"}`}>
                       {!link.trim()
                         ? "Линкът е празен."
-                        : link.length > TEXT_MAX.VIBER
-                          ? "Линкът е твърде дълъг."
-                          : "Viber показва снимката и заглавието от сайта; снимките по-долу са само за Facebook и Instagram."}
+                        : linkInvalid
+                          ? "Линкът трябва да е един адрес, без интервали, до 2000 знака."
+                          : viberMode === "short"
+                            ? "Първо отива линкът (Viber показва снимката и заглавието от сайта), а под него описанието; снимките по-долу са само за Facebook и Instagram."
+                            : "Viber показва снимката и заглавието от сайта; снимките по-долу са само за Facebook и Instagram."}
                     </p>
                   </div>
-                ) : (
+                )}
+                {viberMode === "short" && (
+                  <PostText
+                    id="text-viber-short"
+                    label="Описание под линка"
+                    value={texts.VIBER_SHORT}
+                    initial={initialTexts.VIBER_SHORT}
+                    max={TEXT_MAX.VIBER}
+                    rows={4}
+                    onChange={(v) => setTexts((t) => ({ ...t, VIBER_SHORT: v }))}
+                  />
+                )}
+                {viberMode === "full" && (
                   <PostText
                     id="text-viber"
                     label="Текст за Viber"

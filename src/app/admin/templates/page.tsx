@@ -38,12 +38,13 @@ export default function AdminTemplatesPage() {
       .then((list) => {
         const byKind: Partial<Record<TemplateKind, PostTemplate>> = {};
         for (const t of list) {
-          if (t.network === "FACEBOOK" || t.network === "VIBER" || t.network === "MOBILE_BG") byKind[t.network] = t;
+          if (t.network !== "INSTAGRAM") byKind[t.network] = t;
         }
         setSaved(byKind);
         setDrafts({
           FACEBOOK: byKind.FACEBOOK?.body ?? defaultTemplates.FACEBOOK,
           VIBER: byKind.VIBER?.body ?? defaultTemplates.VIBER,
+          VIBER_SHORT: byKind.VIBER_SHORT?.body ?? defaultTemplates.VIBER_SHORT,
           MOBILE_BG: byKind.MOBILE_BG?.body ?? defaultTemplates.MOBILE_BG,
         });
       })
@@ -242,6 +243,8 @@ export default function AdminTemplatesPage() {
                 {preview.length} знака
                 {network === "FACEBOOK" && " (Instagram приема до 2200 знака)"}
                 {network === "MOBILE_BG" && " (mobile.bg приема до 11 000 знака; емоджитата се махат)"}
+                {network === "VIBER_SHORT" &&
+                  " (във Viber първо отива линкът към колата, който показва снимката и заглавието от сайта, а под него този текст)"}
               </p>
             </>
           ) : (

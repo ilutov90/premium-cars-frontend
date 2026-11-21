@@ -108,7 +108,7 @@ function Row({
               {scheduledStatusLabels[post.status]}
             </span>
             <strong>{formatDate(post.publishAt)}</strong> · {networkLabels[post.network]}
-            {post.linkOnly && <span className="text-muted"> (само линк)</span>}
+            {post.linkOnly && <span className="text-muted"> ({post.linkUrl ? "линк + описание" : "само линк"})</span>}
           </p>
           <p className="mt-1 truncate text-sm">
             <Link href={`/admin/cars/${post.carId}`} className="font-semibold hover:underline">
