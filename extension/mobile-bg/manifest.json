@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Premium Cars → mobile.bg и cars.bg",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Попълва обявите в mobile.bg и cars.bg с данните от админ панела на Premium Cars Import. Бутоните за публикуване ги натиска админът.",
   "permissions": ["storage", "tabs"],
   "host_permissions": [
