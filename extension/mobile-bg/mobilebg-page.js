@@ -122,6 +122,22 @@
     } else if (v.brand) {
       missing.push(`Марка: ${v.brand}`);
     }
+    // the town (f19); for a car "Извън страната" mobile.bg shows a "Държава" list in its place: the form's
+    // select that has the wanted country, whatever its name
+    const place = (value) => {
+      if (value == null || value === "") return;
+      const abroad = norm(f.f18?.selectedOptions?.[0]?.text) === norm("Извън страната");
+      const label = abroad ? "Държава" : "Населено място";
+      let ok = choose(f.f19, value);
+      if (!ok && abroad) {
+        const country = [...f.querySelectorAll("select")].find(
+          (el) => el !== f.f18 && [...el.options].some((o) => norm(o.text) === norm(value)),
+        );
+        ok = choose(country, value);
+        if (ok) country.dispatchEvent(new Event("change", { bubbles: true }));
+      }
+      (ok ? done : missing).push(`${label}: ${value}`);
+    };
     txt("Модификация", "f7", v.modification, 50);
     if (choose(f.f8, v.engineType)) {
       done.push(`Двигател: ${v.engineType}`);
@@ -142,7 +158,7 @@
     sel("Месец", "f14", v.month);
     sel("Година", "f15", v.year);
     sel("Цвят", "f17", v.color);
-    sel("Населено място", "f19", v.city);
+    place(v.city);
     txt("VIN", "f32", v.vin, 17);
     txt("Пробег на ток (WLTP)", "f33", v.rangeKm);
     txt("Батерия (kWh)", "f34", v.batteryKwh);

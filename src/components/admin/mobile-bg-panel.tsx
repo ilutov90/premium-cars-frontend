@@ -250,7 +250,7 @@ const REQUIRED: [keyof Values, string][] = [
   ["month", "Месец"],
   ["year", "Година"],
   ["region", "Намира се в"],
-  ["city", "Населено място"],
+  ["city", "Населено място / Държава"],
   ["phone", "Телефон"],
 ];
 
@@ -423,7 +423,7 @@ function MobileBgDialog({
             ) : (
               <Text invalid={bad("region")} label="Намира се в (област) *" value={values.region} onChange={(v) => set("region", v)} />
             )}
-            <Text invalid={bad("city")} label="Населено място *" value={values.city} onChange={(v) => set("city", v)} />
+            <Text invalid={bad("city")} label={values.region === "Извън страната" ? "Държава *" : "Населено място *"} value={values.city} onChange={(v) => set("city", v)} />
             <Text invalid={bad("vin")} label="VIN" value={values.vin} onChange={(v) => set("vin", v)} max={17} />
             <Text invalid={bad("phone")} label="Телефон *" value={values.phone} onChange={(v) => set("phone", v.replace(/\D/g, ""))} />
             {battery && (
