@@ -510,8 +510,10 @@ export interface ScheduledPost {
   carTitle: string;
   network: SocialNetwork;
   body: string;
-  /** Viber post that is only the car's link */
+  /** Viber post without photos: only the car's link, or with linkUrl the link and the text under it */
   linkOnly: boolean;
+  /** the link of a Viber "link + description" post (sent before the text); null otherwise */
+  linkUrl: string | null;
   /** photos in posting order; empty = the first ones of the gallery */
   imageIds: number[];
   publishAt: string;
@@ -560,7 +562,7 @@ export interface SocialStatus {
 
 /** A post text template saved in the admin panel (backend PostTemplate): FACEBOOK is shared with Instagram. */
 export interface PostTemplate {
-  network: SocialNetwork | "MOBILE_BG";
+  network: SocialNetwork | "VIBER_SHORT" | "MOBILE_BG";
   body: string;
   updatedAt: string;
 }
@@ -601,8 +603,11 @@ export interface ViberConnectResponse {
 
 /** One publication to several networks with the same photos (backend AdminSocialController.PublishRequest). */
 export interface PublishRequest {
-  /** linkOnly: Viber only, the post is just the car's link (Viber shows the preview), no photos */
-  posts: { network: SocialNetwork; text: string; linkOnly?: boolean }[];
+  /**
+   * linkOnly: Viber only, no photos: the post is just the car's link (Viber shows the preview), or with `link` that
+   * link first and the text under it
+   */
+  posts: { network: SocialNetwork; text: string; linkOnly?: boolean; link?: string }[];
   imageIds: number[];
   /** ISO instant; absent = now */
   publishAt?: string;
