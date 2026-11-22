@@ -24,6 +24,17 @@ html {
   scroll-behavior: smooth;
 }
 
+/*
+ * After a page change the router scrolls the new page's first element to the top of the window when the visitor was
+ * scrolled down; without this its top (the home page's heading) went under the sticky header (h-16 + its border).
+ * Sections with their own scroll-mt-* (hash links) keep theirs: Tailwind's utilities layer comes after the base layer.
+ */
+@layer base {
+  main > * {
+    scroll-margin-top: calc(4rem + 1px);
+  }
+}
+
 body {
   background: var(--color-paper);
   color: var(--color-ink);
