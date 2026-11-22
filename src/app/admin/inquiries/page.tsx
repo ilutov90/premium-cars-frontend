@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { OrderStatusChip } from "@/components/admin/order-status-chip";
 import { useAdmin } from "@/components/admin/admin-context";
 import { formatDate, heardFromLabels, inquiryStatusLabels } from "@/lib/format";
 import type { AdminInquiry, InquiryStatus, PageResponse } from "@/lib/types";
@@ -22,6 +24,8 @@ const statuses = Object.keys(inquiryStatusLabels) as InquiryStatus[];
 
 export default function AdminInquiriesPage() {
   const { adminFetch } = useAdmin();
+  const router = useRouter();
+  const [notice, setNotice] = useState<{ inquiryId: number; orderId: number } | null>(null);
   const [filter, setFilter] = useState<InquiryStatus | "">("NEW");
   const [data, setData] = useState<PageResponse<AdminInquiry> | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -44,8 +48,21 @@ export default function AdminInquiriesPage() {
 
   async function setStatus(id: number, status: InquiryStatus) {
     try {
-      await adminFetch(`/api/admin/inquiries/${id}/status`, { method: "POST", body: JSON.stringify({ status }) });
+      const updated = await adminFetch<AdminInquiry>(`/api/admin/inquiries/${id}/status`, {
+        method: "POST",
+        body: JSON.stringify({ status }),
+      });
+      setNotice(status === "CONTACTED" && updated.orderId != null ? { inquiryId: id, orderId: updated.orderId } : null);
       setReload((n) => n + 1);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Грешка");
+    }
+  }
+
+  async function openOrder(id: number) {
+    try {
+      const order = await adminFetch<{ id: number }>(`/api/admin/inquiries/${id}/order`, { method: "POST" });
+      router.push(`/admin/orders/${order.id}`);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Грешка");
     }
@@ -77,6 +94,14 @@ export default function AdminInquiriesPage() {
       </div>
 
       {error && <p className="text-sm text-accent-dark">{error}</p>}
+      {notice && (
+        <p className="mb-3 rounded-xl border border-ok/40 bg-ok/10 p-3 text-sm">
+          Създадена е потенциална поръчка:{" "}
+          <Link href={`/admin/orders/${notice.orderId}`} className="font-semibold underline">
+            Поръчка #{notice.orderId}
+          </Link>
+        </p>
+      )}
       {data?.items.length === 0 && <p className="text-sm text-muted">Няма запитвания.</p>}
 
       <ul className="space-y-3">
@@ -112,6 +137,32 @@ export default function AdminInquiriesPage() {
               </select>
             </div>
             {q.message && <p className="mt-3 text-sm whitespace-pre-line text-ink-soft">{q.message}</p>}
+            <div className="mt-3 flex flex-wrap items-center gap-3 text-sm">
+              {q.orderId != null && (
+                <>
+                  <Link href={`/admin/orders/${q.orderId}`} className="font-semibold text-accent hover:underline">
+                    Поръчка #{q.orderId}
+                  </Link>
+                  {q.orderStatus && <OrderStatusChip status={q.orderStatus} />}
+                </>
+              )}
+              <button type="button" className="btn-ghost px-3! py-1!" onClick={() => void openOrder(q.id)}>
+                {q.orderId != null ? "Отвори поръчката" : "Създай поръчка"}
+              </button>
+            </div>
+            {(q.otherInquiryIds.length > 0 || q.otherOrderIds.length > 0) && (
+              <p className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted">
+                <span className="font-semibold text-ink">Познат клиент:</span>
+                {q.otherOrderIds.map((id) => (
+                  <Link key={`o${id}`} href={`/admin/orders/${id}`} className="font-semibold text-accent hover:underline">
+                    Поръчка #{id}
+                  </Link>
+                ))}
+                {q.otherInquiryIds.map((id) => (
+                  <span key={`i${id}`}>Запитване #{id}</span>
+                ))}
+              </p>
+            )}
             {sourceLine(q) && <p className="mt-2 text-xs break-all text-muted">{sourceLine(q)}</p>}
           </li>
         ))}

@@ -2,10 +2,12 @@ import type {
   CarFeature,
   CarSource,
   CarStatus,
+  ContactKind,
   Drivetrain,
   FuelType,
   HeardFrom,
   InquiryStatus,
+  LostReason,
   OrderDocumentKind,
   OrderStatus,
   Origin,
@@ -72,6 +74,7 @@ export const statusLabels: Record<CarStatus, string> = {
 };
 
 export const orderStatusLabels: Record<OrderStatus, string> = {
+  LEAD: "Потенциална",
   CONTRACT_SIGNED: "Подписан договор",
   PAID: "Платена",
   SHIPPED: "Натоварена",
@@ -79,6 +82,28 @@ export const orderStatusLabels: Record<OrderStatus, string> = {
   DELIVERED: "Предадена",
   CANCELLED: "Отказана",
 };
+
+export const lostReasonLabels: Record<LostReason, string> = {
+  PRICE: "Цена",
+  BOUGHT_ELSEWHERE: "Купи другаде",
+  NO_ANSWER: "Не отговаря",
+  CHANGED_MIND: "Промени решението",
+  OTHER: "Друго",
+};
+
+export const contactKindLabels: Record<ContactKind, string> = {
+  CALL: "Обаждане",
+  VIBER: "Viber",
+  EMAIL: "Имейл",
+  MEETING: "Среща",
+  NOTE: "Бележка",
+  INQUIRY: "Запитване от сайта",
+};
+
+/** A follow-up time that has passed. */
+export function isOverdue(iso: string | null): boolean {
+  return iso != null && new Date(iso).getTime() <= Date.now();
+}
 
 /** Document blocks of an order, in the order they are shown. */
 export const orderDocumentKinds: { kind: OrderDocumentKind; label: string }[] = [
