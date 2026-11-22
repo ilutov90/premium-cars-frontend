@@ -37,10 +37,10 @@ export default function HomePage() {
               Твоят следващ автомобил с до 40% по-добра цена – директно от Азия!
             </h1>
             <p className="mt-3 text-lg font-bold sm:text-xl">Внос на автомобили от Южна Корея и Китай.</p>
-            <p className="mt-4 max-w-xl text-base leading-relaxed text-paper/70 sm:text-lg">
+            <p className="mt-4 max-w-xl text-base leading-snug text-paper sm:text-lg">
               Избери автомобил и виж крайната му цена до България – с включени транспорт, мито и ДДС.
             </p>
-            <p className="mt-3 max-w-xl text-base leading-relaxed text-paper/70 sm:text-lg">
+            <p className="max-w-xl text-base leading-snug text-paper sm:text-lg">
               Ние организираме проверката, покупката, транспорта и документите, както и осигуряваме технотест. Без
               излишни усложнения и с ясни условия още преди поръчката. Получаваш готов автомобил за регистрация в
               България.
