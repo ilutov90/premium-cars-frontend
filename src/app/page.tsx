@@ -31,7 +31,7 @@ export default function HomePage() {
       {/* Hero */}
       <section className="relative overflow-hidden bg-ink text-paper">
         <div className="pointer-events-none absolute -top-40 -right-40 h-[520px] w-[520px] rounded-full bg-accent/25 blur-3xl" />
-        <div className="relative mx-auto grid max-w-6xl items-center gap-8 px-4 py-10 sm:px-6 sm:py-14 lg:grid-cols-[1fr_400px]">
+        <div className="relative mx-auto grid max-w-6xl items-center gap-8 px-4 pt-5 pb-10 sm:px-6 sm:pt-8 sm:pb-14 lg:grid-cols-[1fr_400px]">
           <div>
             <h1 className="max-w-3xl text-3xl leading-[1.1] font-extrabold tracking-tight sm:text-5xl">
               Твоят следващ автомобил с до 40% по-добра цена – директно от Азия!
