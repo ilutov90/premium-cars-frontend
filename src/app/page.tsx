@@ -33,14 +33,12 @@ export default function HomePage() {
         <div className="pointer-events-none absolute -top-40 -right-40 h-[520px] w-[520px] rounded-full bg-accent/25 blur-3xl" />
         <div className="relative mx-auto grid max-w-6xl items-center gap-8 px-4 py-10 sm:px-6 sm:py-14 lg:grid-cols-[1fr_400px]">
           <div>
-            <p className="text-xs font-bold tracking-[0.25em] text-accent uppercase">Южна Корея · Китай → България</p>
-            <h1 className="mt-4 max-w-3xl text-3xl leading-[1.1] font-extrabold tracking-tight sm:text-5xl">
+            <h1 className="max-w-3xl text-3xl leading-[1.1] font-extrabold tracking-tight sm:text-5xl">
               Твоят следващ автомобил с до 40% по-добра цена – директно от Азия!
             </h1>
             <p className="mt-3 text-lg font-bold sm:text-xl">Внос на автомобили от Южна Корея и Китай.</p>
             <p className="mt-4 max-w-xl text-base leading-relaxed text-paper/70 sm:text-lg">
-              Избери автомобил от Южна Корея или Китай и виж крайната му цена до България – с включени транспорт, мито и
-              ДДС.
+              Избери автомобил и виж крайната му цена до България – с включени транспорт, мито и ДДС.
             </p>
             <p className="mt-3 max-w-xl text-base leading-relaxed text-paper/70 sm:text-lg">
               Ние организираме проверката, покупката, транспорта и документите, както и осигуряваме технотест. Без
