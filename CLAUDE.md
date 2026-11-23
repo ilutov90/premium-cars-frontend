@@ -167,6 +167,14 @@ Run `npm run lint` and `npm run build` before finishing a change.
   PDF; without a camera `<input capture>`). The camera is allowed only under `/admin` (`Permissions-Policy`
   `camera=(self)` in `next.config.ts`; the public site keeps `camera=()`). `adminFetch` leaves Content-Type to the
   browser for a FormData body. The car editor links a sold car's order (`AdminCar.orderId`).
+  Potential orders (`LEAD`, "Потенциална"): no car of their own; the cars offered to the customer are `candidates`
+  (`order-candidates.tsx`: add by "Обява №" / link, remove, "Клиентът избра тази" makes one the order's car, agrees the order and
+  marks the car sold; the others stay on the site). The communication log (`order-contacts.tsx`, `ContactKind`, Sofia time)
+  and "Следващ контакт" (`nextContactAt`, Sofia time, red when overdue) drive follow-ups: the list's "За днес / Просрочени"
+  toggle (`?followUp=1`) and a badge on the "Поръчки" nav link (`GET /api/admin/orders/follow-ups`). A cancelled order has a
+  `lostReason`. The editor also shows the site inquiry the order came from and "Познат клиент" (same phone); on `/admin/inquiries`
+  each inquiry links its order ("Създай поръчка" = `POST /api/admin/inquiries/{id}/order`; "Свързахме се" makes a LEAD), and
+  `/admin/reports` has the funnel "От запитване до продажба" per source / campaign / "Откъде научихте" plus the lost reasons.
 - The mobile.bg dialog (`mobile-bg-panel.tsx`) marks every field that keeps it from being sent in red (`danger`), lists
   them left of its button and keeps the button off until they are filled; a make or model outside mobile.bg's list counts.
 - Design tokens are in `src/app/globals.css` (`@theme`: paper, card, ink, muted, line, accent, danger). Use them

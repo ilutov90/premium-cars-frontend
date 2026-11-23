@@ -403,6 +403,11 @@ export interface AdminInquiry {
   createdAt: string;
   heardFrom: HeardFrom | null;
   attribution: Attribution;
+  /** the order made from this inquiry ("Свързахме се" makes a potential one) */
+  orderId: number | null;
+  orderStatus: OrderStatus | null;
+  otherInquiryIds: number[];
+  otherOrderIds: number[];
 }
 
 /** "Откъде научихте за нас?" (backend HeardFrom); labels in format.ts. */
@@ -445,6 +450,21 @@ export interface InquiryReport {
   byUtmCampaign: ReportCount[];
   byCar: { carId: number | null; carTitle: string | null; carSlug: string | null; count: number }[];
   byWeek: { weekStart: string; count: number }[];
+  funnelBySource: Funnel[];
+  funnelByCampaign: Funnel[];
+  funnelByHeardFrom: Funnel[];
+  /** key = LostReason name or null */
+  lostReasons: ReportCount[];
+}
+
+/** How far one channel's inquiries got (backend InquiryDtos.Funnel). */
+export interface Funnel {
+  key: string | null;
+  inquiries: number;
+  orders: number;
+  agreed: number;
+  delivered: number;
+  lost: number;
 }
 
 /** "Доставени коли" on the site (backend PublicDeliveredCar). carSlug only while the car is in the catalog. */
@@ -1114,7 +1134,7 @@ export interface SaveSeoPageRequest {
   text: string | null;
 }
 
-export type OrderStatus = "CONTRACT_SIGNED" | "PAID" | "SHIPPED" | "ARRIVED" | "DELIVERED" | "CANCELLED";
+export type OrderStatus = "LEAD" | "CONTRACT_SIGNED" | "PAID" | "SHIPPED" | "ARRIVED" | "DELIVERED" | "CANCELLED";
 
 export type OrderDocumentKind =
   | "INVOICE_KOREA"
@@ -1165,6 +1185,11 @@ export interface OrderSummary {
   documentCount: number;
   createdAt: string;
   updatedAt: string;
+  nextContactAt: string | null;
+  lostReason: LostReason | null;
+  /** cars offered to the customer (a potential order) */
+  candidateCount: number;
+  inquiryId: number | null;
 }
 
 export interface OrderDocument {
@@ -1197,6 +1222,60 @@ export interface AdminOrder {
   updatedAt: string;
   carPhotos: string[];
   documents: OrderDocument[];
+  nextContactAt: string | null;
+  lostReason: LostReason | null;
+  inquiry: OrderInquiryInfo | null;
+  candidates: OrderCandidate[];
+  /** what was said with the customer, newest first */
+  contacts: OrderContact[];
+  /** other orders / inquiries of the same phone */
+  otherOrderIds: number[];
+  otherInquiryIds: number[];
+}
+
+export type LostReason = "PRICE" | "BOUGHT_ELSEWHERE" | "NO_ANSWER" | "CHANGED_MIND" | "OTHER";
+
+export type ContactKind = "CALL" | "VIBER" | "EMAIL" | "MEETING" | "NOTE" | "INQUIRY";
+
+/** The site inquiry an order was made from (backend `InquiryInfo`). */
+export interface OrderInquiryInfo {
+  id: number;
+  createdAt: string;
+  message: string | null;
+  carId: number | null;
+  carTitle: string | null;
+  carSlug: string | null;
+  status: string;
+  heardFrom: HeardFrom | null;
+  attribution: Attribution | null;
+}
+
+/** A car offered to the customer (backend `CandidateView`); carId / carStatus null = the car is gone. */
+export interface OrderCandidate {
+  id: number;
+  carId: number | null;
+  title: string | null;
+  slug: string | null;
+  priceEur: number | null;
+  coverUrl: string | null;
+  carStatus: CarStatus | null;
+  addedAt: string;
+  addedBy: string | null;
+}
+
+export interface OrderContact {
+  id: number;
+  kind: ContactKind;
+  body: string;
+  happenedAt: string;
+  createdBy: string | null;
+  updatedAt: string;
+}
+
+export interface ContactRequest {
+  kind: ContactKind;
+  body: string;
+  happenedAt: string | null;
 }
 
 export interface OrderRequest {
@@ -1209,6 +1288,8 @@ export interface OrderRequest {
   containerNumber: string | null;
   contractDate: string | null;
   notes: string | null;
+  nextContactAt: string | null;
+  lostReason: LostReason | null;
 }
 
 export interface OrderCarLookup {

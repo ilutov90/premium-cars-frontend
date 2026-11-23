@@ -3,8 +3,8 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useAdmin } from "@/components/admin/admin-context";
-import { formatDay, heardFromLabels, inquiryStatusLabels } from "@/lib/format";
-import type { HeardFrom, InquiryReport, InquiryStatus } from "@/lib/types";
+import { formatDay, heardFromLabels, inquiryStatusLabels, lostReasonLabels } from "@/lib/format";
+import type { Funnel, HeardFrom, InquiryReport, InquiryStatus, LostReason } from "@/lib/types";
 
 /** yyyy-MM-dd of a local day. */
 function isoDay(d: Date): string {
@@ -154,9 +154,81 @@ export default function AdminReportsPage() {
               />
             </div>
           )}
+
+          <section className="mt-8">
+            <h2 className="mb-3 text-lg font-extrabold">От запитване до продажба</h2>
+            <div className="space-y-4">
+              <FunnelTable title="По линк (utm_source)" rows={report.funnelBySource} none="Без проследен линк" />
+              <FunnelTable title="По кампания (utm_campaign)" rows={report.funnelByCampaign} none="Без кампания" />
+              <FunnelTable
+                title="Откъде научихте за нас?"
+                rows={report.funnelByHeardFrom}
+                none="Не е посочено"
+                label={(k) => heardFromLabels[k as HeardFrom] ?? k}
+              />
+              <Bars
+                title="Причини за отказ"
+                rows={report.lostReasons.map((c) => ({
+                  label: c.key ? (lostReasonLabels[c.key as LostReason] ?? c.key) : "Без причина",
+                  count: c.count,
+                  muted: !c.key,
+                }))}
+              />
+            </div>
+          </section>
         </>
       )}
     </div>
+  );
+}
+
+function FunnelTable({
+  title,
+  rows,
+  none,
+  label,
+}: {
+  title: string;
+  rows: Funnel[];
+  none: string;
+  label?: (key: string) => string;
+}) {
+  return (
+    <section className="overflow-x-auto rounded-2xl border border-line bg-card p-4">
+      <h3 className="mb-3 text-sm font-bold">{title}</h3>
+      {rows.length === 0 ? (
+        <p className="text-sm text-muted">Няма данни.</p>
+      ) : (
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="text-left text-xs text-muted">
+              <th className="py-1 pr-3 font-semibold">Канал</th>
+              <th className="px-2 py-1 text-right font-semibold">Запитвания</th>
+              <th className="px-2 py-1 text-right font-semibold">Поръчки</th>
+              <th className="px-2 py-1 text-right font-semibold">Договори</th>
+              <th className="px-2 py-1 text-right font-semibold">Доставени</th>
+              <th className="px-2 py-1 text-right font-semibold">Отказани</th>
+              <th className="py-1 pl-2 text-right font-semibold">% договори</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((r) => (
+              <tr key={r.key ?? "none"} className="border-t border-line tabular-nums">
+                <td className={`py-1.5 pr-3 ${r.key ? "font-semibold" : "text-muted"}`}>{r.key ? (label ? label(r.key) : r.key) : none}</td>
+                <td className="px-2 py-1.5 text-right">{r.inquiries}</td>
+                <td className="px-2 py-1.5 text-right">{r.orders}</td>
+                <td className="px-2 py-1.5 text-right">{r.agreed}</td>
+                <td className="px-2 py-1.5 text-right">{r.delivered}</td>
+                <td className="px-2 py-1.5 text-right">{r.lost}</td>
+                <td className="py-1.5 pl-2 text-right font-semibold">
+                  {r.inquiries > 0 ? `${Math.round((r.agreed / r.inquiries) * 100)}%` : "—"}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+    </section>
   );
 }
 

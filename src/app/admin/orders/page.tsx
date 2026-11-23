@@ -1,19 +1,37 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useAdmin } from "@/components/admin/admin-context";
 import { OrderStatusChip } from "@/components/admin/order-status-chip";
 import { Pager } from "@/components/admin/pager";
 import { CarImage } from "@/components/car-image";
-import { formatDay, formatEur, orderStatusLabels } from "@/lib/format";
+import { formatDate, formatDay, formatEur, isOverdue, orderStatusLabels } from "@/lib/format";
 import type { OrderStatus, OrderSummary, PageResponse } from "@/lib/types";
 
 const PAGE_SIZE = 20;
 
 /** "Поръчки": cars sold to customers, with the customer, the agreed price and the documents. */
 export default function AdminOrdersPage() {
+  return (
+    <Suspense fallback={<p className="text-sm text-muted">Зареждане…</p>}>
+      <OrdersList />
+    </Suspense>
+  );
+}
+
+function OrdersList() {
   const { adminFetch } = useAdmin();
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
+  const followUp = searchParams.get("followUp") === "1";
+
+  function setFollowUp(on: boolean) {
+    setPageNo(0);
+    router.replace(on ? `${pathname}?followUp=1` : pathname, { scroll: false });
+  }
   const [text, setText] = useState("");
   const [q, setQ] = useState("");
   const [status, setStatus] = useState<OrderStatus | "">("");
@@ -26,6 +44,7 @@ export default function AdminOrdersPage() {
     const params = new URLSearchParams({ page: String(pageNo), size: String(PAGE_SIZE) });
     if (status) params.set("status", status);
     if (q.trim()) params.set("q", q.trim());
+    if (followUp) params.set("followUp", "true");
     adminFetch<PageResponse<OrderSummary>>(`/api/admin/orders?${params}`)
       .then((p) => {
         if (!current) return;
@@ -36,7 +55,7 @@ export default function AdminOrdersPage() {
     return () => {
       current = false;
     };
-  }, [adminFetch, q, status, pageNo]);
+  }, [adminFetch, q, status, pageNo, followUp]);
 
   return (
     <div className="pb-10">
@@ -81,6 +100,14 @@ export default function AdminOrdersPage() {
         <button type="submit" className="btn-ghost">
           Търси
         </button>
+        <button
+          type="button"
+          onClick={() => setFollowUp(!followUp)}
+          aria-pressed={followUp}
+          className={`rounded-full px-4 py-2 text-sm font-semibold ${followUp ? "bg-ink text-paper" : "bg-card ring-1 ring-line hover:ring-ink"}`}
+        >
+          За днес / Просрочени
+        </button>
       </form>
 
       {error && <p className="mb-3 text-sm font-medium text-accent-dark">{error}</p>}
@@ -101,8 +128,8 @@ export default function AdminOrdersPage() {
                     <CarImage src={o.coverUrl} alt={o.car.title ?? "Кола"} className="h-16 w-24 shrink-0 rounded-lg object-cover" />
                     <div className="min-w-0 flex-1">
                       <p className="truncate font-bold">
-                        {o.car.title ?? "Кола"}
-                        {o.carId == null && <span className="ml-2 text-xs font-normal text-muted">(колата е изтрита)</span>}
+                        {o.status === "LEAD" && o.carId == null ? "Потенциална поръчка" : (o.car.title ?? "Кола")}
+                        {o.carId == null && o.status !== "LEAD" && <span className="ml-2 text-xs font-normal text-muted">(колата е изтрита)</span>}
                       </p>
                       <p className="truncate text-sm text-muted">
                         {o.customer.name || o.customer.companyName || "Без име"}
@@ -111,7 +138,14 @@ export default function AdminOrdersPage() {
                       <p className="text-xs text-muted">
                         № {o.id}
                         {o.contractDate ? ` · договор ${formatDay(o.contractDate)}` : ""} · {o.documentCount} док.
+                        {o.status === "LEAD" && o.carId == null ? ` · Предложени коли: ${o.candidateCount}` : ""}
                       </p>
+                      {o.nextContactAt && (
+                        <p className={`text-xs ${isOverdue(o.nextContactAt) ? "font-semibold text-accent-dark" : "text-muted"}`}>
+                          Следващ контакт: {formatDate(o.nextContactAt)}
+                          {isOverdue(o.nextContactAt) ? " (просрочен)" : ""}
+                        </p>
+                      )}
                     </div>
                     <div className="flex shrink-0 flex-col items-end gap-1.5">
                       <OrderStatusChip status={o.status} />

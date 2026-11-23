@@ -2,6 +2,7 @@ import { orderStatusLabels } from "@/lib/format";
 import type { OrderStatus } from "@/lib/types";
 
 const tone: Record<OrderStatus, string> = {
+  LEAD: "bg-accent/15 text-accent-dark",
   CONTRACT_SIGNED: "bg-warn/15 text-warn",
   PAID: "bg-ok/15 text-ok",
   SHIPPED: "bg-ink/10 text-ink",

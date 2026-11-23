@@ -4,12 +4,16 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { AdminApiError, useAdmin } from "./admin-context";
+import { OrderCandidates } from "./order-candidates";
+import { OrderContacts } from "./order-contacts";
 import { OrderDocuments } from "./order-documents";
 import { OrderStatusChip } from "./order-status-chip";
 import { StatusBadge } from "./status-badge";
 import { CarImage } from "@/components/car-image";
-import { formatDate, formatEur, formatKm, orderStatusLabels, sourceLabels } from "@/lib/format";
-import type { AdminOrder, OrderCarLookup, OrderCustomer, OrderRequest, OrderStatus } from "@/lib/types";
+import { formatDate, formatEur, formatKm, heardFromLabels, lostReasonLabels, orderStatusLabels, sourceLabels } from "@/lib/format";
+import { phoneHref, viberChatHref } from "@/lib/site";
+import { fromSofiaInput, toSofiaInput } from "@/lib/sofia-time";
+import type { AdminOrder, LostReason, OrderCarLookup, OrderCustomer, OrderRequest, OrderStatus } from "@/lib/types";
 
 interface Form {
   customer: Record<keyof OrderCustomer, string>;
@@ -20,6 +24,9 @@ interface Form {
   containerNumber: string;
   contractDate: string;
   notes: string;
+  /** Sofia wall time "YYYY-MM-DDTHH:mm" or "" */
+  nextContactAt: string;
+  lostReason: LostReason | "";
 }
 
 const emptyForm: Form = {
@@ -31,6 +38,8 @@ const emptyForm: Form = {
   containerNumber: "",
   contractDate: "",
   notes: "",
+  nextContactAt: "",
+  lostReason: "",
 };
 
 const customerFields: [keyof OrderCustomer, string][] = [
@@ -55,6 +64,8 @@ function toForm(o: AdminOrder): Form {
     containerNumber: o.containerNumber ?? "",
     contractDate: o.contractDate ?? "",
     notes: o.notes ?? "",
+    nextContactAt: o.nextContactAt ? toSofiaInput(new Date(o.nextContactAt)) : "",
+    lostReason: o.lostReason ?? "",
   };
 }
 
@@ -81,6 +92,8 @@ function toRequest(f: Form, carId: number | null): OrderRequest {
     containerNumber: text(f.containerNumber),
     contractDate: f.contractDate || null,
     notes: text(f.notes),
+    nextContactAt: fromSofiaInput(f.nextContactAt)?.toISOString() ?? null,
+    lostReason: f.status === "CANCELLED" && f.lostReason ? f.lostReason : null,
   };
 }
 
@@ -90,7 +103,7 @@ export function OrderEditor({ orderId, initialCarId }: { orderId: number | null;
   const router = useRouter();
   const [order, setOrder] = useState<AdminOrder | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const [form, setForm] = useState<Form>(emptyForm);
+  const [form, setForm] = useState<Form>({ ...emptyForm, status: initialCarId != null ? "CONTRACT_SIGNED" : "LEAD" });
   const [lookup, setLookup] = useState<OrderCarLookup | null>(null);
   const [carQuery, setCarQuery] = useState(initialCarId != null ? String(initialCarId) : "");
   const [lookupError, setLookupError] = useState<string | null>(null);
@@ -133,13 +146,13 @@ export function OrderEditor({ orderId, initialCarId }: { orderId: number | null;
     e.preventDefault();
     setMessage(null);
     const creating = orderId == null;
-    if (creating && !lookup) {
+    if (creating && !lookup && form.status !== "LEAD") {
       setMessage({ ok: false, text: "Изберете кола: въведете „Обява №“ или линк." });
       return;
     }
     setBusy(true);
     try {
-      const body = toRequest(form, creating ? lookup!.id : order?.carId ?? null);
+      const body = toRequest(form, creating ? (lookup?.id ?? null) : order?.carId ?? null);
       if (creating) {
         const saved = await adminFetch<AdminOrder>("/api/admin/orders", { method: "POST", body: JSON.stringify(body) });
         router.replace(`/admin/orders/${saved.id}`);
@@ -156,9 +169,27 @@ export function OrderEditor({ orderId, initialCarId }: { orderId: number | null;
     }
   }
 
+  function onCandidates(saved: AdminOrder, chosen: boolean) {
+    if (chosen) {
+      setOrder(saved);
+      setForm((f) => ({
+        ...f,
+        status: saved.status,
+        agreedPriceEur: f.agreedPriceEur === "" && saved.agreedPriceEur != null ? String(saved.agreedPriceEur) : f.agreedPriceEur,
+        contractDate: f.contractDate === "" && saved.contractDate ? saved.contractDate : f.contractDate,
+      }));
+    } else {
+      setOrder((o) => (o ? { ...o, candidates: saved.candidates } : saved));
+    }
+  }
+
+  function onContacts(saved: AdminOrder) {
+    setOrder((o) => (o ? { ...o, contacts: saved.contacts } : saved));
+  }
+
   async function remove() {
     if (!order) return;
-    if (!window.confirm(`Да изтрия ли поръчка № ${order.id} (${order.car.title ?? "кола"}) и всички нейни документи? Колата остава.`)) return;
+    if (!window.confirm(`Да изтрия ли поръчка № ${order.id} (${order.car.title ?? "потенциална"}) и всички нейни документи? Колата остава.`)) return;
     setBusy(true);
     try {
       await adminFetch<void>(`/api/admin/orders/${order.id}`, { method: "DELETE" });
@@ -178,6 +209,9 @@ export function OrderEditor({ orderId, initialCarId }: { orderId: number | null;
   }
 
   const snap = order?.car;
+  const hasCar = order != null && (order.carId != null || order.car.title != null);
+  const isLead = form.status === "LEAD";
+  const phone = form.customer.phone.trim();
   const carLink = order?.carId != null && order.carStatus && (order.carStatus === "PUBLISHED" || order.carStatus === "RESERVED") && snap?.slug ? `/cars/${snap.slug}` : null;
 
   return (
@@ -190,10 +224,37 @@ export function OrderEditor({ orderId, initialCarId }: { orderId: number | null;
         {order && <OrderStatusChip status={order.status} />}
       </div>
 
+      {order?.inquiry && (
+        <section className="mb-6 rounded-2xl border border-line bg-card p-5 text-sm">
+          <h2 className="mb-2 text-sm font-bold">Запитване № {order.inquiry.id}</h2>
+          <p className="text-xs text-muted">{formatDate(order.inquiry.createdAt)}</p>
+          {order.inquiry.message && <p className="mt-2 whitespace-pre-line">{order.inquiry.message}</p>}
+          <p className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted">
+            {order.inquiry.carId != null && (
+              <Link href={`/admin/cars/${order.inquiry.carId}`} className="font-semibold text-accent hover:underline">
+                {order.inquiry.carTitle ?? `Обява № ${order.inquiry.carId}`}
+              </Link>
+            )}
+            {order.inquiry.heardFrom && <span>Откъде: {heardFromLabels[order.inquiry.heardFrom]}</span>}
+            {(order.inquiry.attribution?.utmSource || order.inquiry.attribution?.utmCampaign) && (
+              <span>
+                линк: {[order.inquiry.attribution.utmSource, order.inquiry.attribution.utmCampaign].filter(Boolean).join(" / ")}
+              </span>
+            )}
+          </p>
+        </section>
+      )}
+
       <form onSubmit={save} className="space-y-6">
         <fieldset className="rounded-2xl border border-line bg-card p-5">
           <legend className="px-1 text-sm font-bold">Кола</legend>
-          {order && snap ? (
+          {order && !hasCar ? (
+            <p className="text-sm text-muted">
+              {isLead
+                ? "Потенциална поръчка: още няма избрана кола. Клиентът избира от предложените по-долу."
+                : "Поръчката няма кола. Върнете статуса на „Потенциална“ и изберете от предложените."}
+            </p>
+          ) : order && snap ? (
             <div className="space-y-3">
               <div className="flex flex-wrap items-start gap-4">
                 <CarImage src={order.coverUrl} alt={snap.title ?? "Кола"} className="h-24 w-36 shrink-0 rounded-lg object-cover" />
@@ -283,13 +344,46 @@ export function OrderEditor({ orderId, initialCarId }: { orderId: number | null;
                   . Нова поръчка не може да се създаде.
                 </p>
               )}
-              <p className="text-xs text-muted">При запис колата се маркира като „Продадена“ и се скрива от сайта.</p>
+              <p className="text-xs text-muted">
+                {isLead
+                  ? "Потенциална поръчка: колата не е задължителна; ако е избрана, става първата предложена и остава в сайта."
+                  : "При запис колата се маркира като „Продадена“ и се скрива от сайта."}
+              </p>
             </div>
           )}
         </fieldset>
 
+        {order && (isLead || order.candidates.length > 0) && (
+          <OrderCandidates orderId={order.id} candidates={order.candidates} editable={order.status === "LEAD"} onOrder={onCandidates} />
+        )}
+
         <fieldset className="rounded-2xl border border-line bg-card p-5">
           <legend className="px-1 text-sm font-bold">Клиент</legend>
+          {order && phone && (
+            <p className="mb-3 flex flex-wrap gap-2">
+              <a href={phoneHref(phone)} className="btn-ghost px-3! py-1.5! text-sm">
+                Обади се
+              </a>
+              <a href={viberChatHref(phone)} className="btn-ghost px-3! py-1.5! text-sm">
+                Viber
+              </a>
+            </p>
+          )}
+          {order && (order.otherOrderIds.length > 0 || order.otherInquiryIds.length > 0) && (
+            <p className="mb-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
+              <span className="font-semibold">Познат клиент:</span>
+              {order.otherOrderIds.map((id) => (
+                <Link key={`o${id}`} href={`/admin/orders/${id}`} className="font-semibold text-accent hover:underline">
+                  Поръчка #{id}
+                </Link>
+              ))}
+              {order.otherInquiryIds.map((id) => (
+                <span key={`i${id}`} className="text-muted">
+                  Запитване #{id}
+                </span>
+              ))}
+            </p>
+          )}
           <div className="grid gap-3 sm:grid-cols-2">
             {customerFields.map(([key, label]) => (
               <div key={key} className={key === "address" ? "sm:col-span-2" : ""}>
@@ -353,6 +447,32 @@ export function OrderEditor({ orderId, initialCarId }: { orderId: number | null;
               </label>
               <input id="o-date" type="date" value={form.contractDate} onChange={(e) => setField("contractDate", e.target.value)} className="field" />
             </div>
+            <div>
+              <label className="label" htmlFor="o-next">
+                Следващ контакт (българско време)
+              </label>
+              <span className="flex gap-2">
+                <input id="o-next" type="datetime-local" value={form.nextContactAt} onChange={(e) => setField("nextContactAt", e.target.value)} className="field" />
+                <button type="button" className="btn-ghost" onClick={() => setField("nextContactAt", "")}>
+                  Изчисти
+                </button>
+              </span>
+            </div>
+            {form.status === "CANCELLED" && (
+              <div>
+                <label className="label" htmlFor="o-lost">
+                  Причина за отказ
+                </label>
+                <select id="o-lost" value={form.lostReason} onChange={(e) => setField("lostReason", e.target.value as LostReason | "")} className="field">
+                  <option value="">Без причина</option>
+                  {Object.entries(lostReasonLabels).map(([k, v]) => (
+                    <option key={k} value={k}>
+                      {v}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
             <div className="sm:col-span-2">
               <label className="label" htmlFor="o-notes">
                 Бележки
@@ -380,6 +500,8 @@ export function OrderEditor({ orderId, initialCarId }: { orderId: number | null;
           )}
         </div>
       </form>
+
+      {order && <OrderContacts orderId={order.id} contacts={order.contacts} onOrder={onContacts} />}
 
       {order ? (
         <OrderDocuments orderId={order.id} documents={order.documents} onChange={(documents) => setOrder({ ...order, documents })} />
