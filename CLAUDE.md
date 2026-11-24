@@ -75,6 +75,7 @@ Run `npm run lint` and `npm run build` before finishing a change.
   from `GET /api/admin/cars/{id}` with the admin's session, so the page's HTML never has the source link; asked only
   when the admin panel has marked the browser (`localStorage` "pc-admin", set while logged in, cleared on logout or
   a 401), and it renders nothing otherwise, so customers' layout is unchanged.
+- "Автоматичен импорт", autowini's block: "Проверени (Inspected)", "Реален пробег (Actual)" and "Само от Южна Корея (Location: S.Korea)" (`AutoImportFilters.koreaOnly`, on unless unticked: listings located in Japan or Singapore are not imported, and the next run removes the ones already imported).
 - Import sources (`CarSource`): AUTOHOME and GUAZI (China, priced with the AUTOHOME formula), AUTOWINI (Korea),
   AUTOTRADER_CA (www.autotrader.ca, Canada, prices in CAD, its own formula; origin `CA` "Канада"). Its photos are linked
   like guazi's. In "Автоматичен импорт" it has everything autowini has ("Двигател (без)" with the site's fuel names)

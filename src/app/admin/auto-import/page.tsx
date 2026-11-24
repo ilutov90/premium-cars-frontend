@@ -527,6 +527,14 @@ function SourceCard({
               />
               Реален пробег (Actual)
             </label>
+            <label className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                checked={filters.koreaOnly ?? true}
+                onChange={(e) => setFilters({ ...filters, koreaOnly: e.target.checked })}
+              />
+              Само от Южна Корея (Location: S.Korea)
+            </label>
           </>
         ) : (
           <div className="flex flex-wrap items-center gap-3">
