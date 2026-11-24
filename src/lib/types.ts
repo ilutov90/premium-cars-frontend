@@ -828,12 +828,16 @@ export interface AutotraderFilters {
   usedOnly: boolean;
 }
 
-/** autowini: inspected + actual mileage; guazi: condition grades; autotrader.ca: `autotrader`. Each site ignores the others'. */
+/**
+ * autowini: inspected + actual mileage + `koreaOnly` (the listing's "Location" S.Korea; the backend answers true when
+ * it was never saved); guazi: condition grades; autotrader.ca: `autotrader`. Each site ignores the others'.
+ */
 export interface AutoImportFilters {
   inspected: boolean;
   actualMileage: boolean;
   grades: string[];
   autotrader?: AutotraderFilters;
+  koreaOnly?: boolean;
 }
 
 export interface AutoImportModel {
