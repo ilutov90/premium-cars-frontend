@@ -113,7 +113,7 @@ export default function HomePage() {
       <InquiryCta
         id="contact"
         title="Не намирате вашата кола?"
-        text="Ще ви се обадим с подбрани оферти и крайна цена до България. Предпочитате бърз чат? Пишете ни във Viber."
+        text="Кажете ни марка, модел и година и оставете телефон — ще намерим подходящи коли в Корея и Китай и ще ви се обадим с оферти с крайна цена."
         href={inquiryHref()}
       >
         <Suspense fallback={<ViberChatButton phone={contactDetails(null).phone} />}>
