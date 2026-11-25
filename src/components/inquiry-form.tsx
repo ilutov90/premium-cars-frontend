@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useId, useState } from "react";
+import { useEffect, useId, useState, useSyncExternalStore } from "react";
 import { PUBLIC_API_URL } from "@/lib/config";
 import { heardFromLabels } from "@/lib/format";
 import { trackEvent, trackGoogleConversion, visitAttribution } from "@/lib/marketing";
@@ -12,6 +12,12 @@ import type { FilterOptions, HeardFrom, PostSettings } from "@/lib/types";
 const heardFromOptions = Object.keys(heardFromLabels) as HeardFrom[];
 
 type State = { kind: "idle" } | { kind: "sending" } | { kind: "sent" } | { kind: "error"; message: string };
+
+/** Facebook's and Instagram's in-app browsers (their user agents carry FBAN / FBAV / FB_IAB / Instagram). */
+const IN_APP = /FBAN|FBAV|FB_IAB|FBIOS|Instagram/i;
+
+const noSubscribe = () => () => {};
+const outsideInAppBrowser = () => !IN_APP.test(navigator.userAgent);
 
 const thisYear = new Date().getFullYear();
 const years = Array.from({ length: thisYear - 2009 }, (_, i) => thisYear - i);
@@ -33,6 +39,10 @@ export function InquiryForm({
   model?: string;
 }) {
   const [state, setState] = useState<State>({ kind: "idle" });
+  // The phone and name fields are named for autofill only outside Facebook's and Instagram's in-app browsers: theirs
+  // offers to fill a form it recognises and moves the page to it, which visitors from the ads saw as the page opening
+  // at the form. The page comes without the names and they are added after it loads, so the in-app browser never sees them.
+  const autofill = useSyncExternalStore(noSubscribe, outsideInAppBrowser, () => false);
   const [phone, setPhone] = useState(site.phone);
   const [options, setOptions] = useState<FilterOptions | null>(null);
   const [make, setMake] = useState(initialMake ?? "");
@@ -193,14 +203,14 @@ export function InquiryForm({
             maxLength={40}
             placeholder="08…"
             className="field"
-            autoComplete="tel"
+            autoComplete={autofill ? "tel" : "off"}
           />
         </div>
         <div>
           <label className="label" htmlFor={`${id}-name`}>
             Име <span className="font-normal text-muted">(по желание)</span>
           </label>
-          <input id={`${id}-name`} name="name" maxLength={100} className="field" autoComplete="name" />
+          <input id={`${id}-name`} name="name" maxLength={100} className="field" autoComplete={autofill ? "name" : "off"} />
         </div>
       </div>
       {!general && (

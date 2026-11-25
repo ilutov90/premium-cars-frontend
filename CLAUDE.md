@@ -125,7 +125,7 @@ Run `npm run lint` and `npm run build` before finishing a change.
   Business details (brand, phone, Viber, office) and the "why us" bullets live in `src/lib/site.ts`; the phone,
   Viber link and office saved in the admin panel ("Шаблони → Общи данни") override them in the posts and in the
   footer (`getContact()`, `contactDetails()`).
-- The inquiry form (`inquiry-form.tsx`): the general one is make, model (suggestions from the catalog, any text goes), year and a required phone, sent as the message "Търся: …"; on a car page phone and message. The name is optional. Both have "Пишете ни във Viber" (`viberChatHref`: a chat with the contact phone, with a first message on a car page).
+- The inquiry form (`inquiry-form.tsx`): the general one is make, model (suggestions from the catalog, any text goes), year and a required phone, sent as the message "Търся: …"; on a car page phone and message. The name is optional. The phone and name fields get `autoComplete` "tel" / "name" only outside Facebook's and Instagram's in-app browsers (user agent FBAN / FBAV / FB_IAB / FBIOS / Instagram; rendered "off" and set after hydration through `useSyncExternalStore`): a test of whether their autofill is what moved ad visitors to the form. Both have "Пишете ни във Viber" (`viberChatHref`: a chat with the contact phone, with a first message on a car page).
 - Marketing: the inquiry form sends "Откъде научихте за нас?" (`heardFrom`, labels in `format.ts`) and where the visit
   came from (`src/lib/marketing.ts`: UTM parameters, first page, referring site, kept in sessionStorage for the tab).
   `{{link}}` in the post templates gets UTM parameters per template (`postUtm` in `post-template.ts`). The Meta Pixel
