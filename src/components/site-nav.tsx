@@ -18,7 +18,7 @@ const pages: { href: string; label: string; desktop?: boolean }[] = [
   { href: "/delivered", label: "Доставени коли", desktop: true },
   { href: "/kak-raboti-vnosat", label: "Как работи вносът", desktop: true },
   { href: "/about", label: "За нас", desktop: true },
-  { href: "/#contact", label: "Запитване" },
+  { href: "/zapitvane", label: "Запитване" },
 ];
 
 /** The header's links on a computer and the menu (☰) on a phone, with the phone number and Viber. */
@@ -66,7 +66,7 @@ export function SiteNav({ contact }: { contact: Contact }) {
         >
           <ViberIcon />
         </a>
-        <Link href="/#contact" className="btn-accent ml-1 hidden px-4! py-2! text-[14px]! sm:inline-flex">
+        <Link href="/zapitvane" className="btn-accent ml-1 hidden px-4! py-2! text-[14px]! sm:inline-flex">
           Запитване
         </Link>
         <button
@@ -122,7 +122,7 @@ export function SiteNav({ contact }: { contact: Contact }) {
   );
 }
 
-/** "/cars/x" belongs to "Каталог автомобили"; "/#contact" is a part of the home page, never marked. */
+/** "/cars/x" belongs to "Каталог автомобили". */
 function activeHref(pathname: string): string | null {
   const match = pages
     .filter((p) => !p.href.includes("#"))

@@ -2,7 +2,7 @@ import Form from "next/form";
 import Link from "next/link";
 import { Suspense } from "react";
 import { CarCard } from "@/components/car-card";
-import { InquiryForm } from "@/components/inquiry-form";
+import { InquiryCta, inquiryHref } from "@/components/inquiry-link";
 import { CardGridSkeleton, Notice } from "@/components/notice";
 import { BasicSearchFields } from "@/components/search-fields";
 import { getFilterOptions, searchCars, type CarSearch } from "@/lib/api";
@@ -90,21 +90,15 @@ export function NichePage({
   );
 }
 
-/** The "find me a car" block of the landing pages: a short pitch and the general inquiry form (make / model prefilled). */
+/** The "find me a car" block of the landing pages: a short pitch and a button to the inquiry page (make / model prefilled). */
 export function NicheContact({ title, make, model }: { title: string; make?: string; model?: string }) {
   return (
-    <section id="niche-contact" className="mx-auto max-w-6xl scroll-mt-20 px-4 pt-20 sm:px-6">
-      <div className="grid gap-10 rounded-3xl bg-card p-6 ring-1 ring-line sm:p-10 md:grid-cols-2">
-        <div>
-          <h2 className="text-2xl font-extrabold tracking-tight sm:text-3xl">{title}</h2>
-          <p className="mt-3 leading-relaxed text-muted">
-            Изберете марка, модел и година и оставете телефон — ще ви се обадим с подходящи коли с крайна цена в
-            България. Или ни пишете направо във Viber.
-          </p>
-        </div>
-        <InquiryForm make={make} model={model} />
-      </div>
-    </section>
+    <InquiryCta
+      id="niche-contact"
+      title={title}
+      text="Кажете ни марка, модел и година и оставете телефон — ще ви се обадим с подходящи коли с крайна цена в България."
+      href={inquiryHref({ make, model })}
+    />
   );
 }
 
@@ -142,7 +136,7 @@ async function NicheCars({ searches, emptyText }: { searches: CarSearch[]; empty
     return (
       <Notice title="В момента няма налични">
         {emptyText}{" "}
-        <Link href="#niche-contact" className="font-semibold text-accent">
+        <Link href="/zapitvane" className="font-semibold text-accent">
           Пишете ни
         </Link>
         .

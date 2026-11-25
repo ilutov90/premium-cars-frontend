@@ -82,7 +82,7 @@ async function Catalog({ searchParams }: { searchParams: PageProps<"/cars">["sea
     content = (
       <Notice title="Няма коли по тези критерии">
         Променете филтрите или{" "}
-        <Link href="/#contact" className="font-semibold text-accent">
+        <Link href="/zapitvane" className="font-semibold text-accent">
           ни кажете какво търсите
         </Link>
         .

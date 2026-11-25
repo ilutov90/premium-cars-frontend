@@ -125,7 +125,7 @@ Run `npm run lint` and `npm run build` before finishing a change.
   Business details (brand, phone, Viber, office) and the "why us" bullets live in `src/lib/site.ts`; the phone,
   Viber link and office saved in the admin panel ("Шаблони → Общи данни") override them in the posts and in the
   footer (`getContact()`, `contactDetails()`).
-- The inquiry form (`inquiry-form.tsx`): the general one is make, model (suggestions from the catalog, any text goes), year and a required phone, sent as the message "Търся: …"; on a car page phone and message. The name is optional. The phone and name fields get `autoComplete` "tel" / "name" only outside Facebook's and Instagram's in-app browsers (user agent FBAN / FBAV / FB_IAB / FBIOS / Instagram; rendered "off" and set after hydration through `useSyncExternalStore`): a test of whether their autofill is what moved ad visitors to the form. Both have "Пишете ни във Viber" (`viberChatHref`: a chat with the contact phone, with a first message on a car page).
+- The inquiry form (`inquiry-form.tsx`): the general one is make, model (suggestions from the catalog, any text goes), year and a required phone, sent as the message "Търся: …"; on a car page phone and message. The name is optional. The form is only on its own page, `/zapitvane` (`src/app/zapitvane/page.tsx`: `?kola={slug}` asks about that car, `?make=` / `?model=` prefill the general form): Facebook's and Instagram's in-app browsers moved ad visitors from the home page to the form, so every other page shows a button instead (`inquiry-link.tsx`: `InquiryCta`, `inquiryHref`; the home page's block keeps `id="contact"` and the landing pages' `id="niche-contact"` for old links), and every "Запитване" link (header, menu, footer, pages) leads there. Both have "Пишете ни във Viber" (`viberChatHref`: a chat with the contact phone, with a first message on a car page).
 - Marketing: the inquiry form sends "Откъде научихте за нас?" (`heardFrom`, labels in `format.ts`) and where the visit
   came from (`src/lib/marketing.ts`: UTM parameters, first page, referring site, kept in sessionStorage for the tab).
   `{{link}}` in the post templates gets UTM parameters per template (`postUtm` in `post-template.ts`). The Meta Pixel
@@ -153,7 +153,7 @@ Run `npm run lint` and `npm run build` before finishing a change.
   The picture shown when a link to the site is shared (og:image, `/og`) is uploaded the same way under "Шаблони → Картинка при споделяне"
   (`getShareImage()`, `GET /api/public/share-image`; reduced to at most 1200 px wide JPEG): `src/app/og/route.tsx` serves it (fetched per request,
   `connection()`, `Cache-Control: max-age=300`), else the generated default.
-- Links to a section ("/#contact", "#niche-contact"): `hash-anchor.tsx` (in the root layout) keeps the section in view while
+- Links to a section ("#how"; the old "/#contact" and "#niche-contact" now land on the inquiry button): `hash-anchor.tsx` (in the root layout) keeps the section in view while
   the page above it still streams in (the home page's delivered cars come later and would push "#contact" down), for a
   page opened with a hash and for in-site links, until the page has not grown for 2 s or the visitor scrolls, touches or types.
 - Text sizes: the public site reads two steps larger than Tailwind's scale (14 / 16 / 18 / 20 px) (`--text-xs` … `--text-lg` set on `body` in

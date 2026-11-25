@@ -9,7 +9,7 @@ import { DeliveredCarCards } from "@/components/delivered-cars";
 import { CarCard } from "@/components/car-card";
 import { CardGridSkeleton, Notice } from "@/components/notice";
 import { ImportStepsCompact } from "@/components/import-steps";
-import { InquiryForm } from "@/components/inquiry-form";
+import { InquiryCta, inquiryHref } from "@/components/inquiry-link";
 import { QuickSearch, QuickSearchSkeleton } from "@/components/quick-search";
 
 export const metadata: Metadata = {
@@ -50,7 +50,7 @@ export default function HomePage() {
                 Разгледай каталога с автомобили
               </Link>
               <Link
-                href="/#contact"
+                href="/zapitvane"
                 className="btn border border-paper/25 px-6! py-3! text-base! text-paper hover:border-paper"
               >
                 Изпрати ни запитване
@@ -109,19 +109,13 @@ export default function HomePage() {
         </p>
       </section>
 
-      {/* Contact */}
-      <section id="contact" className="mx-auto max-w-6xl scroll-mt-20 px-4 pt-24 sm:px-6">
-        <div className="grid gap-10 rounded-3xl bg-card p-6 ring-1 ring-line sm:p-10 md:grid-cols-2">
-          <div>
-            <h2 className="text-2xl font-extrabold tracking-tight sm:text-3xl">Не намирате вашата кола?</h2>
-            <p className="mt-3 leading-relaxed text-muted">
-              Изберете марка, модел и година и оставете телефон — ще намерим подходящи коли в Корея и Китай и ще ви
-              се обадим с оферти с крайна цена. Или ни пишете направо във Viber.
-            </p>
-          </div>
-          <InquiryForm />
-        </div>
-      </section>
+      {/* Inquiry: the form itself is on /zapitvane ("#contact" kept for old links) */}
+      <InquiryCta
+        id="contact"
+        title="Не намирате вашата кола?"
+        text="Кажете ни марка, модел и година и оставете телефон — ще намерим подходящи коли в Корея и Китай и ще ви се обадим с оферти с крайна цена."
+        href={inquiryHref()}
+      />
     </>
   );
 }
