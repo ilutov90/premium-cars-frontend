@@ -22,6 +22,7 @@ const pages: { path: string; changefreq: string; priority: number }[] = [
   { path: "/elektromobili-ot-kitay", changefreq: "weekly", priority: 0.8 },
   { path: "/koli-ot-kanada-i-amerika", changefreq: "weekly", priority: 0.8 },
   { path: "/kak-raboti-vnosat", changefreq: "monthly", priority: 0.6 },
+  { path: "/zapitvane", changefreq: "yearly", priority: 0.5 },
   { path: "/delivered", changefreq: "weekly", priority: 0.6 },
   { path: "/about", changefreq: "yearly", priority: 0.3 },
   { path: "/privacy", changefreq: "yearly", priority: 0.1 },

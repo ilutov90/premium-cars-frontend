@@ -27,7 +27,7 @@ import {
 import { CarGallery } from "@/components/car-gallery";
 import { InspectionReport } from "@/components/inspection-report";
 import { ShareButtons } from "@/components/share-buttons";
-import { InquiryForm } from "@/components/inquiry-form";
+import { inquiryHref } from "@/components/inquiry-link";
 import { PriceCard } from "@/components/price-card";
 import { AdminCarBar } from "@/components/admin-car-bar";
 import type { CarSpecs, Origin } from "@/lib/types";
@@ -323,8 +323,11 @@ async function CarDetailView({ params }: { params: PageProps<"/cars/[slug]">["pa
 
       <aside className="space-y-5 lg:sticky lg:top-24 lg:self-start">
         <div className="rounded-2xl border border-line bg-card p-5">
-          <p className="mb-4 text-lg font-bold">Интересувате се?</p>
-          <InquiryForm carId={car.id} carTitle={s.title} />
+          <p className="text-lg font-bold">Интересувате се?</p>
+          <p className="mt-2 text-sm leading-relaxed text-muted">Оставете телефон и въпроса си — ще ви се обадим.</p>
+          <Link href={inquiryHref({ kola: car.slug })} className="btn-accent mt-4 w-full py-3! text-base!">
+            Изпрати запитване
+          </Link>
         </div>
       </aside>
     </div>

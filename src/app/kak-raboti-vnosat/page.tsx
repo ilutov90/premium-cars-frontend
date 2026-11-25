@@ -30,7 +30,7 @@ export default function HowImportWorksPage() {
           <Link href="/cars" className="btn-accent px-6! py-3! text-base!">
             Разгледай каталога с автомобили
           </Link>
-          <Link href="/#contact" className="btn-ghost px-6! py-3! text-base!">
+          <Link href="/zapitvane" className="btn-ghost px-6! py-3! text-base!">
             Изпрати ни запитване
           </Link>
         </div>

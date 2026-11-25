@@ -35,7 +35,7 @@ export function SiteFooter() {
               </Link>
             </li>
             <li>
-              <Link href="/#contact" className="hover:text-paper">
+              <Link href="/zapitvane" className="hover:text-paper">
                 Изпрати ни запитване
               </Link>
             </li>

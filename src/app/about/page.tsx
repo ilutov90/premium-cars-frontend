@@ -47,7 +47,7 @@ export default function AboutPage() {
         <SavedContact />
       </Suspense>
       <p>
-        Или ни пишете през <Link href="/#contact">формата за запитване</Link>. Как използваме данните ви, е описано в{" "}
+        Или ни пишете през <Link href="/zapitvane">формата за запитване</Link>. Как използваме данните ви, е описано в{" "}
         <Link href="/privacy">Политиката за поверителност</Link>.
       </p>
     </TextPage>

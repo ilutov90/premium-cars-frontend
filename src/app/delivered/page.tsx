@@ -28,7 +28,7 @@ export default function DeliveredPage() {
         <Link href="/cars" className="btn-accent">
           Разгледай наличните коли
         </Link>
-        <Link href="/#contact" className="btn-ghost">
+        <Link href="/zapitvane" className="btn-ghost">
           Изпрати ни запитване
         </Link>
       </div>

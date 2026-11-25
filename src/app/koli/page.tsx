@@ -61,7 +61,7 @@ async function Makes() {
     return (
       <div className="mt-8">
         <Notice title="В момента няма налични коли">
-          <Link href="/#contact" className="font-semibold text-accent">
+          <Link href="/zapitvane" className="font-semibold text-accent">
             Кажете ни какво търсите
           </Link>
           .
