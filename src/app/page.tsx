@@ -115,7 +115,11 @@ export default function HomePage() {
         title="Не намирате вашата кола?"
         text="Ще ви се обадим с подбрани оферти и крайна цена до България. Предпочитате бърз чат? Пишете ни във Viber."
         href={inquiryHref()}
-      />
+      >
+        <Suspense fallback={<ViberChatButton phone={contactDetails(null).phone} />}>
+          <SavedViberChatButton />
+        </Suspense>
+      </InquiryCta>
     </>
   );
 }
@@ -146,6 +150,23 @@ function ContactButtons({ contact }: { contact: Contact }) {
         <ViberIcon /> Пиши ни във Viber
       </a>
     </div>
+  );
+}
+
+async function SavedViberChatButton() {
+  const saved = await getContact();
+  return <ViberChatButton phone={contactDetails(saved).phone} />;
+}
+
+/** The Viber chat button under "Изпрати запитване", the same size as it. */
+function ViberChatButton({ phone }: { phone: string }) {
+  return (
+    <a
+      href={viberChatHref(phone)}
+      className="btn justify-center gap-2 bg-[#7360f2] px-6! py-3! text-base! text-white hover:bg-[#5e4bd8]"
+    >
+      <ViberIcon /> Пиши ни във Viber
+    </a>
   );
 }
 
