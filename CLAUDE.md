@@ -167,7 +167,7 @@ Run `npm run lint` and `npm run build` before finishing a change.
   `getUserMedia`, pages with a "document" look done on the pixels, reorder, sent as JPEGs that the server makes one
   PDF; without a camera `<input capture>`). The camera is allowed only under `/admin` (`Permissions-Policy`
   `camera=(self)` in `next.config.ts`; the public site keeps `camera=()`). `adminFetch` leaves Content-Type to the
-  browser for a FormData body. The car editor links a sold car's order (`AdminCar.orderId`).
+  browser for a FormData body. The car editor links a sold car's order (`AdminCar.orderId`). An agreed order's car can be changed (`order-change-car.tsx`, "Смени колата": the new car by "Обява №" / link, `POST /api/admin/orders/{id}/car` `{q, republishOld}`; the previous car stays among the offered cars, "Върни старата кола в сайта" ticked by default; the change is noted in "Комуникация").
   Potential orders (`LEAD`, "Потенциална"): no car of their own; the cars offered to the customer are `candidates`
   (`order-candidates.tsx`: add by "Обява №" / link, remove, "Клиентът избра тази" makes one the order's car, agrees the order and
   marks the car sold; the others stay on the site). The communication log (`order-contacts.tsx`, `ContactKind`, Sofia time)

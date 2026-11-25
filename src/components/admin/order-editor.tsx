@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { AdminApiError, useAdmin } from "./admin-context";
 import { OrderCandidates } from "./order-candidates";
+import { OrderChangeCar } from "./order-change-car";
 import { OrderContacts } from "./order-contacts";
 import { OrderDocuments } from "./order-documents";
 import { OrderStatusChip } from "./order-status-chip";
@@ -298,6 +299,9 @@ export function OrderEditor({ orderId, initialCarId }: { orderId: number | null;
                     </a>
                   ))}
                 </div>
+              )}
+              {order.status !== "LEAD" && order.status !== "CANCELLED" && (
+                <OrderChangeCar order={order} onChanged={setOrder} />
               )}
             </div>
           ) : (
