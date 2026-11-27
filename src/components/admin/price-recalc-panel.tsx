@@ -23,6 +23,7 @@ const rereadable = new Set<string>(["", "AUTOWINI", "GUAZI", "AUTOHOME", "AUTOTR
 const modeLabels: Record<PriceRecalcRun["mode"], string> = {
   STORED: "от записаната ФОБ",
   SOURCE: "с ФОБ от сайта на продавача",
+  CHANGED: "сменени цени от нощния импорт",
 };
 
 function scopeLabel(scope: string) {
@@ -188,7 +189,7 @@ function RunRow({
         )}
         <span className="text-muted">
           {run.changed} с нова цена · {run.fixedPrice} с ръчна цена (непроменени)
-          {run.mode === "SOURCE" && ` · ${run.failed} непрочетени обяви`} · общо {run.total}
+          {run.mode !== "STORED" && ` · ${run.failed} непрочетени обяви`} · общо {run.total}
         </span>
         {run.startedBy && <span className="text-xs text-muted">пуснато от {run.startedBy}</span>}
         {run.status !== "RUNNING" && (
@@ -236,7 +237,7 @@ function RunReport({ run }: { run: PriceRecalcRun }) {
           aria-label="Вид"
         >
           <option value="CHANGED">С нова цена</option>
-          {run.mode === "SOURCE" && <option value="FAILED">Непрочетени обяви</option>}
+          {run.mode !== "STORED" && <option value="FAILED">Непрочетени обяви</option>}
           <option value="FIXED">С ръчна цена (непроменени)</option>
           <option value="">Всички</option>
         </select>

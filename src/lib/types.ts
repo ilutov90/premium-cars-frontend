@@ -949,8 +949,11 @@ export interface PriceRecalcRun {
   id: number;
   /** "ALL" or a CarSource */
   scope: string;
-  /** STORED: the FOB kept at the import; SOURCE: read again from each listing */
-  mode: "STORED" | "SOURCE";
+  /**
+   * STORED: the FOB kept at the import; SOURCE: read again from each listing; CHANGED: the nightly import's, the cars
+   * whose price changed in the site's search, read again from their listings
+   */
+  mode: "STORED" | "SOURCE" | "CHANGED";
   status: "RUNNING" | "DONE" | "FAILED";
   startedBy: string | null;
   startedAt: string;
