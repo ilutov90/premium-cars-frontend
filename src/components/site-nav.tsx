@@ -22,7 +22,12 @@ const pages: { href: string; label: string; desktop?: boolean }[] = [
 ];
 
 /** The header's links on a computer and the menu (☰) on a phone, with the phone number and Viber. */
-export function SiteNav({ contact }: { contact: Contact }) {
+/** The Canada page is in the menu only while cars from Canada are on the site. */
+const CANADA = "/koli-ot-kanada-i-amerika";
+
+const shown = (canada: boolean) => pages.filter((p) => canada || p.href !== CANADA);
+
+export function SiteNav({ contact, canada = false }: { contact: Contact; canada?: boolean }) {
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
@@ -41,8 +46,8 @@ export function SiteNav({ contact }: { contact: Contact }) {
     <>
       <nav className="flex items-center gap-1 text-[14px] font-semibold">
         <div className="hidden items-center xl:flex">
-          <Suspense fallback={<DesktopLinks active={null} />}>
-            <DesktopLinksActive />
+          <Suspense fallback={<DesktopLinks active={null} canada={canada} />}>
+            <DesktopLinksActive canada={canada} />
           </Suspense>
         </div>
         <a
@@ -99,8 +104,8 @@ export function SiteNav({ contact }: { contact: Contact }) {
             className="fixed inset-x-0 top-16 bottom-0 z-40 overflow-y-auto border-t border-line bg-paper xl:hidden"
           >
             <div className="mx-auto max-w-6xl px-4 pb-10 sm:px-6">
-              <Suspense fallback={<MenuLinks active={null} onPick={() => setOpen(false)} />}>
-                <MenuLinksActive onPick={() => setOpen(false)} />
+              <Suspense fallback={<MenuLinks active={null} canada={canada} onPick={() => setOpen(false)} />}>
+                <MenuLinksActive canada={canada} onPick={() => setOpen(false)} />
               </Suspense>
               <div className="mt-6 grid gap-3 sm:grid-cols-2">
                 <a href={phoneHref(contact.phone)} className="btn-accent gap-2 py-3! text-base!">
@@ -133,18 +138,18 @@ function activeHref(pathname: string): string | null {
 
 // usePathname may wait for the request on pages with dynamic params (Cache Components), hence the Suspense
 // boundaries above with the same links unmarked as fallback.
-function MenuLinksActive({ onPick }: { onPick: () => void }) {
-  return <MenuLinks active={activeHref(usePathname())} onPick={onPick} />;
+function MenuLinksActive({ onPick, canada }: { onPick: () => void; canada: boolean }) {
+  return <MenuLinks active={activeHref(usePathname())} canada={canada} onPick={onPick} />;
 }
 
-function DesktopLinksActive() {
-  return <DesktopLinks active={activeHref(usePathname())} />;
+function DesktopLinksActive({ canada }: { canada: boolean }) {
+  return <DesktopLinks active={activeHref(usePathname())} canada={canada} />;
 }
 
-function MenuLinks({ active, onPick }: { active: string | null; onPick: () => void }) {
+function MenuLinks({ active, onPick, canada }: { active: string | null; onPick: () => void; canada: boolean }) {
   return (
     <ul className="divide-y divide-line">
-      {pages.map((p) => (
+      {shown(canada).map((p) => (
         <li key={p.href}>
           <Link
             href={p.href}
@@ -162,10 +167,10 @@ function MenuLinks({ active, onPick }: { active: string | null; onPick: () => vo
   );
 }
 
-function DesktopLinks({ active }: { active: string | null }) {
+function DesktopLinks({ active, canada }: { active: string | null; canada: boolean }) {
   return (
     <>
-      {pages
+      {shown(canada)
         .filter((p) => p.desktop)
         .map((p) => (
           <Link

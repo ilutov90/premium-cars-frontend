@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Suspense } from "react";
-import { getContact, getLogo } from "@/lib/api";
+import { getContact, getLogo, hasCanadaCars } from "@/lib/api";
 import { logoImageStyle } from "@/lib/logo-style";
 import { contactDetails } from "@/lib/site";
 import { SiteNav } from "./site-nav";
@@ -25,8 +25,8 @@ export function SiteHeader() {
 }
 
 async function SavedContactNav() {
-  const saved = await getContact();
-  return <SiteNav contact={contactDetails(saved)} />;
+  const [saved, canada] = await Promise.all([getContact(), hasCanadaCars()]);
+  return <SiteNav contact={contactDetails(saved)} canada={canada} />;
 }
 
 function BuiltInLogo() {

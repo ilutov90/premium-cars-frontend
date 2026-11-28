@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Suspense } from "react";
-import { getContact } from "@/lib/api";
+import { getContact, hasCanadaCars } from "@/lib/api";
 import { CookieSettingsLink } from "@/components/cookie-consent";
 import { company, contactDetails, phoneHref, site, type Contact } from "@/lib/site";
 
@@ -54,11 +54,9 @@ export function SiteFooter() {
                 Електромобили и хибриди от Китай
               </Link>
             </li>
-            <li>
-              <Link href="/koli-ot-kanada-i-amerika" className="hover:text-paper">
-                Коли от Канада и Америка
-              </Link>
-            </li>
+            <Suspense fallback={null}>
+              <CanadaLink />
+            </Suspense>
             <li>
               <Link href="/about" className="hover:text-paper">
                 За нас
@@ -112,5 +110,17 @@ function ContactList({ contact }: { contact: Contact }) {
       </li>
       <li>Офис {contact.office}, България</li>
     </ul>
+  );
+}
+
+/** "Коли от Канада" in the footer, only while cars from Canada are on the site. */
+async function CanadaLink() {
+  if (!(await hasCanadaCars())) return null;
+  return (
+    <li>
+                  <Link href="/koli-ot-kanada-i-amerika" className="hover:text-paper">
+                    Коли от Канада и Америка
+                  </Link>
+                </li>
   );
 }

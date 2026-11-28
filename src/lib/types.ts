@@ -838,6 +838,8 @@ export interface AutoImportFilters {
   grades: string[];
   autotrader?: AutotraderFilters;
   koreaOnly?: boolean;
+  /** Any site: the import queue leaves the new cars drafts (not on the site) until "Публикувай черновите". */
+  hideNew?: boolean;
 }
 
 export interface AutoImportModel {
