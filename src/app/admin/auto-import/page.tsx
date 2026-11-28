@@ -411,6 +411,23 @@ function SourceCard({
     });
   };
 
+  const publishDrafts = () =>
+    act("drafts", async () => {
+      const { count } = await adminFetch<{ count: number }>(`${base}/drafts`);
+      if (count === 0) {
+        setMessage("Няма чернови със снимки и цена за публикуване.");
+        return;
+      }
+      if (
+        !window.confirm(
+          `Да се публикуват ли ${count.toLocaleString("bg-BG")} чернови на ${sourceNames[view.source]}? Ще се покажат в сайта. Черновите без снимки или цена остават скрити.`,
+        )
+      )
+        return;
+      const done = await adminFetch<{ count: number }>(`${base}/drafts/publish`, { method: "POST" });
+      setMessage(`Публикувани: ${done.count.toLocaleString("bg-BG")} коли.`);
+    });
+
   const deleteDupes = () => {
     if (!dupes || dupes.cars === 0) return;
     if (
@@ -502,6 +519,28 @@ function SourceCard({
           {formatDate(view.pausedUntil)} и тогава продължава сама. Обявите остават в опашката, не се броят за неуспешни.
         </p>
       )}
+
+      <div className="mt-3 rounded-xl bg-paper p-3 text-sm ring-1 ring-line">
+        <label className="flex items-center gap-2 font-semibold">
+          <input
+            type="checkbox"
+            checked={filters.hideNew ?? false}
+            onChange={(e) => setFilters({ ...filters, hideNew: e.target.checked })}
+          />
+          Качвай новите коли скрити (като чернови)
+        </label>
+        <p className="mt-1 text-muted">
+          Новите коли се качват реално, но не се виждат в сайта, докато не ги публикувате. Запазва се с „Запази“.
+        </p>
+        <button
+          type="button"
+          className="mt-2 font-semibold text-accent hover:underline disabled:opacity-50"
+          disabled={!!busy}
+          onClick={publishDrafts}
+        >
+          {busy === "drafts" ? "Публикуване…" : "Публикувай черновите"}
+        </button>
+      </div>
 
       <div className="mt-4 flex flex-wrap gap-4 text-sm">
         {view.source === "AUTOTRADER_CA" ? (

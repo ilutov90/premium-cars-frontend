@@ -168,3 +168,12 @@ export async function getSeoPage(makeSlug: string, modelSlug?: string | null): P
     throw e;
   }
 }
+
+/** Whether cars from Canada are on the site (the "Коли от Канада" links show only then); false when unknown. */
+export async function hasCanadaCars(): Promise<boolean> {
+  try {
+    return (await searchCars({ origin: "CA" }, 1)).totalItems > 0;
+  } catch {
+    return false;
+  }
+}
